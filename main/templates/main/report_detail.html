@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Отчет: {{ report.sub_indicator.name }}</h2>
+<p>Значение по умолчанию: {{ report.sub_indicator.default_value }}</p>
+<form method="post">
+  {% csrf_token %}
+  <label for="custom_value">Ваше значение:</label>
+  <input type="number" name="custom_value" id="custom_value" value="{{ report.custom_value }}">
+  <button type="submit">Сохранить</button>
+</form>
+{% if error %}
+  <p style="color: red;">{{ error }}</p>
+{% endif %}
+<a href="{% url 'report_list' report.sub_indicator.main_indicator.direction.id report.sub_indicator.year.year %}">Вернуться к списку отчетов</a>
+{% endblock %}
