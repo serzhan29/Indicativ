@@ -1,8 +1,119 @@
+{% extends "base.html" %}
 
-  <h2>Регистрация</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Зарегистрироваться</button>
-  </form>
+{% block content %}
+  <div class="register-container">
+    <h2>Тіркелу</h2>
+    <form method="post" class="register-form">
+      {% csrf_token %}
 
+      <div class="form-group">
+        <label for="username">Пайдаланушы аты</label>
+        {{ form.username }}
+      </div>
+
+      <div class="form-group">
+        <label for="password1">Құпия сөз</label>
+        {{ form.password1 }}
+      </div>
+
+      <div class="form-group">
+        <label for="password2">Құпия сөзді қайталаңыз</label>
+        {{ form.password2 }}
+      </div>
+
+      <div class="form-group">
+        <label for="faculty">Факультет</label>
+        {{ form.faculty }}
+      </div>
+
+      <div class="form-group">
+        <label for="role">Рөл</label>
+        {{ form.role }}
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Телефон нөмірі</label>
+        {{ form.phone }}
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary">Тіркелу</button>
+      </div>
+    </form>
+
+    <p>Есептік жазбаңыз бар ма? <a href="{% url 'login' %}">Кіру</a></p>
+  </div>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 0;
+    }
+
+    .register-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 100px auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .register-form .form-group {
+      margin-bottom: 15px;
+    }
+
+    .register-form label {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .register-form input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .register-form button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .register-form button:hover {
+      background-color: #0056b3;
+    }
+
+    p {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+{% endblock %}

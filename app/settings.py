@@ -22,6 +22,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
+    'django.contrib.sites',
+    'django.contrib.flatpages',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -36,6 +39,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -115,3 +119,22 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_REDIRECT_URL = '/'  # Перенаправление после успешного входа
+LOGOUT_REDIRECT_URL = '/'  # Перенаправление после выхода
+LOGIN_URL = '/user/login/'  # Указываем правильный путь к странице логина
+
+gettext = lambda s: s
+LANGUAGES = [
+    ('en', 'English'),
+    ('kk', 'Қазақ тілі'),
+    ('ru', 'Русский'),
+]
+
+LANGUAGE_CODE = 'kk'  # Устанавливаем язык по умолчанию
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',  # Путь, где будут храниться переводы
+]
+
+SITE_ID = 1
