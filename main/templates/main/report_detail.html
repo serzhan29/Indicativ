@@ -1,15 +1,52 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+
 {% block content %}
-<h2>Отчет: {{ report.sub_indicator.name }}</h2>
-<p>Значение по умолчанию: {{ report.sub_indicator.default_value }}</p>
-<form method="post">
-  {% csrf_token %}
-  <label for="custom_value">Ваше значение:</label>
-  <input type="number" name="custom_value" id="custom_value" value="{{ report.custom_value }}">
-  <button type="submit">Сохранить</button>
-</form>
-{% if error %}
-  <p style="color: red;">{{ error }}</p>
-{% endif %}
-<a href="{% url 'report_list' report.sub_indicator.main_indicator.direction.id report.sub_indicator.year.year %}">Вернуться к списку отчетов</a>
+<h2>Отчет за {{ year.year }} по направлению {{ direction.name }}</h2>
+
+{% for report_group in reports %}
+    <h3>{{ report_group.main_indicator.name }}</h3>
+    <p><strong>Общий показатель:</strong> <span id="main-value-{{ report_group.main_indicator.id }}">{{ report_group.main_value_total }}</span></p>
+    <table>
+        <tr>
+            <th>Индикатор</th>
+            <th>Значение</th>
+        </tr>
+        {% for report in report_group.indicators %}
+        <tr>
+            <td>{{ report.indicator.name }}</td>
+            <td>
+                <input type="number" value="{{ report.value }}" data-report-id="{{ report.id }}" data-main-id="{{ report.indicator.main_indicator.id }}" class="report-input">
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endfor %}
+
+<script>
+document.querySelectorAll('.report-input').forEach(input => {
+    input.addEventListener('change', function() {
+        let reportId = this.getAttribute('data-report-id');
+        let mainId = this.getAttribute('data-main-id');
+        let newValue = this.value;
+
+        fetch("{% url 'update_report' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ report_id: reportId, value: newValue })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let mainValueElement = document.getElementById(`main-value-${mainId}`);
+                if (mainValueElement) {
+                    mainValueElement.textContent = data.new_main_value;
+                }
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

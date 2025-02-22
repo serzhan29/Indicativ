@@ -1,10 +1,10 @@
 from django.urls import path
-from . import views
-
+from .views import choose_direction, choose_year, update_report, teacher_report
 
 urlpatterns = [
-    path('', views.direction_list, name='direction_list'),
-    path('years/<int:direction_id>/', views.year_list, name='year_list'),
-    path('reports/<int:direction_id>/<int:year>/', views.report_list, name='report_list'),
-    path('report/<int:report_id>/', views.report_detail, name='report_detail'),
+    path('', choose_direction, name='direction_list'),
+    path('reports/<int:direction_id>/', choose_year, name='choose_year'),
+    path('reports/<int:direction_id>/<int:year_id>/', teacher_report, name='view_teacher_report'),
+    path('update-report/', update_report, name='update_report'),
 ]
+

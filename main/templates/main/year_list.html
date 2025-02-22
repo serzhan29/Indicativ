@@ -1,21 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Годы для направления "{{ direction.name }}" - Мой сайт{% endblock %}
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Главная</a></li>
+  <li class="breadcrumb-item"><a href="">Главная</a></li>
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Направления</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ direction.name }}</li>
 {% endblock %}
 {% block content %}
 <h2>Направление: "{{ direction.name }}"</h2>
-<h3>Выберите учебный год</h3>
+<h2>Выберите год для направления "{{ direction.name }}"</h2>
 <ul>
-  {% for year in years %}
-    <li>
-      <a href="{% url 'report_list' direction.id year.year %}">{{ year.year }}</a>
-    </li>
-  {% empty %}
-    <li>Для данного направления отсутствуют учебные годы.</li>
-  {% endfor %}
+    {% for year in years %}
+        <a href="{% url 'view_teacher_report' direction.id year.id %}">{{ year.year }}</a>
+
+    {% endfor %}
 </ul>
-<a href="{% url 'direction_list' %}">Вернуться к списку направлений</a>
+
 {% endblock %}

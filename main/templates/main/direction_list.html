@@ -5,14 +5,14 @@
   <li class="breadcrumb-item active" aria-current="page">Направления</li>
 {% endblock %}
 {% block content %}
-<h2>Выберите направление деятельности</h2>
+
+
+    <h2>Выберите направление</h2>
 <ul>
-  {% for direction in directions %}
-    <li>
-      <a href="{% url 'year_list' direction.id %}">{{ direction.name }}</a>
-    </li>
-  {% empty %}
-    <li>Направления не найдены.</li>
-  {% endfor %}
+    {% for direction in directions %}
+        <li><a href="{% url 'choose_year' direction.id %}">{{ direction.name }}</a></li>
+    {% endfor %}
 </ul>
+
+
 {% endblock %}

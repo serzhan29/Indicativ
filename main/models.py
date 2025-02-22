@@ -1,6 +1,15 @@
+from email.policy import default
+from tabnanny import verbose
+
 from django.db import models
 from django.contrib.auth.models import User
 
+class Year(models.Model):
+    """Модель для хранения годов"""
+    year = models.IntegerField(unique=True, verbose_name="Год")
+
+    def __str__(self):
+        return str(self.year)
 
 
 class Direction(models.Model):
@@ -11,49 +20,39 @@ class Direction(models.Model):
         return self.name
 
 
-class Year(models.Model):
-    """Учебные года (2023, 2024 и т.д.)"""
-    year = models.IntegerField(unique=True, verbose_name="Год")
-
-    def __str__(self):
-        return str(self.year)
-
-
 class MainIndicator(models.Model):
-    """Главный индикатор"""
-    direction = models.ForeignKey(Direction, on_delete=models.CASCADE, verbose_name="Направление")
+    """Главный индикатор, объединяющий несколько индикаторов"""
+    direction = models.ForeignKey(Direction, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, verbose_name="Название главного индикатора")
     years = models.ManyToManyField(Year, verbose_name="Годы действия")
-    name = models.CharField(max_length=200, verbose_name="Название")
-    description = models.TextField(blank=True, verbose_name="Описание")
-
-    # Автоматически рассчитываемое поле (можно заменить на сигнал)
-    total = models.IntegerField(default=0, verbose_name="Суммарное значение")
 
     def __str__(self):
-        return f"{self.name} ({self.direction})"
+        return f"{self.name} - {self.direction.name}"
 
 
-class SubIndicator(models.Model):
-    """Под-индикатор"""
-    main_indicator = models.ForeignKey(MainIndicator, on_delete=models.CASCADE, verbose_name="Главный индикатор")
-    year = models.ForeignKey(Year, on_delete=models.CASCADE, verbose_name="Год")
-    name = models.CharField(max_length=200, verbose_name="Название")
-    default_value = models.IntegerField(default=0, verbose_name="Значение по умолчанию")
+class Indicator(models.Model):
+    """Подчинённые индикаторы, принадлежащие главному индикатору"""
+    main_indicator = models.ForeignKey(MainIndicator, on_delete=models.CASCADE, related_name="indicators", verbose_name="Главный индикатор")
+    years = models.ManyToManyField(Year, verbose_name="Годы действия")
+    name = models.CharField(max_length=255, verbose_name="Название индикатора")
 
     def __str__(self):
-        return f"{self.name} ({self.year})"
+        years_list = ", ".join(str(year.year) for year in self.years.all())  # Получаем все года
+        return f"{self.name} - ({years_list})"
 
 
 class TeacherReport(models.Model):
-    """Отчет учителя"""
+    """Учитель вносит данные по индикатору"""
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Учитель")
-    sub_indicator = models.ForeignKey(SubIndicator, on_delete=models.CASCADE, verbose_name="Под-индикатор")
-    custom_value = models.IntegerField(default=0, verbose_name="Значение учителя")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, verbose_name="Индикатор")
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, verbose_name="Год")
+    main_value = models.IntegerField(default=0, verbose_name="Главный индикатор")
+    value = models.IntegerField(default=0, verbose_name="Подиндикатор")
+
 
     class Meta:
-        unique_together = [['teacher', 'sub_indicator']]
+        unique_together = [['teacher', 'indicator', 'year']]
 
     def __str__(self):
-        return f"{self.teacher} - {self.sub_indicator}"
+        return f"{self.teacher} - {self.indicator.name} | year - {self.year}|"
+
