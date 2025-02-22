@@ -1,33 +1,64 @@
 {% extends 'base.html' %}
-
+{% block breadcrumbs %}
+  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Направления</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'choose_year' direction.id %}">{{ direction.name }}</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Отчёты за {{ year.year }}</li>
+{% endblock %}
 {% block content %}
-<h2>Отчет за {{ year.year }} по направлению {{ direction.name }}</h2>
+<h2 class="text-center my-4">Отчет за {{ year.year }} по направлению {{ direction.name }}</h2>
 
 {% for report_group in reports %}
-    <h3>{{ report_group.main_indicator.name }}</h3>
-    <p><strong>Общий показатель:</strong> <span id="main-value-{{ report_group.main_indicator.id }}">{{ report_group.main_value_total }}</span></p>
-    <table>
-        <tr>
-            <th>Индикатор</th>
-            <th>Значение</th>
-        </tr>
-        {% for report in report_group.indicators %}
-        <tr>
-            <td>{{ report.indicator.name }}</td>
-            <td>
-                <input type="number" value="{{ report.value }}" data-report-id="{{ report.id }}" data-main-id="{{ report.indicator.main_indicator.id }}" class="report-input">
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title text-primary">{{ report_group.main_indicator.name }}</h3>
+            <p class="fw-bold">Общий показатель: <span id="main-value-{{ report_group.main_indicator.id }}">{{ report_group.main_value_total }}</span></p>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Индикатор</th>
+                            <th class="text-center">Значение</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in report_group.indicators %}
+                        <tr>
+                            <td>{{ report.indicator.name }}</td>
+                            <td class="text-center">
+                                <input type="number" class="form-control text-center"
+                                       value="{{ report.value }}"
+                                       min="0" step="any"
+                                       data-report-id="{{ report.id }}"
+                                       data-main-id="{{ report.indicator.main_indicator.id }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 {% endfor %}
 
 <script>
-document.querySelectorAll('.report-input').forEach(input => {
+document.querySelectorAll('.form-control').forEach(input => {
+    // Запрещаем ввод отрицательных чисел
+    input.addEventListener('input', function() {
+        if (this.value < 0) {
+            this.value = 0;
+        }
+    });
+
+    // Отправка данных на сервер при изменении
     input.addEventListener('change', function() {
         let reportId = this.getAttribute('data-report-id');
         let mainId = this.getAttribute('data-main-id');
-        let newValue = this.value;
+        let newValue = parseFloat(this.value); // Преобразуем в число
+
+        if (isNaN(newValue) || newValue < 0) {
+            this.value = 0; // Предотвращаем некорректный ввод
+            return;
+        }
 
         fetch("{% url 'update_report' %}", {
             method: "POST",
