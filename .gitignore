@@ -17,7 +17,7 @@ staticfiles/
 #media/
 
 # Игнорировать базы данных SQLite
-*.sqlite3
+*.sqlite31
 
 # Игнорировать логи
 *.log
