@@ -1,6 +1,6 @@
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, logout
 from .forms import CustomUserCreationForm
 from .models import Profile
 
@@ -40,8 +40,6 @@ def login_view(request):
     return render(request, "user/login.html", {"form": form})
 
 
-# Страница для выхода (логут)
-from django.contrib.auth import logout
 
 def logout_view(request):
     # Завершаем сеанс пользователя
