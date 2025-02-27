@@ -1,18 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Годы для направления "{{ direction.name }}" - Мой сайт{% endblock %}
+
 {% block breadcrumbs %}
   <li class="breadcrumb-item"><a href="">Главная</a></li>
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Направления</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ direction.name }}</li>
 {% endblock %}
-{% block content %}
-<h2>Направление: "{{ direction.name }}"</h2>
-<h2>Выберите год для направления "{{ direction.name }}"</h2>
-<ul>
-    {% for year in years %}
-        <a href="{% url 'view_teacher_report' direction.id year.id %}">{{ year.year }}</a>
 
-    {% endfor %}
-</ul>
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4 text-primary">Выберите год для направления "{{ direction.name }}"</h2>
+
+    <div class="row justify-content-center">
+        {% for year in years|dictsort:"year" %}
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{% url 'view_teacher_report' direction.id year.id %}" class="text-decoration-none">
+                <div class="card shadow-sm border-0 text-center py-3 transition">
+                    <div class="card-body">
+                        <h5 class="card-title text-dark fw-bold">{{ year.year }}</h5>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.transition {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s;
+}
+.transition:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+</style>
 
 {% endblock %}

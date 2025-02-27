@@ -6,13 +6,46 @@
 {% endblock %}
 {% block content %}
 
+<div class="container">
+    <h2 class="text-center my-4">Выберите направление</h2>
+    <div class="row justify-content-center">
+        {% for direction in directions %}
+        <div class="col-md-4 mb-4">  <!-- Добавил mb-4 для увеличения отступа -->
+            <div class="card direction-card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ direction.name }}</h5>
+                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">Выбрать</a> <!-- Увеличил отступ -->
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 
-    <h2>Выберите направление</h2>
-<ul>
-    {% for direction in directions %}
-        <li><a href="{% url 'choose_year' direction.id %}">{{ direction.name }}</a></li>
-    {% endfor %}
-</ul>
+<style>
+    .direction-card {
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        background: linear-gradient(135deg, #f9f9f9, #e3e3e3);
+        padding: 20px;
+    }
 
+    .direction-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .btn-primary {
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 8px;
+    }
+</style>
 
 {% endblock %}
