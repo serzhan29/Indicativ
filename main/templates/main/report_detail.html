@@ -4,9 +4,16 @@
   <li class="breadcrumb-item"><a href="{% url 'choose_year' direction.id %}">{{ direction.name }}</a></li>
   <li class="breadcrumb-item active" aria-current="page">Отчёты за {{ year.year }}</li>
 {% endblock %}
+
 {% block content %}
 <h2 class="text-center my-4">Отчет за {{ year.year }} по направлению {{ direction.name }}</h2>
+
 <a href="{% url 'download_report' direction_id=direction.id year_id=year.id %}" class="btn btn-primary">Скачать отчет</a>
+
+{% if not year.editable %}
+    <div class="alert alert-warning mt-3">Редактирование отчетов за этот год запрещено.</div>
+{% endif %}
+
 {% for report_group in reports %}
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
@@ -29,7 +36,8 @@
                                        value="{{ report.value }}"
                                        min="0" step="any"
                                        data-report-id="{{ report.id }}"
-                                       data-main-id="{{ report.indicator.main_indicator.id }}">
+                                       data-main-id="{{ report.indicator.main_indicator.id }}"
+                                       {% if not year.editable %}disabled{% endif %}>
                             </td>
                         </tr>
                         {% endfor %}
@@ -40,23 +48,22 @@
     </div>
 {% endfor %}
 
+{% if year.editable %}
 <script>
 document.querySelectorAll('.form-control').forEach(input => {
-    // Запрещаем ввод отрицательных чисел
     input.addEventListener('input', function() {
         if (this.value < 0) {
             this.value = 0;
         }
     });
 
-    // Отправка данных на сервер при изменении
     input.addEventListener('change', function() {
         let reportId = this.getAttribute('data-report-id');
         let mainId = this.getAttribute('data-main-id');
-        let newValue = parseFloat(this.value); // Преобразуем в число
+        let newValue = parseFloat(this.value);
 
         if (isNaN(newValue) || newValue < 0) {
-            this.value = 0; // Предотвращаем некорректный ввод
+            this.value = 0;
             return;
         }
 
@@ -80,4 +87,5 @@ document.querySelectorAll('.form-control').forEach(input => {
     });
 });
 </script>
+{% endif %}
 {% endblock %}

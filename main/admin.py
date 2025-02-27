@@ -5,7 +5,8 @@ from .models import Year, Direction, MainIndicator, Indicator, TeacherReport
 
 @admin.register(Year)
 class YearAdmin(admin.ModelAdmin):
-    list_display = ("year",)
+    list_display = ("year", "editable")
+    list_editable = ("editable",)  # Позволяет менять значение прямо в списке
     ordering = ("year",)
 
 

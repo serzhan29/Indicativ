@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 class Year(models.Model):
     """Модель для хранения годов"""
     year = models.IntegerField(unique=True, verbose_name="Год")
+    editable = models.BooleanField(default=True, verbose_name="Можно редактировать")
 
     def __str__(self):
         return str(self.year)
@@ -22,6 +23,7 @@ class MainIndicator(models.Model):
     direction = models.ForeignKey(Direction, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, verbose_name="Название главного индикатора")
     years = models.ManyToManyField(Year, verbose_name="Годы действия")
+
 
     def __str__(self):
         return f"{self.name} - {self.direction.name}"

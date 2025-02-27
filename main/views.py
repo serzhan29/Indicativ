@@ -71,12 +71,17 @@ def teacher_report(request, direction_id, year_id):
 @login_required
 @require_POST
 def update_report(request):
-    """Обновляет значение индикатора и пересчитывает главный показатель"""
+    """Обновляет значение индикатора и пересчитывает главный показатель, если год активен"""
     data = json.loads(request.body)
     report_id = data.get("report_id")
     new_value = data.get("value")
 
     report = get_object_or_404(TeacherReport, id=report_id, teacher=request.user)
+
+    # Проверяем, разрешено ли редактирование для данного года
+    if not report.year.editable:
+        return JsonResponse({"success": False, "error": "Редактирование запрещено для этого года"}, status=403)
+
     report.value = new_value
     report.save(update_fields=["value"])
 
