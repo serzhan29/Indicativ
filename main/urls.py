@@ -1,18 +1,17 @@
 from django.urls import path
-from .views import choose_direction, choose_year, update_report, teacher_report
-from .views_docx import generate_word_report
+from .views import choose_direction, choose_year, teacher_report, update_value
+from .views_docx import download_teacher_report
 from .views_display import reports_dashboard, update_report2
 
 urlpatterns = [
     path('', choose_direction, name='direction_list'),
     path('report/<int:direction_id>/', choose_year, name='choose_year'),
-    path('report/<int:direction_id>/<int:year_id>/', teacher_report, name='view_teacher_report'),
-    path('update-report/', update_report, name='update_report'),
-    path('download_report/<int:direction_id>/<int:year_id>/', generate_word_report, name='download_report'),
+    path('download_teacher_report/<int:direction_id>/<int:year_id>/', download_teacher_report, name='download_teacher_report'),
 
-    path('report/', reports_dashboard, name='reports_dashboard'),  # Без параметров
-    path('report/<int:direction_id>/<int:year_id>/', reports_dashboard, name='reports_dashboard'),
-    path('report/update2/', update_report2, name='update_report2'),  # AJAX-запрос на обновление отчета
+
+    path('reports/teacher/<int:direction_id>/<int:year_id>/', teacher_report, name='teacher_report'),
+    path('update_value/', update_value, name='update_value'),
+
 ]
 
 

@@ -1,105 +1,132 @@
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.enum.section import WD_SECTION, WD_ORIENTATION
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
-from .models import Direction, Year, MainIndicator, Indicator, TeacherReport
-from docx.oxml import parse_xml
-from docx.oxml.ns import nsdecls
+from docx.enum.section import WD_ORIENT
+from docx.shared import RGBColor, Pt, Inches
 from docx.oxml.ns import qn
-from urllib.parse import quote
+from docx.oxml import OxmlElement
+from urllib.parse import quote_plus
+from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherReport
 
-
-def set_bold(run, bold=True):
-    run.bold = bold
-    return run
-
-def set_table_borders(table):
-    for row in table.rows:
-        for cell in row.cells:
-            cell_xml = cell._element
-            tbl_cell_properties = cell_xml.get_or_add_tcPr()
-
-            borders_xml = '''
-            <w:tcBorders {}>
-                <w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-                <w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-                <w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-                <w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-            </w:tcBorders>
-            '''.format(nsdecls('w'))
-
-            borders_element = parse_xml(borders_xml)
-            tbl_cell_properties.append(borders_element)
-
-def set_landscape(doc):
-    section = doc.sections[0]
-    section.orientation = WD_ORIENTATION.LANDSCAPE  # Устанавливаем альбомную ориентацию
-    section.page_height, section.page_width = section.page_width, section.page_height
-
-def set_font(run, font_name='Times New Roman', size=14):
-    run.font.name = font_name
-    r = run._element
-    r.rPr.rFonts.set(qn('w:eastAsia'), font_name)
-    run.font.size = Pt(size)
 
 @login_required
-def generate_word_report(request, direction_id, year_id):
+def download_teacher_report(request, direction_id, year_id):
+    """Генерация отчета в Word с таблицей в альбомном формате"""
+    teacher = request.user
     direction = get_object_or_404(Direction, id=direction_id)
     year = get_object_or_404(Year, id=year_id)
-    main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
+
+    aggregated_data = AggregatedIndicator.objects.filter(
+        teacher=teacher,
+        year=year,
+        main_indicator__direction=direction
+    )
 
     doc = Document()
-    set_landscape(doc)  # Устанавливаем альбомную ориентацию
 
-    # Добавляем заголовок
-    p = doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті")
-    set_font(p.add_run())
-    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    # Верхний текст
+    para = doc.add_paragraph('Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті', style='Heading 1')
+    run = para.runs[0]
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    para.alignment = 1  # Центр
 
-    p = doc.add_paragraph("\n«БЕКІТЕМІН»\nИнженерия факультетінің деканы ____________________ Нажи Генч\n«____» ______________ 2024 ж.")
-    set_font(p.add_run())
-    p.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
+    para = doc.add_paragraph('«БЕКІТЕМІН»', style='Heading 2')
+    run = para.runs[0]
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(0, 0, 0)
+    para.alignment = 2  # Право
 
-    p = doc.add_paragraph(f"КОМПЬЮТЕРЛІК ИНЖЕНЕРИЯ кафедрасының\n{year.year} ОҚУ ЖЫЛЫНДАҒЫ ҒЫЛЫМ САЛАСЫ БОЙЫНША ИНДИКАТИВТІ ЖӘНЕ СТРАТЕГИЯЛЫҚ КӨРСЕТКІШТЕРІНІҢ ЕСЕБІ ЖӘНЕ {year.year + 1} ОҚУ ЖЫЛЫНА ЖОСПАРЫ")
-    set_font(p.add_run())
-    p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    para = doc.add_paragraph('Инженерия факультетінің деканы ____________________ Нажи Генч')
+    para.alignment = 2
+
+    para = doc.add_paragraph('«____» ______________ 2024 ж.')
+    para.alignment = 2
+
+    para = doc.add_paragraph('КОМПЬЮТЕРЛІК ИНЖЕНЕРИЯ кафедрасының', style='Heading 2')
+    para.alignment = 1
+
+    para = doc.add_paragraph(
+        f'{year.year} ОҚУ ЖЫЛЫНДАҒЫ {direction.name} БОЙЫНША ИНДИКАТИВТІ ЖӘНЕ {year.year} СТРАТЕГИЯЛЫҚ КӨРСЕТКІШТЕРІНІҢ ЕСЕБІ',
+        style='Heading 1'
+    )
+    para.alignment = 1
+
+    # Устанавливаем альбомную ориентацию
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    new_width, new_height = section.page_height, section.page_width
+    section.page_width = new_width
+    section.page_height = new_height
 
     # Создаем таблицу
-    table = doc.add_table(rows=1, cols=8)
+    table = doc.add_table(rows=1, cols=3)
+    table.style = 'Table Grid'
+
+    # Устанавливаем ширину колонок
+    table.columns[0].width = Inches(8)
+    table.columns[1].width = Inches(1)
+    table.columns[2].width = Inches(1)
+
+    # Заголовки
     hdr_cells = table.rows[0].cells
-    headers = ["Индикатор атауы", "Өлшеу бірлігі", "Жоспар 2022-2023 оқу жылы", "Есеп 2023-2024 оқу жылы",
-               "Жоспар 2024-2025 оқу жылы", "Өткен жылғы орындалған көрсеткішке +20%", "Ескерту"]
-    for i, text in enumerate(headers):
-        hdr_cells[i].text = text
-        set_bold(hdr_cells[i].paragraphs[0].runs[0])
-        set_font(hdr_cells[i].paragraphs[0].runs[0])  # Устанавливаем шрифт для заголовков
+    hdr_cells[0].text = "Главный индикатор и подиндикаторы"
+    hdr_cells[1].text = "Единица измерения"
+    hdr_cells[2].text = "Жоспар"
 
-    for main_indicator in main_indicators:
-        row_cells = table.add_row().cells
-        row_cells[0].text = f"IV. {main_indicator.name}"
-        row_cells[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+    for cell in hdr_cells:
+        run = cell.paragraphs[0].runs[0]
+        run.bold = True
+        run.font.name = 'Times New Roman'
+        run.font.size = Pt(14)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        cell.paragraphs[0].alignment = 1  # Центр
 
-        indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
-        for indicator in indicators:
-            report = TeacherReport.objects.filter(indicator=indicator, year=year, teacher=request.user).first()
-            values = [
-                indicator.name, "Саны",
-                str(report.value if report else 0), "-", "-", "-", "-"
-            ]
-            row_cells = table.add_row().cells
-            for i, value in enumerate(values):
-                row_cells[i].text = value
-                set_font(row_cells[i].paragraphs[0].runs[0])  # Устанавливаем шрифт для значений
+    # Заполнение данных
+    for data in aggregated_data:
+        row = table.add_row().cells
+        row[0].text = data.main_indicator.name
+        row[1].text = data.main_indicator.unit
+        row[2].text = str(data.total_value)
 
-    set_table_borders(table)
+        # Форматирование строк
+        for i, cell in enumerate(row):
+            run = cell.paragraphs[0].runs[0]
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(14)
+            run.font.color.rgb = RGBColor(0, 0, 0)
+            cell.paragraphs[0].alignment = 0 if i == 0 else 1  # Главный индикатор слева, остальное в центре
+
+        # Подиндикаторы
+        sub_indicators = Indicator.objects.filter(main_indicator=data.main_indicator, years=year)
+        for ind in sub_indicators:
+            sub_row = table.add_row().cells
+            sub_row[0].text = ind.name
+            sub_row[1].text = ind.unit
+            sub_row[2].text = str(
+                TeacherReport.objects.filter(
+                    teacher=teacher,
+                    indicator=ind,
+                    year=year
+                ).first().value or 0
+            )
+
+            # Форматирование подиндикаторов
+            for i, cell in enumerate(sub_row):
+                run = cell.paragraphs[0].runs[0]
+                run.font.name = 'Times New Roman'
+                run.font.size = Pt(14)
+                run.font.color.rgb = RGBColor(0, 0, 0)
+                cell.paragraphs[0].alignment = 0 if i == 0 else 1  # Подиндикаторы слева, остальное в центре
+
+    # Отправляем файл пользователю
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    user = request.user
-    file_name = f'Отчет - {year.year} - {user.first_name or "Без_имени"} {user.last_name or "Без_фамилии"}.docx'
+    file_name = f"Отчет учителя {teacher.first_name} {year.year}.docx"
+    encoded_file_name = quote_plus(file_name)
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
 
-    encoded_file_name = quote(file_name.encode('utf-8'))
-    response['Content-Disposition'] = f'attachment; filename="{encoded_file_name}"; filename*=UTF-8\'\'{encoded_file_name}'
     doc.save(response)
     return response

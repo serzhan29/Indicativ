@@ -14,7 +14,8 @@
     <div class="row justify-content-center">
         {% for year in years|dictsort:"year" %}
         <div class="col-md-3 col-sm-6 mb-3">
-            <a href="{% url 'view_teacher_report' direction.id year.id %}" class="text-decoration-none">
+            <a href="{% url 'teacher_report' direction_id=direction.id year_id=year.id %}" class="text-decoration-none">
+
                 <div class="card shadow-sm border-0 text-center py-3 transition">
                     <div class="card-body">
                         <h5 class="card-title text-dark fw-bold">{{ year.year }}</h5>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Year, Direction, MainIndicator, Indicator, TeacherReport
+from .models import Year, Direction, MainIndicator, Indicator, TeacherReport, AggregatedIndicator
 
 
 @admin.register(Year)
@@ -53,7 +53,6 @@ class IndicatorAdmin(admin.ModelAdmin):
 
     display_years.short_description = "Годы действия"
 
-
     # Кастомный фильтр для сокращенных названий главных индикаторов
     class ShortMainIndicatorFilter(admin.SimpleListFilter):
         title = "Главный индикатор (сокр.)"
@@ -74,10 +73,9 @@ class IndicatorAdmin(admin.ModelAdmin):
     list_filter = ("years", ShortMainIndicatorFilter)  # Используем кастомный фильтр
 
 
-
 @admin.register(TeacherReport)
 class TeacherReportAdmin(admin.ModelAdmin):
-    list_display = ("teacher", "short_indicator", "year", "main_value", "highlight_value")
+    list_display = ("teacher", "short_indicator", "year", "highlight_value")
     search_fields = ("teacher__username", "indicator__name", "year__year")
     list_filter = ("teacher", "year", "short_indicator_filter")
     ordering = ("year", "teacher")
@@ -114,3 +112,14 @@ class TeacherReportAdmin(admin.ModelAdmin):
 
     list_filter = ("teacher", "year", ShortIndicatorFilter)  # Используем кастомный фильтр
 
+
+@admin.register(AggregatedIndicator)
+class AggregatedIndicatorAdmin(admin.ModelAdmin):
+    list_display = ("teacher", "short_main_indicator", "year", "total_value", "additional_value")
+    list_filter = ("year", "teacher", "main_indicator__direction")
+    search_fields = ("teacher__username", "main_indicator__name", "year__year")
+    ordering = ("year", "teacher")
+
+    def short_main_indicator(self, obj):
+        return obj.main_indicator.name[:15] + "..." if len(obj.main_indicator.name) > 15 else obj.main_indicator.name
+    short_main_indicator.short_description = "Главн. индикатор"
