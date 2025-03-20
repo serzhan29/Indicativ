@@ -5,6 +5,7 @@
   <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">Барлық жылдар</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ year.year }}</li>
 {% endblock %}
+
 {% block content %}
 
 <style>
@@ -107,7 +108,7 @@
 </style>
 
 <form action="{% url 'download_teacher_report' direction.id year.id %}" method="get">
-    <button type="submit" class="btn btn-primary">Скачать отчет</button>
+    <button type="submit" class="btn btn-primary">Есепті жүктеу</button>
 </form>
 
 <h2>{{ direction }}</h2>
@@ -127,7 +128,21 @@
             <td>{{ data.main_indicator.name }}</td>
             <td>{{ data.main_indicator.unit }}</td>
             <td>
-                <span class="total-value">{{ data.total_value }}</span>
+                {% if data.teacher_reports %}
+                    <span class="total-value" data-default-value="{{ data.additional_value }}">{{ data.total_value }}</span>
+                {% else %}
+                    <input
+                        type="number"
+                        class="editable {% if not year.editable %} not-editable {% endif %}"
+                        data-type="additional"
+                        data-id="{{ data.main_indicator.id }}"
+                        {% if not year.editable %} disabled {% endif %}
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="{{ data.additional_value }}"
+                    >
+                {% endif %}
             </td>
         </tr>
         {% if data.teacher_reports %}
@@ -164,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
             let type = this.dataset.type;
 
             if (!/^(100|[1-9]?\d?)$/.test(value)) {
-                this.value = "";
+                this.value = this.dataset.defaultValue;
                 return;
             }
 
@@ -179,7 +194,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateTotals();
+                    if (type === "indicator") {
+                        updateTotals();
+                    }
+                    console.log("Значение обновлено");
                 }
             });
         });

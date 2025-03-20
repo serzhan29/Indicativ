@@ -32,14 +32,14 @@
         <ul class="navbar-nav ms-auto">
           {% if user.is_authenticated %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}">Выход ({{ user.username }})</a>
+              <a class="nav-link" href="{% url 'logout' %}">Шығу ({{ user.username }})</a>
             </li>
           {% else %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}">Вход</a>
+              <a class="nav-link" href="{% url 'login' %}">Кіру</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
+              <a class="nav-link" href="{% url 'register' %}">Тіркеу</a>
             </li>
           {% endif %}
         </ul>
