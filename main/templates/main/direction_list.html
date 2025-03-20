@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Направления - Мой сайт{% endblock %}
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Главная</a></li>
-  <li class="breadcrumb-item active" aria-current="page">Направления</li>
+  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Басты бет</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Бағыттар</li>
 {% endblock %}
 {% block content %}
 
 <div class="container">
-    <h2 class="text-center my-4">Выберите направление</h2>
+    <h2 class="text-center my-4">Бағытты таңдаңыз</h2>
     <div class="row justify-content-center">
         {% for direction in directions %}
         <div class="col-md-4 mb-4">  <!-- Добавил mb-4 для увеличения отступа -->
             <div class="card direction-card">
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ direction.name }}</h5>
-                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">Выбрать</a> <!-- Увеличил отступ -->
+                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">Таңдау</a> <!-- Увеличил отступ -->
                 </div>
             </div>
         </div>

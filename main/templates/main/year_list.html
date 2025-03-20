@@ -2,14 +2,14 @@
 {% block title %}Годы для направления "{{ direction.name }}" - Мой сайт{% endblock %}
 
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="">Главная</a></li>
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Направления</a></li>
+  <li class="breadcrumb-item"><a href="">Басты бет</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Бағыттар</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ direction.name }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-center mb-4 text-primary">Выберите год для направления "{{ direction.name }}"</h2>
+    <h2 class="text-center mb-4 text-primary">"{{ direction.name }}" бағыт үшін жылды таңдаңыз</h2>
 
     <div class="row justify-content-center">
         {% for year in years|dictsort:"year" %}
