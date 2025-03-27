@@ -12,8 +12,8 @@ class Faculty(models.Model):
 class Profile(models.Model):
     """Дополнительные данные пользователя"""
     ROLES = (
-        ('teacher', 'Учитель'),
-        ('viewer', 'Просматривающий'),
+        ('teacher', 'Мұғалім'),
+        ('viewer', 'Қараушы'),
     )
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     role = models.CharField(max_length=10, choices=ROLES, default='viewer', verbose_name="Роль")

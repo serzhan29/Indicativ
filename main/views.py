@@ -7,86 +7,94 @@ from django.db.models import Sum
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, View
+from django.views.generic import TemplateView
 
-@login_required
-def choose_direction(request):
+class DirectionListView(LoginRequiredMixin, ListView):
     """Шаг 1: Выбор направления"""
-    directions = Direction.objects.all()
-    return render(request, 'main/direction_list.html', {'directions': directions})
+    model = Direction
+    template_name = 'main/direction_list.html'
+    context_object_name = 'directions'
 
-@login_required
-def choose_year(request, direction_id):
+class YearListView(LoginRequiredMixin, ListView):
     """Шаг 2: Выбор года после направления"""
-    direction = get_object_or_404(Direction, id=direction_id)
-    years = Year.objects.all()
-    return render(request, 'main/year_list.html', {'direction': direction, 'years': years})
+    model = Year
+    template_name = 'main/year_list.html'
+    context_object_name = 'years'
 
-@login_required
-def teacher_report(request, direction_id, year_id):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['direction'] = get_object_or_404(Direction, id=self.kwargs['direction_id'])
+        return context
+
+class TeacherReportView(LoginRequiredMixin, TemplateView):
     """Генерация отчетов для учителя и их агрегация"""
-    teacher = request.user
-    direction = get_object_or_404(Direction, id=direction_id)
-    year = get_object_or_404(Year, id=year_id)
+    template_name = 'main/teacher_report.html'
 
-    # Фильтруем только те главные индикаторы, которые относятся к выбранному году
-    main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        teacher = self.request.user
+        direction = get_object_or_404(Direction, id=self.kwargs['direction_id'])
+        year = get_object_or_404(Year, id=self.kwargs['year_id'])
 
-    aggregated_data = []
-    for main_indicator in main_indicators:
-        # Фильтруем только те подиндикаторы, которые относятся к выбранному году
-        indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+        main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
+        aggregated_data = []
 
-        for indicator in indicators:
-            teacher_report, created = TeacherReport.objects.get_or_create(
+        for main_indicator in main_indicators:
+            indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+
+            for indicator in indicators:
+                teacher_report, created = TeacherReport.objects.get_or_create(
+                    teacher=teacher,
+                    indicator=indicator,
+                    year=year,
+                    defaults={'value': 0}
+                )
+                if not created and teacher_report.value != 0:
+                    teacher_report.save()
+
+            aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
+                main_indicator=main_indicator,
                 teacher=teacher,
-                indicator=indicator,
                 year=year,
-                defaults={'value': 0}
+                defaults={'additional_value': 0}
             )
-            if not created and teacher_report.value != 0:
-                teacher_report.save()
+            if not created and aggregated_indicator.additional_value != 0:
+                aggregated_indicator.save()
 
-        aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
-            main_indicator=main_indicator,
-            teacher=teacher,
-            year=year,
-            defaults={'additional_value': 0}
-        )
-        if not created and aggregated_indicator.additional_value != 0:
-            aggregated_indicator.save()
+            total_value = TeacherReport.objects.filter(
+                teacher=teacher, indicator__in=indicators, year=year
+            ).aggregate(Sum('value'))['value__sum'] or 0
 
-        total_value = TeacherReport.objects.filter(
-            teacher=teacher, indicator__in=indicators, year=year
-        ).aggregate(Sum('value'))['value__sum'] or 0
+            total_value += aggregated_indicator.additional_value
 
-        total_value += aggregated_indicator.additional_value
+            teacher_reports = TeacherReport.objects.filter(
+                teacher=teacher, indicator__in=indicators, year=year
+            ).select_related('indicator')
 
-        teacher_reports = TeacherReport.objects.filter(
-            teacher=teacher, indicator__in=indicators, year=year
-        ).select_related('indicator')
+            aggregated_data.append({
+                'id': aggregated_indicator.id,
+                'main_indicator': main_indicator,
+                'total_value': total_value,
+                'additional_value': aggregated_indicator.additional_value,
+                'teacher_reports': teacher_reports
+            })
 
-        aggregated_data.append({
-            'id': aggregated_indicator.id,
-            'main_indicator': main_indicator,
-            'total_value': total_value,
-            'additional_value': aggregated_indicator.additional_value,
-            'teacher_reports': teacher_reports
+        context.update({
+            'teacher': teacher,
+            'direction': direction,
+            'year': year,
+            'aggregated_data': aggregated_data
         })
-
-    return render(request, 'main/teacher_report.html', {
-        'teacher': teacher,
-        'direction': direction,
-        'year': year,
-        'aggregated_data': aggregated_data
-    })
+        return context
 
 
-
-@csrf_exempt
-@login_required
-def update_value(request):
+@method_decorator(csrf_exempt, name='dispatch')
+class UpdateValueView(LoginRequiredMixin, View):
     """Обновление значений подиндикаторов и доп. значений"""
-    if request.method == "POST":
+
+    def post(self, request, *args, **kwargs):
         data = json.loads(request.body)
         item_id = data.get("id")
         new_value = data.get("value")
@@ -98,14 +106,13 @@ def update_value(request):
             return JsonResponse({"success": False, "error": "Некорректное значение"})
 
         if item_type == "indicator":
-            report = TeacherReport.objects.get(id=item_id)
+            report = get_object_or_404(TeacherReport, id=item_id)
             if not report.year.editable:
                 return JsonResponse({"success": False, "error": "Редактирование запрещено"})
 
             report.value = new_value
             report.save()
 
-            # Пересчет агрегированного значения
             aggregated_indicator, _ = AggregatedIndicator.objects.get_or_create(
                 main_indicator=report.indicator.main_indicator,
                 teacher=report.teacher,
@@ -119,7 +126,7 @@ def update_value(request):
             aggregated_indicator.save()
 
         elif item_type == "additional":
-            aggregated_indicator = AggregatedIndicator.objects.get(id=item_id)
+            aggregated_indicator = get_object_or_404(AggregatedIndicator, id=item_id)
             if not aggregated_indicator.year.editable:
                 return JsonResponse({"success": False, "error": "Редактирование запрещено"})
 
@@ -128,11 +135,12 @@ def update_value(request):
                 TeacherReport.objects.filter(
                     teacher=aggregated_indicator.teacher, indicator__main_indicator=aggregated_indicator.main_indicator, year=aggregated_indicator.year
                 ).aggregate(Sum("value"))["value__sum"] or 0
-            ) + new_value  # Прибавляем новое additional_value
+            ) + new_value
             aggregated_indicator.save()
 
         return JsonResponse({"success": True})
 
-    return JsonResponse({"success": False, "error": "Неверный метод"})
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({"success": False, "error": "Неверный метод"})
 
 

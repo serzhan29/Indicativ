@@ -125,7 +125,7 @@
     <tbody>
         {% for data in aggregated_data %}
         <tr class="main-indicator">
-            <td>{{ data.main_indicator.name }}</td>
+            <td style="">{{ data.main_indicator.name }}</td>
             <td>{{ data.main_indicator.unit }}</td>
             <td>
                 {% if data.teacher_reports %}
@@ -148,7 +148,7 @@
         {% if data.teacher_reports %}
             {% for report in data.teacher_reports %}
             <tr class="sub-indicator">
-                <td>{{ report.indicator.name }}</td>
+                <td>*{{ report.indicator.name }}</td>
                 <td>{{ report.indicator.unit }}</td>
                 <td>
                     <input
