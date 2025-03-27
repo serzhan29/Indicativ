@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block breadcrumbs %}
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Басты бет</a></li>
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{{ direction.name }}</a></li>
@@ -8,104 +9,7 @@
 
 {% block content %}
 
-<style>
-    body {
-        font-family: "Poppins", sans-serif;
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-        color: #fff;
-        margin: 0;
-        padding: 0;
-    }
-
-    h2, h3 {
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-weight: bold;
-    }
-
-    h2 {
-        font-size: 2rem;
-        background: -webkit-linear-gradient(45deg, #ff9a9e, #fad0c4);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    h3 {
-        font-size: 1.5rem;
-        opacity: 0.8;
-    }
-
-    table {
-        width: 90%;
-        max-width: 1200px;
-        margin: 30px auto;
-        border-collapse: collapse;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    }
-
-    th, td {
-        padding: 15px;
-        text-align: left;
-        border-right: 2px solid white;
-    }
-
-    th:last-child, td:last-child {
-        border-right: none;
-    }
-
-    th {
-        background: rgba(255, 255, 255, 0.2);
-        text-transform: uppercase;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .main-indicator {
-        font-weight: bold;
-        background: rgba(255, 255, 255, 0.05);
-        border-bottom: 2px solid white;
-    }
-
-    .sub-indicator {
-        padding-left: 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .editable {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 8px;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-
-    .editable:focus {
-        outline: none;
-        border-color: #ff9a9e;
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .not-editable {
-        background: rgba(255, 255, 255, 0.1);
-        cursor: not-allowed;
-        color: #ccc;
-    }
-
-    .total-value {
-        font-weight: bold;
-        color: #ffcc67;
-        font-size: 1.2rem;
-        text-align: center;
-        display: block;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'main/css/main.css' %}">
 
 <form action="{% url 'download_teacher_report' direction.id year.id %}" method="get">
     <button type="submit" class="btn btn-primary">Есепті жүктеу</button>
@@ -148,7 +52,7 @@
         {% if data.teacher_reports %}
             {% for report in data.teacher_reports %}
             <tr class="sub-indicator">
-                <td>*{{ report.indicator.name }}</td>
+                <td>{{ report.indicator.name }}</td>
                 <td>{{ report.indicator.unit }}</td>
                 <td>
                     <input

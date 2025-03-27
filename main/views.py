@@ -11,11 +11,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
 from django.views.generic import TemplateView
 
+
 class DirectionListView(LoginRequiredMixin, ListView):
     """Шаг 1: Выбор направления"""
     model = Direction
     template_name = 'main/direction_list.html'
     context_object_name = 'directions'
+
 
 class YearListView(LoginRequiredMixin, ListView):
     """Шаг 2: Выбор года после направления"""
@@ -27,6 +29,7 @@ class YearListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['direction'] = get_object_or_404(Direction, id=self.kwargs['direction_id'])
         return context
+
 
 class TeacherReportView(LoginRequiredMixin, TemplateView):
     """Генерация отчетов для учителя и их агрегация"""
