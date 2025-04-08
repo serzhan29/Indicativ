@@ -7,13 +7,14 @@ from docx.shared import RGBColor, Pt, Inches
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from urllib.parse import quote_plus
-from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherReport
+from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherReport, User
 
 
 @login_required
-def download_teacher_report(request, direction_id, year_id):
+def download_teacher_report(request, teacher_id, direction_id, year_id):
     """Генерация отчета в Word с таблицей в альбомном формате"""
-    teacher = request.user
+    # Получаем учителя по переданному ID
+    teacher = get_object_or_404(User, id=teacher_id)  # Получаем учителя по ID
     direction = get_object_or_404(Direction, id=direction_id)
     year = get_object_or_404(Year, id=year_id)
 
@@ -40,7 +41,8 @@ def download_teacher_report(request, direction_id, year_id):
     run.font.color.rgb = RGBColor(0, 0, 0)
     para.alignment = 2  # Право
 
-    para = doc.add_paragraph('Инженерия факультетінің деканы ____________________ Нажи Генч')
+    para = doc.add_paragraph(
+        f'Инженерия факультетінің деканы ____________________ {teacher.first_name} {teacher.last_name}')
     para.alignment = 2
 
     para = doc.add_paragraph('«____» ______________ 2024 ж.')
@@ -124,9 +126,10 @@ def download_teacher_report(request, direction_id, year_id):
 
     # Отправляем файл пользователю
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    file_name = f"Отчет учителя {teacher.first_name} {year.year}.docx"
+    file_name = f"Отчет учителя {teacher.first_name} {teacher.last_name} {year.year}.docx"
     encoded_file_name = quote_plus(file_name)
     response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
 
     doc.save(response)
     return response
+
