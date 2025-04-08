@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<h2 class="text-center my-4">Есепті қарау</h2>
+
+<form method="get" class="container my-4">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label>Бағыт:</label>
+            <select name="direction" class="form-control" required>
+                <option value="">Таңдаңыз</option>
+                {% for dir in directions %}
+                    <option value="{{ dir.id }}" {% if direction and dir.id == direction.id %}selected{% endif %}>
+                        {{ dir.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label>Жыл:</label>
+            <select name="year" class="form-control" required>
+                <option value="">Таңдаңыз</option>
+                {% for y in years %}
+                    <option value="{{ y.id }}" {% if year and y.id == year.id %}selected{% endif %}>
+                        {{ y.year }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4 mb-3 d-flex align-items-end">
+            <!-- Скрытое поле для ID учителя -->
+            <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
+            <button type="submit" class="btn btn-primary w-100">Қарау</button>
+        </div>
+    </div>
+</form>
+
+{% if direction and year %}
+    <div class="container mt-5">
+        <hr>
+        <h3 class="text-center">{{ direction.name }} ({{ year.year }})</h3>
+
+        <table class="table table-bordered table-striped mt-4">
+            <thead class="table-info">
+                <tr>
+                    <th>Индикатор атауы</th>
+                    <th>Өлшеу бірлігі</th>
+                    <th>Көрсеткіш саны</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in aggregated_data %}
+                    <!-- Главный индикатор -->
+                    <tr class="table-primary">
+                        <td><strong>{{ data.main_indicator.name }}</strong></td>
+                        <td>{{ data.main_indicator.unit }}</td>
+                        <td>{{ data.total_value }}</td>
+                    </tr>
+                    <!-- Подиндикаторы -->
+                    {% for report in data.teacher_reports %}
+                        <tr class="table-secondary">
+                            <td>{{ report.indicator.name }}</td>
+                            <td>{{ report.indicator.unit }}</td>
+                            <td>{{ report.value }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+{% endblock %}
+
+<style>
+    /* Основные стили для формы */
+    form {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Выравнивание для кнопки */
+    .btn-primary {
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    /* Заголовки и таблицы */
+    h3 {
+        font-size: 1.8rem;
+        color: #343a40;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #007bff;
+        color: white;
+    }
+
+    td {
+        background-color: #f9f9f9;
+    }
+
+    /* Для главного индикатора */
+    .table-primary td {
+        background-color: #e6f7ff; /* Светло-голубой фон */
+        font-weight: bold;
+    }
+
+    /* Для подиндикаторов */
+    .table-secondary td {
+        background-color: #f2f2f2; /* Светло-серый фон */
+    }
+
+    /* Мобильная адаптация */
+    @media (max-width: 768px) {
+        .col-md-4 {
+            margin-bottom: 15px;
+        }
+
+        table {
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 8px;
+        }
+
+        .btn-primary {
+            font-size: 14px;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+

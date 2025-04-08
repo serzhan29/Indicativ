@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Мұғалімдер тізімі</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+            max-width: 800px;
+        }
+        .teacher-card {
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background-color: white;
+            margin-bottom: 15px;
+        }
+        .faculty-select {
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mb-4 text-center">Мұғалімдер тізімі</h2>
+
+        <form method="get" class="mb-4 d-flex flex-column flex-md-row align-items-md-center gap-3">
+            <label for="faculty" class="form-label mb-0">Факультетті таңдау:</label>
+            <select name="faculty" id="faculty" class="form-select faculty-select" onchange="this.form.submit()">
+                <option value="">Барлық факультеттер</option>
+                {% for f in faculties %}
+                    <option value="{{ f.id }}" {% if request.GET.faculty == f.id|stringformat:"s" %}selected{% endif %}>
+                        {{ f.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <hr>
+
+        {% if teachers %}
+            {% for teacher in teachers %}
+
+                <div class="teacher-card">
+                    <a href="{% url 'teacher_report_readonly' %}?direction={{ direction.id }}&year={{ year.id }}&teacher={{ teacher.id }}">
+                        <strong>{{ teacher.user.last_name |default:teacher.user.username }} {{ teacher.user.first_name }}</strong>
+                    </a><br>
+                    <small>
+                        {% if teacher.faculty %}
+                            {{ teacher.faculty.name }}
+                        {% else %}
+                            Без факультета
+                        {% endif %}
+                    </small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">Мұғалімдер табылмады.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

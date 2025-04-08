@@ -10,6 +10,10 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
       <a class="navbar-brand" href="">Indicatorium</a>
+        {% if user.is_staff %}
+            <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">View</a>
+        {% endif %}
+
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto">
           {% if user.is_authenticated %}
