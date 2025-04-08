@@ -18,7 +18,7 @@ def register(request):
                 phone=form.cleaned_data["phone"]
             )
             login(request, user)  # Авторизуем пользователя сразу после регистрации
-            return redirect("home")  # Замените "home" на нужный маршрут
+            return redirect("direction_list")
     else:
         form = CustomUserCreationForm()
     return render(request, "user/register.html", {"form": form})
