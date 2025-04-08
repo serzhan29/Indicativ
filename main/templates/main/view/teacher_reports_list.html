@@ -37,6 +37,11 @@
         </div>
     </div>
 </form>
+    {% if direction.id and year.id%}
+        <form action="{% url 'download_teacher_report' teacher_id=teacher.id direction_id=direction.id year_id=year.id %}" method="get">
+            <button type="submit" class="btn btn-primary">Есепті жүктеу</button>
+        </form>
+    {% endif %}
 
 {% if direction and year %}
     <div class="container mt-5">
