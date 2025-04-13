@@ -1,4 +1,6 @@
+{% extends "base.html" %}
 {% load static %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="kk">
 <head>
@@ -6,12 +8,9 @@
     <title>Мұғалімдер тізімі</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
+        /* Изолированные стили для этого шаблона */
+        .teacher-list-page {
             background-color: #f8f9fa;
-        }
-        .container {
-            margin-top: 50px;
-            max-width: 800px;
         }
         .teacher-card {
             padding: 15px;
@@ -19,16 +18,62 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             background-color: white;
             margin-bottom: 15px;
+            transition: box-shadow 0.3s;
         }
+
+        .teacher-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
         .faculty-select {
             max-width: 300px;
         }
+
+        .teacher-list-page h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Стили для формы фильтра */
+        .teacher-list-page form {
+            margin-bottom: 20px;
+        }
+
+        .teacher-list-page .form-label {
+            margin-bottom: 0;
+        }
+
+        /* Стили для ссылок */
+        .teacher-card a {
+            text-decoration: none;
+            color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .teacher-card a:hover {
+            text-decoration: underline;
+        }
+
+        .teacher-card small {
+            color: #6c757d;
+        }
+
+        .teacher-list-page hr {
+            border-color: #dee2e6;
+        }
+
+        /* Стили для пустого состояния */
+        .teacher-list-page .text-muted {
+            text-align: center;
+            font-style: italic;
+        }
     </style>
 </head>
-<body>
+<body class="teacher-list-page">
     <div class="container">
         <h2 class="mb-4 text-center">Мұғалімдер тізімі</h2>
 
+        <!-- Форма фильтрации по факультету -->
         <form method="get" class="mb-4 d-flex flex-column flex-md-row align-items-md-center gap-3">
             <label for="faculty" class="form-label mb-0">Факультетті таңдау:</label>
             <select name="faculty" id="faculty" class="form-select faculty-select" onchange="this.form.submit()">
@@ -43,25 +88,50 @@
 
         <hr>
 
-        {% if teachers %}
-            {% for teacher in teachers %}
+        <!-- Список преподавателей -->
+        {% if page_obj %}
+            <div class="row">
+                {% for teacher in page_obj %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="teacher-card">
+                            <a href="{% url 'teacher_report_readonly' %}?direction={{ direction.id }}&year={{ year.id }}&teacher={{ teacher.id }}">
+                                {{ teacher.user.last_name|default:teacher.user.username }} {{ teacher.user.first_name }}
+                            </a><br>
+                            <small>
+                                {% if teacher.faculty %}
+                                    {{ teacher.faculty.name }}
+                                {% else %}
+                                    Без факультета
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
 
-                <div class="teacher-card">
-                    <a href="{% url 'teacher_report_readonly' %}?direction={{ direction.id }}&year={{ year.id }}&teacher={{ teacher.id }}">
-                        <strong>{{ teacher.user.last_name |default:teacher.user.username }} {{ teacher.user.first_name }}</strong>
-                    </a><br>
-                    <small>
-                        {% if teacher.faculty %}
-                            {{ teacher.faculty.name }}
-                        {% else %}
-                            Без факультета
-                        {% endif %}
-                    </small>
-                </div>
-            {% endfor %}
+            <!-- Пагинация -->
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}page={{ page_obj.previous_page_number }}">Алдыңғы</a>
+                        </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Бет {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}page={{ page_obj.next_page_number }}">Келесі</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
         {% else %}
             <p class="text-muted">Мұғалімдер табылмады.</p>
         {% endif %}
+
     </div>
 </body>
 </html>
+{% endblock %}
