@@ -1,0 +1,19 @@
+<h2>Сводка по подиндикаторам</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Индикатор</th>
+      <th>Год</th>
+      <th>Сумма значений</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in indicator_data %}
+      <tr>
+        <td>{{ item.indicator__name }}</td>
+        <td>{{ item.year__year }}</td>
+        <td>{{ item.total }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
