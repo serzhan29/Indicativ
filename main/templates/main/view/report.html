@@ -39,14 +39,24 @@
         font-size: 0.85rem;
         padding: 0.3rem 0.6rem;
     }
+
+    .modal-content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 106%;
+        pointer-events: auto;
+        background-clip: padding-box;
+        outline: 0;
+    }
 </style>
 
 <div class="container py-4">
-    <h1 class="mb-4">Обзор индикаторов за {{ selected_year.year }}</h1>
+    <h1 class="mb-4" style="text-align: center">{{ selected_year.year }} жылғы көрсеткіштерге шолу</h1>
 
     <!-- Форма выбора года -->
     <form method="get" class="mb-4">
-        <label for="year" class="form-label">Выберите год:</label>
+        <label for="year" class="form-label">Жылды таңдаңыз:</label>
         <select name="year" id="year" class="form-select w-auto d-inline" onchange="this.form.submit()">
             {% for year in years %}
                 <option value="{{ year.id }}" {% if year == selected_year %}selected{% endif %}>{{ year.year }}</option>
@@ -61,24 +71,25 @@
                 📂 {{ direction.name }}
             </button>
 
-            <div id="direction-{{ forloop.counter }}" class="collapse px-3 pb-3">
+            <div id="direction-{{ forloop.counter }}" class="collapse show px-3 pb-3">
+            {% if direction.main_indicators %}
                 {% for main in direction.main_indicators %}
                     <div class="indicator-card">
                         <h5 class="mb-2">{{ main.name }} <small class="text-muted">({{ main.unit }})</small></h5>
 
                         {% if main.has_sub_indicators %}
-                            <p class="text-end text-primary"><strong>Итого по подиндикаторам:</strong> {{ main.sub_total_sum }}</p>
+                            <p class="text-end text-primary"><strong>Индикаторлар бойынша жиыны: {{ main.sub_total_sum }}</strong></p>
 
                             {% for sub in main.sub_indicators %}
                                 <div class="ms-3 mb-2">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span><strong>{{ sub.name }}</strong> ({{ sub.unit }}) </span>
-                                        <span><strong>Итого:</strong> {{ sub.total }}</span>
+                                        <span>Барлығы: <strong>{{ sub.total }}</strong></span>
                                     </div>
                                     <button class="btn btn-outline-primary btn-sm btn-sm-custom mt-1"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modal-sub-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-                                        📋 Посмотреть учителей
+                                        📋 Мұғалімдерді қарау
                                     </button>
 
                                     <!-- Модальное окно для подиндикатора -->
@@ -86,17 +97,20 @@
                                       <div class="modal-dialog modal-dialog-scrollable">
                                         <div class="modal-content">
                                           <div class="modal-header">
-                                            <h5 class="modal-title">{{ sub.name }} — Детали</h5>
+                                            <h5 class="modal-title">{{ sub.name }}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                          </div>
+                                          <div class="modal-header">
+                                              <h6 class="modal-title">Барлығы: <strong>{{ sub.total }}</strong></h6>
                                           </div>
                                           <div class="modal-body">
                                             <!-- Кнопка сортировки -->
                                             <div class="mb-3">
                                               <button class="btn btn-outline-primary" id="sort-name-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" onclick="sortListByName({{ forloop.parentloop.counter }}, {{ forloop.counter }})">
-                                                Сортировать по имени
+                                                Аты бойынша сұрыптау 🔤
                                               </button>
                                               <button class="btn btn-outline-primary" id="sort-value-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" onclick="sortListByValue({{ forloop.parentloop.counter }}, {{ forloop.counter }})">
-                                                Сортировать по значению
+                                                Мәні бойынша сұрыптау 🔢
                                               </button>
                                             </div>
 
@@ -109,7 +123,6 @@
                                                 {% endfor %}
                                             </ul>
                                             <hr>
-                                            <p><strong>Итого:</strong> {{ sub.total }}</p>
                                           </div>
                                         </div>
                                       </div>
@@ -119,11 +132,11 @@
 
                         {% else %}
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span><strong>Итого:</strong> {{ main.total }}</span>
+                                <span><strong>Барлығы: {{ main.total }}</strong> </span>
                                 <button class="btn btn-outline-primary btn-sm btn-sm-custom"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modal-main-{{ forloop.counter }}">
-                                    📋 Посмотреть учителей
+                                    📋 Мұғалімдерді қарау
                                 </button>
                             </div>
 
@@ -132,17 +145,20 @@
                               <div class="modal-dialog modal-dialog-scrollable">
                                 <div class="modal-content">
                                   <div class="modal-header">
-                                    <h5 class="modal-title">{{ main.name }} — Детали</h5>
+                                    <h5 class="modal-title">{{ main.name }}</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                  </div>
+                                  <div class="modal-header">
+                                      <h6 class="modal-title">Барлығы: {{ main.total }}</h6>
                                   </div>
                                   <div class="modal-body">
                                     <!-- Кнопка сортировки -->
                                     <div class="mb-3">
                                       <button class="btn btn-outline-primary" id="sort-name-main-{{ forloop.counter }}" onclick="sortListByNameMain({{ forloop.counter }})">
-                                          Сортировать по имени
+                                          Аты бойынша сұрыптау 🔤
                                       </button>
                                       <button class="btn btn-outline-primary" id="sort-value-main-{{ forloop.counter }}" onclick="sortListByValueMain({{ forloop.counter }})">
-                                          Сортировать по значению
+                                          Мәні бойынша сұрыптау 🔢
                                       </button>
                                     </div>
 
@@ -155,7 +171,6 @@
                                         {% endfor %}
                                     </ul>
                                     <hr>
-                                    <p><strong>Итого:</strong> {{ main.total }}</p>
                                   </div>
                                 </div>
                               </div>
@@ -165,6 +180,9 @@
                     </div>
                 {% endfor %}
             </div>
+        {% else %}
+            <div class="text-muted px-2 py-2">Әзірге ештеңе қосылмаған</div>
+        {% endif %}
         </div>
     {% endfor %}
 </div>
