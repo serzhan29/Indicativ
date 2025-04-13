@@ -8,29 +8,40 @@ from django.db.models import Q
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
+from collections import defaultdict
+from django.core.paginator import Paginator
 
 @login_required
 def teachers_by_faculty(request):
     try:
         profile = request.user.profile
     except Profile.DoesNotExist:
-        return redirect('home')  # или куда-нибудь, если профиля нет
+        return redirect('home')
 
-    # Проверка роли
     if profile.role != 'viewer':
-        return render(request, 'main/view/no_permission.html')  # отдельная страница с сообщением
+        return render(request, 'main/view/no_permission.html')
 
     faculties = Faculty.objects.all()
     selected_faculty_id = request.GET.get('faculty')
 
+    # Получаем всех учителей
+    teachers = Profile.objects.filter(role='teacher')
+
+    # Фильтрация по факультету
     if selected_faculty_id:
-        teachers = Profile.objects.filter(role='teacher', faculty_id=selected_faculty_id)
-    else:
-        teachers = Profile.objects.filter(role='teacher')
+        teachers = teachers.filter(faculty_id=selected_faculty_id)
+
+    # Сортировка
+    teachers = teachers.order_by('user__last_name', 'user__first_name')
+
+    # Пагинация (по 12 учителей на страницу)
+    paginator = Paginator(teachers, 18)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     return render(request, 'main/view/list_teacher.html', {
         'faculties': faculties,
-        'teachers': teachers,
+        'page_obj': page_obj,
         'selected_faculty_id': int(selected_faculty_id) if selected_faculty_id else None
     })
 
@@ -114,4 +125,68 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
 
         return context
 
+def indicator_report_view(request):
+    year_id = request.GET.get("year")
+    years = Year.objects.all().order_by("-year")
+    selected_year = Year.objects.get(id=year_id) if year_id else years.first()
 
+    directions = Direction.objects.all()
+    data = []
+
+    for direction in directions:
+        direction_data = {
+            "name": direction.name,
+            "main_indicators": []
+        }
+
+        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
+
+        for main in main_indicators:
+            has_sub_indicators = main.indicators.exists()
+            main_data = {
+                "name": main.name,
+                "unit": main.unit,
+                "teachers": [],
+                "total": 0,
+                "sub_indicators": [],
+                "has_sub_indicators": has_sub_indicators
+            }
+
+            if has_sub_indicators:
+                for sub in main.indicators.filter(years=selected_year):
+                    reports = TeacherReport.objects.filter(indicator=sub, year=selected_year)
+                    teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.value) for r in reports]
+                    total = sum(v for _, v in teacher_values)
+
+                    sub_data = {
+                        "name": sub.name,
+                        "unit": sub.unit,
+                        "teachers": teacher_values,
+                        "total": total
+                    }
+
+                    main_data["sub_indicators"].append(sub_data)
+            else:
+                # Если нет подиндикаторов — смотрим AggregatedIndicator по главному индикатору
+                aggr_reports = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
+                teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.total_value) for r in aggr_reports]
+                total = sum(v for _, v in teacher_values)
+
+                main_data["teachers"] = teacher_values
+                main_data["total"] = total
+
+            direction_data["main_indicators"].append(main_data)
+
+        data.append(direction_data)
+
+        for direction in data:
+            for main in direction['main_indicators']:
+                if main['has_sub_indicators']:
+                    main['sub_total_sum'] = sum(sub['total'] for sub in main['sub_indicators'])
+
+
+    return render(request, 'main/view/report.html', {
+        "years": years,
+        "selected_year": selected_year,
+        "data": data,
+    })
