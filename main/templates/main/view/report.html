@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+    body {
+        background-color: #f9f9f9;
+    }
+    .direction-card {
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    .indicator-card {
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .indicator-card:last-child {
+        border-bottom: none;
+    }
+    .btn-toggle {
+        font-weight: bold;
+        font-size: 1.1rem;
+        cursor: pointer;
+        background-color: #e7f1ff;
+        color: #0d6efd;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
+    }
+    .btn-sm-custom {
+        font-size: 0.85rem;
+        padding: 0.3rem 0.6rem;
+    }
+</style>
+
+<div class="container py-4">
+    <h1 class="mb-4">Обзор индикаторов за {{ selected_year.year }}</h1>
+
+    <!-- Форма выбора года -->
+    <form method="get" class="mb-4">
+        <label for="year" class="form-label">Выберите год:</label>
+        <select name="year" id="year" class="form-select w-auto d-inline" onchange="this.form.submit()">
+            {% for year in years %}
+                <option value="{{ year.id }}" {% if year == selected_year %}selected{% endif %}>{{ year.year }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Все направления -->
+    {% for direction in data %}
+        <div class="direction-card">
+            <button class="btn btn-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#direction-{{ forloop.counter }}">
+                📂 {{ direction.name }}
+            </button>
+
+            <div id="direction-{{ forloop.counter }}" class="collapse px-3 pb-3">
+                {% for main in direction.main_indicators %}
+                    <div class="indicator-card">
+                        <h5 class="mb-2">{{ main.name }} <small class="text-muted">({{ main.unit }})</small></h5>
+
+                        {% if main.has_sub_indicators %}
+                            <p class="text-end text-primary"><strong>Итого по подиндикаторам:</strong> {{ main.sub_total_sum }}</p>
+
+                            {% for sub in main.sub_indicators %}
+                                <div class="ms-3 mb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><strong>{{ sub.name }}</strong> ({{ sub.unit }}) </span>
+                                        <span><strong>Итого:</strong> {{ sub.total }}</span>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm btn-sm-custom mt-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modal-sub-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                        📋 Посмотреть учителей
+                                    </button>
+
+                                    <!-- Модальное окно для подиндикатора -->
+                                    <div class="modal fade" id="modal-sub-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" tabindex="-1">
+                                      <div class="modal-dialog modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h5 class="modal-title">{{ sub.name }} — Детали</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            <!-- Кнопка сортировки -->
+                                            <div class="mb-3">
+                                              <button class="btn btn-outline-primary" id="sort-name-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" onclick="sortListByName({{ forloop.parentloop.counter }}, {{ forloop.counter }})">
+                                                Сортировать по имени
+                                              </button>
+                                              <button class="btn btn-outline-primary" id="sort-value-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" onclick="sortListByValue({{ forloop.parentloop.counter }}, {{ forloop.counter }})">
+                                                Сортировать по значению
+                                              </button>
+                                            </div>
+
+                                            <ul class="list-group" id="teacher-list-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                                {% for teacher, value in sub.teachers %}
+                                                    <li class="list-group-item d-flex justify-content-between">
+                                                        <span>{{ teacher }}</span>
+                                                        <span>{{ value }}</span>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                            <hr>
+                                            <p><strong>Итого:</strong> {{ sub.total }}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+
+                        {% else %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span><strong>Итого:</strong> {{ main.total }}</span>
+                                <button class="btn btn-outline-primary btn-sm btn-sm-custom"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modal-main-{{ forloop.counter }}">
+                                    📋 Посмотреть учителей
+                                </button>
+                            </div>
+
+                            <!-- Модальное окно для главного индикатора -->
+                            <div class="modal fade" id="modal-main-{{ forloop.counter }}" tabindex="-1">
+                              <div class="modal-dialog modal-dialog-scrollable">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h5 class="modal-title">{{ main.name }} — Детали</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    <!-- Кнопка сортировки -->
+                                    <div class="mb-3">
+                                      <button class="btn btn-outline-primary" id="sort-name-main-{{ forloop.counter }}" onclick="sortListByNameMain({{ forloop.counter }})">
+                                          Сортировать по имени
+                                      </button>
+                                      <button class="btn btn-outline-primary" id="sort-value-main-{{ forloop.counter }}" onclick="sortListByValueMain({{ forloop.counter }})">
+                                          Сортировать по значению
+                                      </button>
+                                    </div>
+
+                                    <ul class="list-group" id="teacher-list-main-{{ forloop.counter }}">
+                                        {% for teacher, value in main.teachers %}
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>{{ teacher }}</span>
+                                                <span>{{ value }}</span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                    <hr>
+                                    <p><strong>Итого:</strong> {{ main.total }}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Функция сортировки по имени для подиндикаторов
+    function sortListByName(directionIndex, subIndex) {
+        const list = document.getElementById(`teacher-list-${directionIndex}-${subIndex}`);
+        const items = Array.from(list.getElementsByTagName('li'));
+
+        items.sort((a, b) => {
+            const nameA = a.getElementsByTagName('span')[0].textContent.trim().toLowerCase();
+            const nameB = b.getElementsByTagName('span')[0].textContent.trim().toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        items.forEach(item => list.appendChild(item));
+    }
+
+    // Функция сортировки по значению для подиндикаторов
+    function sortListByValue(directionIndex, subIndex) {
+        const list = document.getElementById(`teacher-list-${directionIndex}-${subIndex}`);
+        const items = Array.from(list.getElementsByTagName('li'));
+
+        items.sort((a, b) => {
+            const valueA = parseFloat(a.getElementsByTagName('span')[1].textContent.trim());
+            const valueB = parseFloat(b.getElementsByTagName('span')[1].textContent.trim());
+            return valueB - valueA;  // сортировка по убыванию
+        });
+
+        items.forEach(item => list.appendChild(item));
+    }
+
+    // Функция сортировки по имени для главных индикаторов
+    function sortListByNameMain(mainIndex) {
+        const list = document.getElementById(`teacher-list-main-${mainIndex}`);
+        const items = Array.from(list.getElementsByTagName('li'));
+
+        items.sort((a, b) => {
+            const nameA = a.getElementsByTagName('span')[0].textContent.trim().toLowerCase();
+            const nameB = b.getElementsByTagName('span')[0].textContent.trim().toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        items.forEach(item => list.appendChild(item));
+    }
+
+    // Функция сортировки по значению для главных индикаторов
+    function sortListByValueMain(mainIndex) {
+        const list = document.getElementById(`teacher-list-main-${mainIndex}`);
+        const items = Array.from(list.getElementsByTagName('li'));
+
+        items.sort((a, b) => {
+            const valueA = parseFloat(a.getElementsByTagName('span')[1].textContent.trim());
+            const valueB = parseFloat(b.getElementsByTagName('span')[1].textContent.trim());
+            return valueB - valueA;  // сортировка по убыванию
+        });
+
+        items.forEach(item => list.appendChild(item));
+    }
+</script>
+{% endblock %}
