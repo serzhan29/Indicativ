@@ -50,80 +50,78 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
     template_name = 'main/view/teacher_reports_list.html'
 
     def get(self, request, *args, **kwargs):
-        direction_id = request.GET.get('direction')
         year_id = request.GET.get('year')
-        teacher_id = request.GET.get('teacher')  # 👈 Получаем айди учителя из GET-параметра
+        teacher_id = request.GET.get('teacher')
 
-        if not direction_id or not year_id:
+        if not year_id:
             return super().get(request, *args, **kwargs)
 
-        # Сохраняем выбранные значения
-        self.direction = get_object_or_404(Direction, id=direction_id)
         self.year = get_object_or_404(Year, id=year_id)
-
-        # 👇 Получаем выбранного учителя или текущего пользователя
-        if teacher_id:
-            self.teacher = get_object_or_404(User, id=teacher_id)
-        else:
-            self.teacher = request.user
+        self.teacher = get_object_or_404(User, id=teacher_id) if teacher_id else request.user
 
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        direction_id = self.request.GET.get('direction')
         year_id = self.request.GET.get('year')
-
-        directions = Direction.objects.all()
+        directions = Direction.objects.all().order_by('id')
         years = Year.objects.all().order_by('year')
 
-        context['directions'] = directions
         context['years'] = years
+        context['directions'] = directions
 
-        if not direction_id or not year_id:
-            return context  # Форма ещё не отправлена
+        if not year_id:
+            return context
 
-        teacher = self.teacher
-        direction = self.direction
         year = self.year
+        teacher = self.teacher
 
-        main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
-        aggregated_data = []
+        all_data = []
 
-        for main_indicator in main_indicators:
-            indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+        for direction in directions:
+            direction_data = {
+                'direction': direction,
+                'main_indicators': []
+            }
 
-            total_value = TeacherReport.objects.filter(
-                teacher=teacher, indicator__in=indicators, year=year
-            ).aggregate(Sum('value'))['value__sum'] or 0
+            main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
 
-            aggregated_indicator = AggregatedIndicator.objects.filter(
-                teacher=teacher, main_indicator=main_indicator, year=year
-            ).first()
+            for main_indicator in main_indicators:
+                indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
 
-            additional_value = aggregated_indicator.additional_value if aggregated_indicator else 0
-            total_value += additional_value
+                total_value = TeacherReport.objects.filter(
+                    teacher=teacher, indicator__in=indicators, year=year
+                ).aggregate(Sum('value'))['value__sum'] or 0
 
-            teacher_reports = TeacherReport.objects.filter(
-                teacher=teacher, indicator__in=indicators, year=year
-            ).select_related('indicator')
+                aggregated_indicator = AggregatedIndicator.objects.filter(
+                    teacher=teacher, main_indicator=main_indicator, year=year
+                ).first()
 
-            aggregated_data.append({
-                'main_indicator': main_indicator,
-                'total_value': total_value,
-                'additional_value': additional_value,
-                'teacher_reports': teacher_reports
-            })
+                additional_value = aggregated_indicator.additional_value if aggregated_indicator else 0
+                total_value += additional_value
+
+                teacher_reports = TeacherReport.objects.filter(
+                    teacher=teacher, indicator__in=indicators, year=year
+                ).select_related('indicator')
+
+                direction_data['main_indicators'].append({
+                    'main_indicator': main_indicator,
+                    'total_value': total_value,
+                    'additional_value': additional_value,
+                    'teacher_reports': teacher_reports
+                })
+
+            all_data.append(direction_data)
 
         context.update({
-            'teacher': teacher,  # 👈 Не забываем передать учителя в контекст
-            'direction': direction,
+            'teacher': teacher,
             'year': year,
-            'aggregated_data': aggregated_data
+            'aggregated_data': all_data  # 👈 Весь список
         })
 
         return context
+
 
 def indicator_report_view(request):
     year_id = request.GET.get("year")

@@ -63,6 +63,14 @@
             {% endfor %}
         </select>
     </form>
+<form action="{% url 'indicator_report' %}" method="GET">
+    <select name="year">
+        {% for year in years %}
+            <option value="{{ year.id }}" {% if year.id == selected_year.id %}selected{% endif %}>{{ year.year }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Скачать отчет</button>
+</form>
 
     <!-- Все направления -->
     {% for direction in data %}

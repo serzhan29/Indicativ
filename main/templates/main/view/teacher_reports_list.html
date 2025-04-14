@@ -2,25 +2,23 @@
 {% load static %}
 {% block content %}
 
-<h2 class="text-center my-4">Есепті қарау</h2>
+{% if teacher.id and year.id %}
+  <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}" class="btn btn-primary">
+    Скачать отчет в Word
+  </a>
 
-<form method="get" class="container my-4">
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <label>Бағыт:</label>
-            <select name="direction" class="form-control" required>
-                <option value="">Таңдаңыз</option>
-                {% for dir in directions %}
-                    <option value="{{ dir.id }}" {% if direction and dir.id == direction.id %}selected{% endif %}>
-                        {{ dir.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+{% endif %}
 
-        <div class="col-md-4 mb-3">
-            <label>Жыл:</label>
-            <select name="year" class="form-control" required>
+
+<div class="report-container py-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Есепті қарау</h2>
+    </div>
+
+    <form method="get" class="form-section container d-flex flex-wrap justify-content-between align-items-end gap-1 shadow-sm p-4 mb-3 bg-white rounded-5">
+        <div class="flex-grow-1">
+            <label class="form-label fw-semibold">Жыл:</label>
+            <select name="year" class="form-select" required>
                 <option value="">Таңдаңыз</option>
                 {% for y in years %}
                     <option value="{{ y.id }}" {% if year and y.id == year.id %}selected{% endif %}>
@@ -30,128 +28,159 @@
             </select>
         </div>
 
-        <div class="col-md-4 mb-3 d-flex align-items-end">
-            <!-- Скрытое поле для ID учителя -->
-            <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
-            <button type="submit" class="btn btn-primary w-100">Қарау</button>
-        </div>
-    </div>
-</form>
-{% if direction.id and year.id%}
-    <form action="{% url 'download_teacher_report' teacher_id=teacher.id direction_id=direction.id year_id=year.id %}" method="get">
-    <button type="submit" class="btn btn-primary">Есепті жүктеу</button>
+        <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
+        <button type="submit" class="btn btn-gradient px-4 py-2">
+            Қарау
+        </button>
     </form>
-{% endif %}
 
-{% if direction and year %}
-    <div class="container mt-5">
-        <hr>
-        <h3 class="text-center">{{ direction.name }} ({{ year.year }})</h3>
 
-        <table class="table table-bordered table-striped mt-4">
-            <thead class="table-info">
-                <tr>
-                    <th>Индикатор атауы</th>
-                    <th>Өлшеу бірлігі</th>
-                    <th>Көрсеткіш саны</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for data in aggregated_data %}
-                    <!-- Главный индикатор -->
-                    <tr class="table-primary">
-                        <td><strong>{{ data.main_indicator.name }}</strong></td>
-                        <td>{{ data.main_indicator.unit }}</td>
-                        <td>{{ data.total_value }}</td>
-                    </tr>
-                    <!-- Подиндикаторы -->
-                    {% for report in data.teacher_reports %}
-                        <tr class="table-secondary">
-                            <td>{{ report.indicator.name }}</td>
-                            <td>{{ report.indicator.unit }}</td>
-                            <td>{{ report.value }}</td>
-                        </tr>
-                    {% endfor %}
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% endif %}
+    {% if year %}
+        <div class="container">
+            <div class="text-center mb-4">
+                <h3 class="fw-semibold">{{ year.year }} жылғы есеп</h3>
+            </div>
+
+            {% for group in aggregated_data %}
+                <div class="direction-block mb-5">
+                    <h4 class="direction-title mb-3">{{ group.direction.name }}</h4>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered shadow-sm rounded overflow-hidden">
+                            <thead class="table-header text-white text-center">
+                                <tr>
+                                    <th>Индикатор атауы</th>
+                                    <th>Өлшеу бірлігі</th>
+                                    <th>Көрсеткіш саны</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in group.main_indicators %}
+                                    <tr class="main-indicator-row">
+                                        <td class="fw-bold">{{ data.main_indicator.name }}</td>
+                                        <td>{{ data.main_indicator.unit }}</td>
+                                        <td>{{ data.total_value }}</td>
+                                    </tr>
+                                    {% for report in data.teacher_reports %}
+                                        <tr class="sub-indicator-row">
+                                            <td>
+                                                <span class="sub-indent">↳</span> {{ report.indicator.name }}
+                                            </td>
+                                            <td>{{ report.indicator.unit }}</td>
+                                            <td>{{ report.value }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
 
 {% endblock %}
 
 <style>
-    /* Основные стили для формы */
-    form {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    /* Общая обертка */
+    .report-container {
+        background: linear-gradient(to right, #e6f7ff, #ffffff);
     }
 
-    /* Выравнивание для кнопки */
-    .btn-primary {
-        padding: 12px;
-        font-size: 16px;
+    /* Форма */
+    .form-section {
+        width: 20%;
     }
 
-    /* Заголовки и таблицы */
-    h3 {
-        font-size: 1.8rem;
-        color: #343a40;
+    .form-section {
+        border-left: 6px solid #0096ff;
+        transition: box-shadow 0.3s ease;
+        width: 20%;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
+    .form-section:hover {
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.2);
     }
 
-    th, td {
-        padding: 10px;
-        text-align: center;
-    }
-
-    th {
-        background-color: #007bff;
+    .btn-gradient {
+        background: linear-gradient(135deg, #0096ff, #00cfff);
+        border: none;
         color: white;
+        font-weight: 600;
+        padding: 12px;
+        border-radius: 10px;
+        transition: 0.3s ease;
     }
 
-    td {
-        background-color: #f9f9f9;
+    .btn-gradient:hover {
+        background: linear-gradient(135deg, #007be6, #00b0dd);
+        transform: translateY(-1px);
     }
 
-    /* Для главного индикатора */
-    .table-primary td {
-        background-color: #e6f7ff; /* Светло-голубой фон */
+    /* Название направления */
+    .direction-title {
+        font-size: 1.5rem;
+        color: #007be6;
+        border-left: 5px solid #00bfff;
+        padding-left: 12px;
+    }
+
+    /* Таблица */
+    table {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: linear-gradient(to right, #007be6, #00cfff);
+    }
+
+    .main-indicator-row td {
+        background-color: #d9f1ff;
         font-weight: bold;
+        color: #003366;
     }
 
-    /* Для подиндикаторов */
-    .table-secondary td {
-        background-color: #f2f2f2; /* Светло-серый фон */
+    .sub-indicator-row td {
+        background-color: #f0fbff;
+        border-left: 5px solid #00bfff;
+    }
+
+    .sub-indent {
+        margin-right: 8px;
+        color: #00aaff;
     }
 
     /* Мобильная адаптация */
     @media (max-width: 768px) {
-        .col-md-4 {
-            margin-bottom: 15px;
+        .form-select {
+            width: 100%;
+        }
+        .form-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-gradient {
+            width: 100%;
+        }
+
+        .btn-gradient {
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .direction-title {
+            font-size: 1.3rem;
+        }
+
+        h2, h3 {
+            font-size: 1.6rem;
         }
 
         table {
             font-size: 14px;
         }
-
-        th, td {
-            padding: 8px;
-        }
-
-        .btn-primary {
-            font-size: 14px;
-        }
-
-        h3 {
-            font-size: 1.5rem;
-        }
     }
 </style>
-
