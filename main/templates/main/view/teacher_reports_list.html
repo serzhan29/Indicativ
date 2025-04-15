@@ -9,10 +9,11 @@
 
 {% endif %}
 
-
 <div class="report-container py-5">
     <div class="text-center mb-5">
-        <h2 class="fw-bold">Есепті қарау</h2>
+        {% if teacher.id %}
+            <h2 class="fw-bold">{{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }}</h2>
+        {% endif %}
     </div>
 
     <form method="get" class="form-section container d-flex flex-wrap justify-content-between align-items-end gap-1 shadow-sm p-4 mb-3 bg-white rounded-5">

@@ -11,6 +11,8 @@ from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherRepo
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from django.views import View
+from urllib.parse import quote
+
 
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
@@ -250,7 +252,7 @@ def set_cell_font(cell, bold=False, align_center=False):
         for run in paragraph.runs:
             run.font.name = 'Times New Roman'
             run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-            run.font.size = Pt(14)
+            run.font.size = Pt(12)
             run.font.bold = bold
             run.font.color.rgb = None  # чёрный
 
@@ -359,7 +361,8 @@ class TeacherReportWordExportView(View):
 
         # Файлды қайтару
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        filename = f"OKYTUSHY_ESEBI_{teacher.username}_{year.year}.docx"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        file_name = f"Мұғалім {teacher.last_name} {teacher.first_name} - {year.year}ж.docx"
+        encoded_file_name = quote(file_name)
+        response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
         doc.save(response)
         return response
