@@ -26,6 +26,7 @@ class UnitChoices(models.TextChoices):
 
 class MainIndicator(models.Model):
     """Главный индикатор, объединяющий несколько индикаторов"""
+    code = models.CharField(max_length=15, default="", verbose_name="Код: ")
     direction = models.ForeignKey(Direction, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, verbose_name="Название главного индикатора")
     years = models.ManyToManyField(Year, verbose_name="Годы действия")
@@ -33,12 +34,13 @@ class MainIndicator(models.Model):
                             default=UnitChoices.Quantity)
 
     def __str__(self):
-        return f"{self.name} - {self.direction.name}"
+        return f"{self.code} {self.name} - {self.direction.name}"
 
 
 class Indicator(models.Model):
     """Подчинённые индикаторы, принадлежащие главному индикатору"""
     main_indicator = models.ForeignKey(MainIndicator, on_delete=models.CASCADE, related_name="indicators", verbose_name="Главный индикатор")
+    code = models.CharField(max_length=15, default="", verbose_name="Код: ")
     years = models.ManyToManyField(Year, verbose_name="Годы действия")
     name = models.CharField(max_length=255, verbose_name="Название индикатора")
     unit = models.CharField(max_length=255, verbose_name="Единица измерения", choices=UnitChoices.choices,
@@ -46,7 +48,7 @@ class Indicator(models.Model):
 
     def __str__(self):
         years_list = ", ".join(str(year.year) for year in self.years.all())  # Получаем все года
-        return f"{self.name} - ({years_list} - {self.unit})"
+        return f" {self.code} {self.name} - ({years_list} - {self.unit})"
 
 
 class TeacherReport(models.Model):
@@ -60,7 +62,7 @@ class TeacherReport(models.Model):
         unique_together = ('teacher', 'indicator', 'year')  # исправлено
 
     def __str__(self):
-        return f"{self.teacher} - {self.indicator.name} | год - {self.year.year} |"  # исправлено
+        return f"{self.teacher} - {self.indicator.code} {self.indicator.name} | год - {self.year.year} |"  # исправлено
 
 
 class AggregatedIndicator(models.Model):
@@ -75,4 +77,4 @@ class AggregatedIndicator(models.Model):
         unique_together = ('teacher', 'main_indicator', 'year')  # исправлено
 
     def __str__(self):
-        return f"{self.teacher} - {self.main_indicator.name} ({self.year.year}) - Сумма: {self.total_value}"
+        return f"{self.teacher} - {self.main_indicator.code} {self.main_indicator.name} ({self.year.year}) - Сумма: {self.total_value}"

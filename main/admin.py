@@ -18,7 +18,8 @@ class DirectionAdmin(admin.ModelAdmin):
 
 @admin.register(MainIndicator)
 class MainIndicatorAdmin(admin.ModelAdmin):
-    list_display = ("short_name", "direction", "display_years")
+    list_display = ( "code", "short_name", "direction", "display_years")
+    list_display_links = ("code", "short_name",)
     search_fields = ("name", "direction__name")
     list_filter = ("direction", "years")
     ordering = ("direction", "name")
@@ -37,7 +38,8 @@ class MainIndicatorAdmin(admin.ModelAdmin):
 
 @admin.register(Indicator)
 class IndicatorAdmin(admin.ModelAdmin):
-    list_display = ("name", "short_main_indicator", "display_years")  # Используем сокращенное название
+    list_display = ( "code", "name", "short_main_indicator", "display_years")  # Используем сокращенное название
+    list_display_links = ("code", "name")
     search_fields = ("name", "main_indicator__name")
     list_filter = ("years", "short_main_indicator_filter")  # Добавляем кастомный фильтр
     ordering = ("main_indicator", "name")
