@@ -6,5 +6,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include("main.urls")),
     path('user/', include("user.urls")),
+    path('chaining/', include('smart_selects.urls')),
 
 ]
