@@ -21,6 +21,7 @@
 <table>
     <thead>
         <tr>
+            <th>Code </th>
             <th>Индикатор атауы</th>
             <th>Өлшеу бірлігі</th>
             <th>Көрсеткіш саны</th>
@@ -29,6 +30,7 @@
     <tbody>
         {% for data in aggregated_data %}
         <tr class="main-indicator">
+            <td>{{ data.main_indicator.code }}</td>
             <td style="">{{ data.main_indicator.name }}</td>
             <td>{{ data.main_indicator.unit }}</td>
             <td>
@@ -52,6 +54,7 @@
         {% if data.teacher_reports %}
             {% for report in data.teacher_reports %}
             <tr class="sub-indicator">
+                <td>{{ report.indicator.code }}</td>
                 <td>{{ report.indicator.name }}</td>
                 <td>{{ report.indicator.unit }}</td>
                 <td>

@@ -83,7 +83,7 @@
             {% if direction.main_indicators %}
                 {% for main in direction.main_indicators %}
                     <div class="indicator-card">
-                        <h5 class="mb-2">{{ main.name }} <small class="text-muted">({{ main.unit }})</small></h5>
+                        <h5 class="mb-2"> {{ main.code }} {{ main.name }} <small class="text-muted">({{ main.unit }})</small></h5>
 
                         {% if main.has_sub_indicators %}
                             <p class="text-end text-primary"><strong>Индикаторлар бойынша жиыны: {{ main.sub_total_sum }}</strong></p>
@@ -91,7 +91,7 @@
                             {% for sub in main.sub_indicators %}
                                 <div class="ms-3 mb-2">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span><strong>{{ sub.name }}</strong> ({{ sub.unit }}) </span>
+                                        <span><strong>{{ sub.code }} {{ sub.name }}</strong> ({{ sub.unit }}) </span>
                                         <span>Барлығы: <strong>{{ sub.total }}</strong></span>
                                     </div>
                                     <button class="btn btn-outline-primary btn-sm btn-sm-custom mt-1"

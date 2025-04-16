@@ -142,6 +142,7 @@ def indicator_report_view(request):
         for main in main_indicators:
             has_sub_indicators = main.indicators.exists()
             main_data = {
+                "code": main.code,
                 "name": main.name,
                 "unit": main.unit,
                 "teachers": [],
@@ -157,6 +158,7 @@ def indicator_report_view(request):
                     total = sum(v for _, v in teacher_values)
 
                     sub_data = {
+                        "code": sub.code,
                         "name": sub.name,
                         "unit": sub.unit,
                         "teachers": teacher_values,

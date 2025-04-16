@@ -50,6 +50,7 @@
                         <table class="table table-hover table-bordered shadow-sm rounded overflow-hidden">
                             <thead class="table-header text-white text-center">
                                 <tr>
+                                    <th>Code </th>
                                     <th>Индикатор атауы</th>
                                     <th>Өлшеу бірлігі</th>
                                     <th>Көрсеткіш саны</th>
@@ -58,12 +59,14 @@
                             <tbody>
                                 {% for data in group.main_indicators %}
                                     <tr class="main-indicator-row">
+                                        <td> {{ data.main_indicator.code }} </td>
                                         <td class="fw-bold">{{ data.main_indicator.name }}</td>
                                         <td>{{ data.main_indicator.unit }}</td>
                                         <td>{{ data.total_value }}</td>
                                     </tr>
                                     {% for report in data.teacher_reports %}
                                         <tr class="sub-indicator-row">
+                                            <td> {{ report.indicator.code }} </td>
                                             <td>
                                                 <span class="sub-indent">↳</span> {{ report.indicator.name }}
                                             </td>
