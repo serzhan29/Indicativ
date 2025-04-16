@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from user.models import Profile, Faculty
+from user.models import Profile, Faculty, Department
 from .models import TeacherReport, AggregatedIndicator, Year, Direction, MainIndicator, Indicator
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
@@ -21,29 +21,34 @@ def teachers_by_faculty(request):
     if profile.role != 'viewer':
         return render(request, 'main/view/no_permission.html')
 
-    faculties = Faculty.objects.all()
+    faculties = Faculty.objects.filter(profile__role='teacher').distinct()
     selected_faculty_id = request.GET.get('faculty')
+    selected_department_id = request.GET.get('department')
 
-    # Получаем всех учителей
     teachers = Profile.objects.filter(role='teacher')
 
-    # Фильтрация по факультету
     if selected_faculty_id:
         teachers = teachers.filter(faculty_id=selected_faculty_id)
+        departments = Department.objects.filter(faculty_id=selected_faculty_id)
+    else:
+        departments = Department.objects.none()
 
-    # Сортировка
+    if selected_department_id:
+        teachers = teachers.filter(department_id=selected_department_id)
+
     teachers = teachers.order_by('user__last_name', 'user__first_name')
-
-    # Пагинация (по 12 учителей на страницу)
     paginator = Paginator(teachers, 18)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'main/view/list_teacher.html', {
         'faculties': faculties,
+        'departments': departments,
         'page_obj': page_obj,
-        'selected_faculty_id': int(selected_faculty_id) if selected_faculty_id else None
+        'selected_faculty_id': int(selected_faculty_id) if selected_faculty_id else None,
+        'selected_department_id': int(selected_department_id) if selected_department_id else None,
     })
+
 
 
 class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
