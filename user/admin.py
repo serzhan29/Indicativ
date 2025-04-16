@@ -4,18 +4,21 @@ from django.contrib.auth.models import User
 from .models import Faculty, Department, Profile
 
 
-class ProfileInline(admin.StackedInline):  # или TabularInline для компактного вида
+class ProfileInline(admin.StackedInline):  # Можно заменить на TabularInline для компактности
     model = Profile
     can_delete = False
     verbose_name_plural = 'Профиль'
     fk_name = 'user'
-    fields = ('role', 'faculty', 'department', 'phone')  # Только нужные поля
+    fields = ('role', 'faculty', 'department', 'phone')
 
 
 class CustomUserAdmin(UserAdmin):
     inlines = (ProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'get_role', 'get_faculty', 'get_department')  # показываем роль/факультет
-    list_select_related = ('profile',)  # оптимизация запросов
+    list_display = ('username', 'email', 'first_name', 'last_name', 'get_role', 'get_faculty', 'get_department')
+    list_select_related = ('profile',)
+
+    # 🔎 Фильтры по профилю
+    list_filter = ('profile__role', 'profile__faculty', 'profile__department')
 
     def get_role(self, instance):
         return instance.profile.role
@@ -27,12 +30,12 @@ class CustomUserAdmin(UserAdmin):
 
     def get_department(self, instance):
         return instance.profile.department
-    get_faculty.short_description = 'Кафедра'
+    get_department.short_description = 'Кафедра'
 
-    # Фильтры и поиск по профилю
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('profile')
+
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
