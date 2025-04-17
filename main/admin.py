@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Year, Direction, MainIndicator, Indicator, TeacherReport, AggregatedIndicator
+from user.models import User, Department, Faculty
 
 
 @admin.register(Year)
@@ -75,27 +76,53 @@ class IndicatorAdmin(admin.ModelAdmin):
     list_filter = ("years", ShortMainIndicatorFilter)  # Используем кастомный фильтр
 
 
+# === Кастомный фильтр по факультету ===
+class FacultyFilter(admin.SimpleListFilter):
+    title = "Факультет"
+    parameter_name = "faculty"
+
+    def lookups(self, request, model_admin):
+        return [(f.id, f.name) for f in Faculty.objects.all()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(
+                teacher__profile__department__faculty__id=self.value()
+            ).distinct()
+        return queryset
+
+# === Кастомный фильтр по кафедре ===
+class DepartmentFilter(admin.SimpleListFilter):
+    title = "Кафедра"
+    parameter_name = "department"
+
+    def lookups(self, request, model_admin):
+        return [(d.id, d.name) for d in Department.objects.all()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(
+                teacher__profile__department__id=self.value()
+            ).distinct()
+        return queryset
+
 @admin.register(TeacherReport)
 class TeacherReportAdmin(admin.ModelAdmin):
     list_display = ("teacher", "short_indicator", "year", "highlight_value")
     search_fields = ("teacher__username", "indicator__name", "year__year")
-    list_filter = ("teacher", "year", "short_indicator_filter")
     ordering = ("year", "teacher")
 
     def short_indicator(self, obj):
-        """Сокращает название индикатора, если оно длиннее 30 символов"""
         return obj.indicator.name[:30] + "..." if len(obj.indicator.name) > 30 else obj.indicator.name
 
     short_indicator.short_description = "Индикатор (сокр.)"
 
     def highlight_value(self, obj):
-        """Отображает значение отчета, подсвечивая его красным, если оно равно 0"""
         color = "red" if obj.value == 0 else "green"
         return format_html(f'<span style="color: {color}; font-weight: bold;">{obj.value}</span>')
 
     highlight_value.short_description = "Значение"
 
-    # Кастомный фильтр для сокращенных индикаторов
     class ShortIndicatorFilter(admin.SimpleListFilter):
         title = "Индикатор (сокр.)"
         parameter_name = "indicator"
@@ -112,16 +139,42 @@ class TeacherReportAdmin(admin.ModelAdmin):
                 return queryset.filter(indicator__id=self.value())
             return queryset
 
-    list_filter = ("teacher", "year", ShortIndicatorFilter)  # Используем кастомный фильтр
+    list_filter = (
+        "teacher",
+        "year",
+        ShortIndicatorFilter,
+        FacultyFilter,
+        DepartmentFilter,
+    )
 
 
+# === Регистрация модели AggregatedIndicator ===
 @admin.register(AggregatedIndicator)
 class AggregatedIndicatorAdmin(admin.ModelAdmin):
-    list_display = ("teacher", "short_main_indicator", "year", "total_value", "additional_value")
-    list_filter = ("year", "teacher", "main_indicator__direction")
-    search_fields = ("teacher__username", "main_indicator__name", "year__year")
+    list_display = (
+        "teacher",
+        "short_main_indicator",
+        "year",
+        "total_value",
+        "additional_value"
+    )
+    list_filter = (
+        "year",
+        "teacher",
+        "main_indicator__direction",
+        FacultyFilter,
+        DepartmentFilter,
+    )
+    search_fields = (
+        "teacher__username",
+        "teacher__first_name",
+        "teacher__last_name",
+        "main_indicator__name",
+        "year__year"
+    )
     ordering = ("year", "teacher")
 
     def short_main_indicator(self, obj):
         return obj.main_indicator.name[:15] + "..." if len(obj.main_indicator.name) > 15 else obj.main_indicator.name
+
     short_main_indicator.short_description = "Главн. индикатор"
