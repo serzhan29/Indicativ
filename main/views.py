@@ -159,9 +159,15 @@ def index(request):
     directions = Direction.objects.all()
 
     selected_direction = request.GET.get('direction')  # получаем выбранное направление
+    selected_indicator = request.GET.get('indicator')  # получаем выбранный главный индикатор
 
+    # Фильтрация по направлению
     if selected_direction:
-        main_indicators = main_indicators.filter(direction__id=selected_direction)  # фильтруем по направлению
+        main_indicators = main_indicators.filter(direction__id=selected_direction)
+
+    # Фильтрация по главному индикатору
+    if selected_indicator:
+        main_indicators = main_indicators.filter(id=selected_indicator)
 
     year_values = []
 
@@ -191,5 +197,9 @@ def index(request):
         'teacher': teacher,
         'year_values': year_values,
         'directions': directions,  # передаем список направлений в шаблон
-        'selected_direction': selected_direction  # передаем выбранное направление
+        'selected_direction': selected_direction,  # передаем выбранное направление
+        'selected_indicator': selected_indicator,  # передаем выбранный индикатор
+        'main_indicators': main_indicators,  # передаем список главных индикаторов для фильтра
     })
+
+

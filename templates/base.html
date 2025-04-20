@@ -20,12 +20,12 @@
     }
 
     .navbar-brand {
-      font-size: 1.8rem;
-      font-weight: 700;
+      font-size: 1.5rem;
+      font-weight: 600;
       color: #fff !important;
-      transition: color 0.3s ease;
       text-transform: none;
-      letter-spacing: 1px;
+      letter-spacing: 0.1px;
+      transition: color 0.3s ease;
     }
 
     .navbar-brand:hover {
@@ -56,48 +56,63 @@
       background-color: #fff;
     }
 
-    .navbar-collapse {
-      justify-content: flex-end;
+    /* Стиль для мобильного меню */
+    @media (max-width: 992px) {
+      .navbar-collapse {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: #007bff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 9999;
+      }
+
+      .navbar-collapse.show {
+        display: block;
+        opacity: 1;
+      }
+
+      .navbar-nav {
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+      }
+
+      .navbar-nav .nav-item {
+        width: 100%;
+        margin: 5px 0;
+      }
+
+      .navbar-nav .nav-item .nav-link {
+        font-size: 1.1rem;
+        padding: 15px;
+        color: #fff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .navbar-nav .nav-item .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Стили для кнопки "бургер" */
+      .navbar-toggler {
+        border: none;
+        background: transparent;
+        color: #fff;
+      }
+
+      .navbar-toggler-icon {
+        background-color: #fff;
+        border-radius: 3px;
+        padding: 5px;
+      }
     }
 
-    /* Анимация появления меню */
-    .navbar-collapse {
-      display: none;
-      opacity: 0;
-      transition: opacity 0.5s ease-in-out;
-    }
-
-    .navbar-collapse.show {
-      display: block;
-      opacity: 1;
-    }
-
-    /* Появление для выпадающих меню */
-    .navbar-nav .nav-item.dropdown:hover .dropdown-menu {
-      display: block;
-      opacity: 1;
-      transition: opacity 0.3s ease-in-out;
-    }
-
-    .dropdown-menu {
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      background-color: #007bff;
-      opacity: 0;
-      display: none;
-    }
-
-    .dropdown-item {
-      color: #fff;
-      font-size: 1.1rem;
-      padding: 10px 15px;
-      transition: background-color 0.3s ease;
-    }
-
-    .dropdown-item:hover {
-      background-color: #00b8d4;
-    }
-
+    /* Общие стили */
     .breadcrumb {
       background-color: #fff;
       border-radius: 10px;
@@ -115,7 +130,6 @@
       color: #0056b3;
     }
 
-    /* Эффект активной ссылки */
     .active-link {
       color: #ff9800 !important;
       font-weight: 700;
@@ -124,38 +138,6 @@
     .navbar-nav .nav-item.active .nav-link {
       background-color: rgba(255, 255, 255, 0.2);
       color: #ffeb3b;
-    }
-
-    /* Эффект для иконок */
-    .nav-link i {
-      margin-right: 10px;
-      transition: transform 0.3s ease;
-    }
-
-    .nav-link:hover i {
-      transform: rotate(360deg);
-    }
-
-    /* Стиль активного меню */
-    .active-menu {
-      background-color: #ff9800 !important;
-      color: #fff !important;
-    }
-
-    /* Плавное добавление градиента при ховере */
-    .navbar-brand, .navbar-nav .nav-item .nav-link {
-      transition: color 0.3s ease, background-color 0.3s ease;
-    }
-
-    /* Анимация для загрузки */
-    @keyframes slideIn {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(0); }
-    }
-
-    /* Стилизация меню для мобильных */
-    .navbar-collapse {
-      animation: slideIn 0.5s ease-out;
     }
   </style>
 </head>
@@ -167,11 +149,17 @@
       <a class="navbar-brand" href="{% url 'direction_list' %}">Бағыттар</a>
 
       {% if user.is_staff %}
-          <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
-          <a class="navbar-brand" href="{% url 'indicator_report' %}">Report</a>
-          <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
+        <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
+        <a class="navbar-brand" href="{% url 'indicator_report' %}">Report</a>
+        <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
       {% endif %}
 
+      <!-- Кнопка для мобильного меню -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Меню на мобильных устройствах -->
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto">
           {% if user.is_authenticated %}
