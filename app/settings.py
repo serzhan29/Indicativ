@@ -22,6 +22,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.sites',
     'django.contrib.flatpages',
     'django.contrib.admin',
@@ -147,3 +148,61 @@ SITE_ID = 1
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Мой сайт",  # название сайта
+    "site_header": "Администрирование сайта",  # заголовок в шапке админки
+    "site_brand": "Мой сайт",  # бренд на верхней панели
+    "welcome_sign": "Добро пожаловать в панель администратора",  # приветственное сообщение
+    "copyright": "Все права защищены © 2025",
+
+    "custom_links": {
+        "books": [{
+            # Any Name you like
+            "name": "Главная страница",
+
+            # url name e.g `admin:index`, relative urls e.g `/admin/index` or absolute urls e.g `https://domain.com/admin/index`
+            "url": "index",
+
+            # any font-awesome icon, see list here https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2 (optional)
+            "icon": "fas fa-comments",
+
+        }]
+    },
+
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": True,
+    "brand_small_text": False,
+    "brand_colour": "navbar-info",
+    "accent": "accent-primary",
+    "navbar": "navbar-info navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-light-info",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": True,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True,
+    "theme": "simplex",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    },
+    "actions_sticky_top": False
+}
+
+JAZZMIN_SETTINGS["show_ui_builder"] = True
