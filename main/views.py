@@ -147,3 +147,49 @@ class UpdateValueView(LoginRequiredMixin, View):
         return JsonResponse({"success": False, "error": "Неверный метод"})
 
 
+
+# index.html
+
+def index(request):
+    teacher = request.user
+    years = Year.objects.order_by('year')
+    main_indicators = MainIndicator.objects.all()
+
+    # Получаем все направления
+    directions = Direction.objects.all()
+
+    selected_direction = request.GET.get('direction')  # получаем выбранное направление
+
+    if selected_direction:
+        main_indicators = main_indicators.filter(direction__id=selected_direction)  # фильтруем по направлению
+
+    year_values = []
+
+    for year in years:
+        year_data = {
+            'year': year.year,
+            'main_indicators': []
+        }
+
+        for main in main_indicators:
+            agg = AggregatedIndicator.objects.filter(
+                teacher=teacher,
+                main_indicator=main,
+                year=year
+            ).first()
+
+            year_data['main_indicators'].append({
+                'name': main.name,
+                'code': main.code,
+                'value': agg.total_value if agg else 0,
+                'unit': main.unit
+            })
+
+        year_values.append(year_data)
+
+    return render(request, 'main/index.html', {
+        'teacher': teacher,
+        'year_values': year_values,
+        'directions': directions,  # передаем список направлений в шаблон
+        'selected_direction': selected_direction  # передаем выбранное направление
+    })

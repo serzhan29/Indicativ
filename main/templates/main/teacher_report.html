@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Басты бет</a></li>
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{{ direction.name }}</a></li>
   <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">Барлық жылдар</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ year.year }}</li>

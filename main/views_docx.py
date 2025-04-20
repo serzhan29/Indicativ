@@ -9,9 +9,14 @@ from docx.oxml.ns import qn
 from urllib.parse import quote_plus
 from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherReport, User, MainIndicator
 from docx.oxml import OxmlElement
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_PARAGRAPH_ALIGNMENT
 from django.views import View
 from urllib.parse import quote
+from user.models import Department, Faculty
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.shared import Cm
+from docx.enum.table import WD_ALIGN_VERTICAL
+from django.db import models
 
 
 @login_required
@@ -366,3 +371,241 @@ class TeacherReportWordExportView(View):
         response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
         doc.save(response)
         return response
+
+
+def export_report(request, faculty_id):
+    year_id = request.GET.get('year')
+
+    if year_id:
+        selected_year = Year.objects.get(id=year_id)
+    else:
+        selected_year = Year.objects.latest('year')
+
+    faculty = Faculty.objects.get(id=faculty_id)
+    departments = Department.objects.filter(faculty=faculty)
+    directions = Direction.objects.all()
+
+    document = Document()
+
+    # Устанавливаем альбомную ориентацию
+    section = document.sections[-1]
+    new_width, new_height = section.page_height, section.page_width
+    section.page_width = new_width
+    section.page_height = new_height
+
+    document.add_heading(f'Есеп беру — {faculty.name} ({selected_year.year} жыл)', 0)
+
+    for direction in directions:
+        document.add_heading(direction.name, level=1)
+
+        table = document.add_table(rows=1, cols=3 + len(departments))
+        table.style = 'Table Grid'
+
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Код индикатор'
+        hdr_cells[1].text = 'Атауы'
+
+        for idx, dept in enumerate(departments):
+            hdr_cells[2 + idx].text = dept.name
+
+        hdr_cells[-1].text = 'Жалпы сумма'
+
+        for cell in hdr_cells:
+            cell.width = Cm(5)
+            for paragraph in cell.paragraphs:
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
+
+        for main in main_indicators:
+            has_sub_indicators = main.indicators.exists()
+
+            if has_sub_indicators:
+                sub_indicators = main.indicators.filter(years=selected_year)
+
+                # Сначала собираем суммы по каждому департаменту
+                dept_sums = [0] * len(departments)
+                total_sum = 0
+
+                for sub in sub_indicators:
+                    for idx, dept in enumerate(departments):
+                        value = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        ).aggregate(total=models.Sum('value'))['total'] or 0
+                        dept_sums[idx] += value
+                        total_sum += value
+
+                # Строка с общей суммой по подиндикаторам
+                summary_row = table.add_row().cells
+                summary_row[0].text = f'{main.code} (Барлығы)'
+                summary_row[1].text = f'Барлығы: {main.name}'
+                for idx, value in enumerate(dept_sums):
+                    summary_row[2 + idx].text = str(value)
+                summary_row[-1].text = str(sum(dept_sums))
+
+                # Затем строки по каждому подиндикатору
+                for sub in sub_indicators:
+                    row = table.add_row().cells
+                    row[0].text = sub.code
+                    row[1].text = sub.name
+
+                    sub_total = 0
+                    for idx, dept in enumerate(departments):
+                        reports = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        )
+                        cell_text = "\n".join(f"{r.teacher.get_full_name()}: {r.value}" for r in reports)
+                        value_sum = sum(r.value for r in reports)
+                        sub_total += value_sum
+                        row[2 + idx].text = cell_text if cell_text else "—"
+
+                    row[-1].text = str(sub_total)
+
+
+            else:
+                # Если у главного индикатора нет подиндикаторов, то отображаем его данные
+                row = table.add_row().cells
+                row[0].text = main.code
+                row[1].text = main.name
+
+                total = 0
+                for idx, dept in enumerate(departments):
+                    aggr_reports = AggregatedIndicator.objects.filter(
+                        main_indicator=main,
+                        year=selected_year,
+                        teacher__profile__department=dept
+                    )
+                    values = [(r.teacher.get_full_name(), r.total_value) for r in aggr_reports]
+                    cell_text = "\n".join(f"{t[0]}: {t[1]}" for t in values)
+                    row[2 + idx].text = cell_text if cell_text else "—"
+                    total += sum(val for _, val in values)
+
+                row[-1].text = str(total)
+
+        document.add_paragraph()
+
+    # Сохраняем документ в HTTP-ответ
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    filename = f"report_{faculty.name}_{selected_year.year}.docx"
+    encoded_file_name = quote(filename)
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
+
+    document.save(response)
+    return response
+
+
+# Отчет без списков учителей
+@login_required
+def export_department_report_docx(request, faculty_id):
+    year_id = request.GET.get('year')
+    selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
+
+    faculty = Faculty.objects.get(id=faculty_id)
+    departments = Department.objects.filter(faculty=faculty)
+    directions = Direction.objects.all()
+
+    document = Document()
+
+    # Альбомная ориентация
+    section = document.sections[-1]
+    section.page_width, section.page_height = section.page_height, section.page_width
+
+    document.add_heading(f'Есеп беру — {faculty.name} ({selected_year.year} жыл)', 0)
+
+    for direction in directions:
+        document.add_heading(direction.name, level=1)
+
+        table = document.add_table(rows=1, cols=3 + len(departments))
+        table.style = 'Table Grid'
+
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Код индикатор'
+        hdr_cells[1].text = 'Атауы'
+        for idx, dept in enumerate(departments):
+            hdr_cells[2 + idx].text = dept.name
+        hdr_cells[-1].text = 'Жалпы сумма'
+
+        for cell in hdr_cells:
+            cell.width = Cm(5)
+            for paragraph in cell.paragraphs:
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
+
+        for main in main_indicators:
+            has_sub_indicators = main.indicators.exists()
+
+            if has_sub_indicators:
+                sub_indicators = main.indicators.filter(years=selected_year)
+                dept_sums = [0] * len(departments)
+                total_sum = 0
+
+                for sub in sub_indicators:
+                    for idx, dept in enumerate(departments):
+                        value = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        ).aggregate(total=Sum('value'))['total'] or 0
+                        dept_sums[idx] += value
+                        total_sum += value
+
+                # Строка с общей суммой по подиндикаторам
+                summary_row = table.add_row().cells
+                summary_row[0].text = f'{main.code} (Барлығы)'
+                summary_row[1].text = f'Барлығы: {main.name}'
+                for idx, value in enumerate(dept_sums):
+                    summary_row[2 + idx].text = str(value)
+                summary_row[-1].text = str(sum(dept_sums))
+
+                # Подиндикаторы, только суммы
+                for sub in sub_indicators:
+                    row = table.add_row().cells
+                    row[0].text = sub.code
+                    row[1].text = sub.name
+
+                    sub_total = 0
+                    for idx, dept in enumerate(departments):
+                        value = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        ).aggregate(total=Sum('value'))['total'] or 0
+                        row[2 + idx].text = str(value)
+                        sub_total += value
+
+                    row[-1].text = str(sub_total)
+
+            else:
+                row = table.add_row().cells
+                row[0].text = main.code
+                row[1].text = main.name
+
+                total = 0
+                for idx, dept in enumerate(departments):
+                    value = AggregatedIndicator.objects.filter(
+                        main_indicator=main,
+                        year=selected_year,
+                        teacher__profile__department=dept
+                    ).aggregate(total=Sum('total_value'))['total'] or 0
+                    row[2 + idx].text = str(value)
+                    total += value
+
+                row[-1].text = str(total)
+
+        document.add_paragraph()
+
+    # Сохраняем документ в HTTP-ответ
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    filename = f"report_{faculty.name}_{selected_year.year}.docx"
+    encoded_file_name = quote(filename)
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
+
+    document.save(response)
+    return response

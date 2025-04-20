@@ -1,11 +1,12 @@
 from django.urls import path
-from .views import  DirectionListView, YearListView, TeacherReportView, UpdateValueView
-from .views_docx import download_teacher_report, TeacherReportWordExportView
-from .views_display import reports_dashboard, update_report2
-from .observer import teachers_by_faculty, TeacherReportReadOnlyView, indicator_report_view
+from .views import  DirectionListView, YearListView, TeacherReportView, UpdateValueView, index
+from .views_docx import download_teacher_report, TeacherReportWordExportView, export_report, export_department_report_docx
+from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
+                       indicator_report_view, report_department, get_departments)
 
 urlpatterns = [
     path('', DirectionListView.as_view(), name='direction_list'),
+    path('main', index, name='index'),
     path('directions/<int:direction_id>/years/', YearListView.as_view(), name='choose_year'),
     path('download_teacher_report/<int:teacher_id>/<int:direction_id>/<int:year_id>/', download_teacher_report, name='download_teacher_report'),
 
@@ -18,7 +19,10 @@ urlpatterns = [
     path('report/', indicator_report_view, name='indicator_report'),
     path('report/download/', indicator_report_view, name='indicator_report_download'),
     path('teacher-report/download/', TeacherReportWordExportView.as_view(), name='teacher_report_download'),
-
+    path('report/department/', report_department, name='report_department'),
+    path('get_departments/<str:faculty_id>/', get_departments, name='get_departments'),
+    path('export_report/<int:faculty_id>/', export_report, name='export_report'),
+    path('report_value_department/<int:faculty_id>/', export_department_report_docx, name='export_department_report_docx'),
 
 ]
 
