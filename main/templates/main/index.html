@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div style="display: flex; gap: 30px;">
+
+    <!-- Фильтр по направлениям слева -->
+    <div style="width: 250px; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+        <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 20px;">Фильтр по направлениям</h3>
+
+        <form method="GET" action="">
+            <label for="direction" style="font-size: 14px; color: #333; margin-bottom: 10px; display: block;">Выберите направление</label>
+            <select name="direction" id="direction" style="width: 100%; padding: 8px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="">Все направления</option>
+                {% for direction in directions %}
+                    <option value="{{ direction.id }}" {% if direction.id == selected_direction %}selected{% endif %}>
+                        {{ direction.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="margin-top: 15px; background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+                Применить фильтр
+            </button>
+        </form>
+    </div>
+
+    <!-- Основная часть с графиками -->
+    <div style="flex-grow: 1;">
+        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">
+            📊 Графики по главным индикаторам для {{ teacher.get_full_name }}
+        </h1>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <style>
+            .chart-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin-bottom: 40px;
+            }
+
+            .chart-card {
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                height: 300px; /* фиксированная высота */
+                overflow: hidden;
+                transition: box-shadow 0.3s ease;
+            }
+
+            .chart-card:hover {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            }
+
+            .chart-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 4px;
+                max-height: 40px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .chart-unit {
+                font-size: 12px;
+                color: #888;
+                margin-bottom: 10px;
+            }
+
+            @media (max-width: 1024px) {
+                .chart-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            @media (max-width: 600px) {
+                .chart-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+
+        {% if year_values.0.main_indicators %}
+            <div class="chart-grid">
+                {% for main in year_values.0.main_indicators|slice:":6" %}
+                    <div class="chart-card">
+                        <div>
+                            <div class="chart-title" title="{{ main.code }} — {{ main.name }}">
+                                {{ main.code }} — {{ main.name }}
+                            </div>
+                            <div class="chart-unit">Единица: {{ main.unit }}</div>
+                        </div>
+
+                        <canvas id="chart-{{ forloop.counter }}" height="160"></canvas>
+
+                        <script>
+                            const ctx{{ forloop.counter }} = document.getElementById("chart-{{ forloop.counter }}").getContext("2d");
+
+                            new Chart(ctx{{ forloop.counter }}, {
+                                type: "line",
+                                data: {
+                                    labels: [{% for y in year_values %}"{{ y.year }}",{% endfor %}],
+                                    datasets: [{
+                                        label: "{{ main.name }}",
+                                        data: [
+                                            {% for y in year_values %}
+                                                {% for m in y.main_indicators %}
+                                                    {% if m.code == main.code %}
+                                                        {{ m.value }},
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endfor %}
+                                        ],
+                                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                        borderColor: 'rgba(54, 162, 235, 1)',
+                                        borderWidth: 2,
+                                        tension: 0.3,
+                                        pointRadius: 3,
+                                        fill: true
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { enabled: true }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            title: { display: true, text: "{{ main.unit }}" }
+                                        },
+                                        x: {
+                                            title: { display: true, text: "Годы" }
+                                        }
+                                    }
+                                }
+                            });
+                        </script>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #888; font-size: 16px; margin-top: 30px;">Нет доступных графиков. Отчеты могут быть не заполнены.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
