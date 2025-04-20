@@ -13,7 +13,7 @@
         }
 
         .teacher-card {
-            padding: 15px;
+            padding: 35px;
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             background-color: white;
@@ -26,7 +26,7 @@
         }
 
         .faculty-select {
-            max-width: 300px;
+            max-width: 350px;
         }
 
         .teacher-list-page h2 {
@@ -99,7 +99,6 @@
             {% endif %}
         </form>
 
-
         <hr>
 
         {% if page_obj %}
@@ -112,7 +111,7 @@
                             </a><br>
                             <small>
                                 {% if teacher.faculty %}
-                                    {{ teacher.department |default:"Кафедра бекітілмеген" }}
+                                    {{ teacher.department|default:"Кафедра бекітілмеген" }}
                                 {% else %}
                                     Без факультета
                                 {% endif %}
