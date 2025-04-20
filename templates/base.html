@@ -1,30 +1,189 @@
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Мой сайт{% endblock %}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+  <style>
+    /* Основные стили для улучшенного дизайна меню */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f7fa;
+      color: #333;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, #007bff, #00b8d4);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .navbar-brand {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff !important;
+      transition: color 0.3s ease;
+      text-transform: none;
+      letter-spacing: 1px;
+    }
+
+    .navbar-brand:hover {
+      color: #ffeb3b !important;
+    }
+
+    .navbar-nav .nav-item .nav-link {
+      font-size: 1.2rem;
+      color: #fff;
+      padding: 12px 20px;
+      text-transform: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-nav .nav-item .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ffeb3b;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transform: scale(1.05);
+    }
+
+    .navbar-nav .nav-item .nav-link:active {
+      color: #ff9800;
+    }
+
+    .navbar-toggler-icon {
+      background-color: #fff;
+    }
+
+    .navbar-collapse {
+      justify-content: flex-end;
+    }
+
+    /* Анимация появления меню */
+    .navbar-collapse {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .navbar-collapse.show {
+      display: block;
+      opacity: 1;
+    }
+
+    /* Появление для выпадающих меню */
+    .navbar-nav .nav-item.dropdown:hover .dropdown-menu {
+      display: block;
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .dropdown-menu {
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background-color: #007bff;
+      opacity: 0;
+      display: none;
+    }
+
+    .dropdown-item {
+      color: #fff;
+      font-size: 1.1rem;
+      padding: 10px 15px;
+      transition: background-color 0.3s ease;
+    }
+
+    .dropdown-item:hover {
+      background-color: #00b8d4;
+    }
+
+    .breadcrumb {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .breadcrumb-item a {
+      color: #007bff;
+      font-weight: 600;
+    }
+
+    .breadcrumb-item a:hover {
+      color: #0056b3;
+    }
+
+    /* Эффект активной ссылки */
+    .active-link {
+      color: #ff9800 !important;
+      font-weight: 700;
+    }
+
+    .navbar-nav .nav-item.active .nav-link {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #ffeb3b;
+    }
+
+    /* Эффект для иконок */
+    .nav-link i {
+      margin-right: 10px;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-link:hover i {
+      transform: rotate(360deg);
+    }
+
+    /* Стиль активного меню */
+    .active-menu {
+      background-color: #ff9800 !important;
+      color: #fff !important;
+    }
+
+    /* Плавное добавление градиента при ховере */
+    .navbar-brand, .navbar-nav .nav-item .nav-link {
+      transition: color 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* Анимация для загрузки */
+    @keyframes slideIn {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(0); }
+    }
+
+    /* Стилизация меню для мобильных */
+    .navbar-collapse {
+      animation: slideIn 0.5s ease-out;
+    }
+  </style>
 </head>
+
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-      <a class="navbar-brand" href="">Indicatorium</a>
-        {% if user.is_staff %}
-            <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">View</a>
-            <a class="navbar-brand" href="{% url 'indicator_report' %}">Report</a>
-        {% endif %}
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'index' %}">Indicatorium</a>
+      <a class="navbar-brand" href="{% url 'direction_list' %}">Бағыттар</a>
+
+      {% if user.is_staff %}
+          <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
+          <a class="navbar-brand" href="{% url 'indicator_report' %}">Report</a>
+          <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
+      {% endif %}
+
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto">
           {% if user.is_authenticated %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}">Шығу ({{ user.username }})</a>
+              <a class="nav-link" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Шығу ({{ user.username }})</a>
             </li>
           {% else %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}">Кіру</a>
+              <a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Кіру</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'register' %}">Тіркеу</a>
+              <a class="nav-link" href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Тіркеу</a>
             </li>
           {% endif %}
         </ul>
@@ -34,19 +193,19 @@
 
   <!-- Блок для хлебных крошек -->
   <nav aria-label="breadcrumb" class="bg-light py-2">
-    <div class="container">
+    <div class="container-fluid">
       <ol class="breadcrumb mb-0">
         {% block breadcrumbs %}
-          <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Басты бет</a></li>
         {% endblock %}
       </ol>
     </div>
   </nav>
 
-  <div class="container mt-4">
+  <div class="container-fluid mt-4">
     {% block content %}
     {% endblock %}
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
