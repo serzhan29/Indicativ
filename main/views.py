@@ -5,12 +5,12 @@ from django.views.decorators.http import require_POST
 from .models import Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator, User
 from django.db.models import Sum
 from django.utils.decorators import method_decorator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
 from django.views.generic import TemplateView
-
+from django.db.models import F
 
 class DirectionListView(LoginRequiredMixin, ListView):
     """Шаг 1: Выбор направления"""
@@ -88,9 +88,93 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
             'teacher': teacher,
             'direction': direction,
             'year': year,
-            'aggregated_data': aggregated_data
+            'aggregated_data': aggregated_data,
+            'directions': Direction.objects.all(),
         })
         return context
+
+
+class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
+    """Генерация отчетов для учителя и их агрегация"""
+    template_name = 'main/teacher_full_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        teacher = self.request.user
+
+        # Пробуем получить year_id и direction_id
+        direction_id = self.kwargs.get('direction_id')
+        year_id = self.kwargs.get('year_id')
+
+        directions = Direction.objects.all()
+        all_aggregated_data = {}
+
+        if year_id:
+            year = get_object_or_404(Year, id=year_id)
+        else:
+            year = Year.objects.order_by('-id').first()  # или кидай 404, как хочешь
+
+        if direction_id:
+            # Если выбран конкретный direction
+            directions = Direction.objects.filter(id=direction_id)
+
+        for dir_item in directions:
+            main_indicators = MainIndicator.objects.filter(direction=dir_item, years=year)
+            aggregated_data = []
+
+            for main_indicator in main_indicators:
+                indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+
+                for indicator in indicators:
+                    teacher_report, created = TeacherReport.objects.get_or_create(
+                        teacher=teacher,
+                        indicator=indicator,
+                        year=year,
+                        defaults={'value': 0}
+                    )
+                    if not created and teacher_report.value != 0:
+                        teacher_report.save()
+
+                aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
+                    main_indicator=main_indicator,
+                    teacher=teacher,
+                    year=year,
+                    defaults={'additional_value': 0}
+                )
+                if not created and aggregated_indicator.additional_value != 0:
+                    aggregated_indicator.save()
+
+                total_value = TeacherReport.objects.filter(
+                    teacher=teacher, indicator__in=indicators, year=year
+                ).aggregate(Sum('value'))['value__sum'] or 0
+
+                total_value += aggregated_indicator.additional_value
+
+                teacher_reports = TeacherReport.objects.filter(
+                    teacher=teacher, indicator__in=indicators, year=year
+                ).select_related('indicator')
+
+                aggregated_data.append({
+                    'id': aggregated_indicator.id,
+                    'main_indicator': main_indicator,
+                    'total_value': total_value,
+                    'additional_value': aggregated_indicator.additional_value,
+                    'teacher_reports': teacher_reports
+                })
+
+            all_aggregated_data[dir_item] = aggregated_data
+
+        context.update({
+            'teacher': teacher,
+            'current_direction': None if not direction_id else get_object_or_404(Direction, id=direction_id),
+            'year': year,
+            'all_aggregated_data': all_aggregated_data,
+            'directions': Direction.objects.all(),
+            'all_years': Year.objects.all().order_by('-year'),   # <-- добавляем список всех годов
+        })
+
+        return context
+
 
 
 @method_decorator(csrf_exempt, name='dispatch')

@@ -42,7 +42,7 @@
 
     <!-- ГРАФИКИ -->
     <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333;">
-        📊 {{ teacher.get_full_name }} үшін негізгі көрсеткіштер бойынша графиктер
+        📊 {{ teacher.get_full_name|default:teacher.username}} үшін негізгі көрсеткіштер бойынша графиктер
     </h2>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

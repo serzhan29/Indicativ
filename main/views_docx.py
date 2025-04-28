@@ -17,6 +17,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import Cm
 from docx.enum.table import WD_ALIGN_VERTICAL
 from django.db import models
+from datetime import datetime
 
 
 @login_required
@@ -274,7 +275,7 @@ class TeacherReportWordExportView(View):
         teacher = get_object_or_404(User, id=teacher_id) if teacher_id else request.user
         directions = Direction.objects.all().order_by('id')
 
-        next_year = year.year +1
+        next_year = year.year + 1
 
         # Получаем факультет из профиля
         faculty_name = (
@@ -285,7 +286,7 @@ class TeacherReportWordExportView(View):
 
         doc = Document()
 
-        # Альбом бет
+        # Настройка страницы
         section = doc.sections[0]
         section.orientation = WD_ORIENT.LANDSCAPE
         new_width, new_height = section.page_height, section.page_width
@@ -295,6 +296,12 @@ class TeacherReportWordExportView(View):
         section.right_margin = Inches(1)
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
+
+        # Добавление нижнего колонтитула на все страницы
+        footer = section.footer
+        paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
 
         # Бастапқы бет
         doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -332,26 +339,61 @@ class TeacherReportWordExportView(View):
                 doc.add_paragraph("Индикаторлар бойынша деректер жоқ.")
                 continue
 
-            table = doc.add_table(rows=1, cols=2)
+            # Создание таблицы с правильным порядком столбцов
+            table = doc.add_table(rows=1, cols=4)
             table.style = 'Table Grid'
             hdr_cells = table.rows[0].cells
-            hdr_cells[0].text = 'Индикатор'
-            hdr_cells[1].text = 'Мәні'
-            set_cell_font(hdr_cells[0], bold=True)
-            set_cell_font(hdr_cells[1], bold=True, align_center=True)
+            hdr_cells[0].text = 'Код'
+            hdr_cells[1].text = 'Индикатор'
+            hdr_cells[2].text = 'Өлшем бірлігі'
+            hdr_cells[3].text = 'Мәні'
+            set_cell_font(hdr_cells[0], bold=True, align_center=True)
+            set_cell_font(hdr_cells[1], bold=True)
+            set_cell_font(hdr_cells[2], bold=True, align_center=True)
+            set_cell_font(hdr_cells[3], bold=True, align_center=True)
+
+            # Устанавливаем ширину столбцов
+            for col in table.columns:
+                if col.cells[0].text == 'Код':
+                    col.width = Inches(0.5)  # Уменьшаем ширину столбца для кода индикатора
+                elif col.cells[0].text == 'Индикатор':
+                    col.width = Inches(7.5)  # Увеличиваем ширину столбца для названия индикатора
+                elif col.cells[0].text == 'Өлшем бірлігі':
+                    col.width = Inches(0.5)  # Уменьшаем ширину столбца для единицы измерения
+                else:
+                    col.width = Inches(1)  # Устанавливаем ширину для значения
+
+            # Центрируем заголовки столбцов
+            for cell in hdr_cells:
+                set_cell_font(cell, bold=True, align_center=True)
 
             for main_indicator in main_indicators:
-                indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+                aggregated_data = AggregatedIndicator.objects.filter(
+                    teacher=teacher, main_indicator=main_indicator, year=year
+                ).first()
 
-                total_value = TeacherReport.objects.filter(
-                    teacher=teacher, indicator__in=indicators, year=year
-                ).aggregate(Sum('value'))['value__sum'] or 0
+                # Если агрегированные данные есть, используем их
+                if aggregated_data:
+                    total_value = aggregated_data.total_value
+                else:
+                    total_value = 0  # Если данных нет, ставим 0
+
+                # Если сумма равна 0, то показываем "Жоқ"
+                if total_value == 0:
+                    total_value = "0"
 
                 row = table.add_row().cells
-                row[0].text = main_indicator.name
-                row[1].text = str(total_value)
-                set_cell_font(row[0], bold=True)
-                set_cell_font(row[1], bold=True, align_center=True)
+                row[0].text = main_indicator.code  # Отображаем код индикатора
+                row[1].text = main_indicator.name
+                row[2].text = main_indicator.unit  # Отображаем единицу измерения
+                row[3].text = str(total_value)  # Отображаем значение
+                set_cell_font(row[0], bold=True, align_center=True)
+                set_cell_font(row[1], bold=True)
+                set_cell_font(row[2], bold=True, align_center=True)
+                set_cell_font(row[3], bold=True, align_center=True)
+
+                # Обрабатываем подиндикаторы для главного индикатора
+                indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
 
                 for indicator in indicators:
                     value = TeacherReport.objects.filter(
@@ -359,10 +401,14 @@ class TeacherReportWordExportView(View):
                     ).aggregate(Sum('value'))['value__sum'] or 0
 
                     ind_row = table.add_row().cells
-                    ind_row[0].text = f'– {indicator.name}'
-                    ind_row[1].text = str(value)
-                    set_cell_font(ind_row[0])
-                    set_cell_font(ind_row[1], align_center=True)
+                    ind_row[0].text = f'{indicator.code}'  # Отображаем код индикатора
+                    ind_row[1].text = indicator.name
+                    ind_row[2].text = indicator.unit  # Отображаем единицу измерения
+                    ind_row[3].text = str(value)  # Отображаем значение
+                    set_cell_font(ind_row[0], align_center=True)
+                    set_cell_font(ind_row[1])
+                    set_cell_font(ind_row[2], align_center=True)
+                    set_cell_font(ind_row[3], align_center=True)
 
         # Файлды қайтару
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -371,6 +417,7 @@ class TeacherReportWordExportView(View):
         response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
         doc.save(response)
         return response
+
 
 
 def export_report(request, faculty_id):
@@ -499,6 +546,11 @@ def export_report(request, faculty_id):
     return response
 
 
+def align_cell_center(cell):
+    for paragraph in cell.paragraphs:
+        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
 # Отчет без списков учителей
 @login_required
 def export_department_report_docx(request, faculty_id):
@@ -520,31 +572,33 @@ def export_department_report_docx(request, faculty_id):
     for direction in directions:
         document.add_heading(direction.name, level=1)
 
-        table = document.add_table(rows=1, cols=3 + len(departments))
+        num_depts = len(departments)
+        table = document.add_table(rows=1, cols=3 + num_depts)
         table.style = 'Table Grid'
 
         hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Код индикатор'
-        hdr_cells[1].text = 'Атауы'
+        hdr_cells[0].text = 'Код'
+        hdr_cells[1].text = 'Индикатор атауы'
         for idx, dept in enumerate(departments):
             hdr_cells[2 + idx].text = dept.name
         hdr_cells[-1].text = 'Жалпы сумма'
 
-        for cell in hdr_cells:
-            cell.width = Cm(5)
-            for paragraph in cell.paragraphs:
-                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        # Индивидуальные ширины ячеек
+        column_widths = [Cm(1), Cm(23)] + [Cm(1) for _ in departments] + [Cm(1)]
+        for idx, cell in enumerate(hdr_cells):
+            cell.width = column_widths[idx]
+            align_cell_center(cell)
 
-        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
+        main_indicators = MainIndicator.objects.filter(
+            direction=direction, years=selected_year
+        ).prefetch_related("indicators")
 
         for main in main_indicators:
             has_sub_indicators = main.indicators.exists()
 
             if has_sub_indicators:
                 sub_indicators = main.indicators.filter(years=selected_year)
-                dept_sums = [0] * len(departments)
-                total_sum = 0
+                dept_sums = [0] * num_depts
 
                 for sub in sub_indicators:
                     for idx, dept in enumerate(departments):
@@ -554,17 +608,21 @@ def export_department_report_docx(request, faculty_id):
                             teacher__profile__department=dept
                         ).aggregate(total=Sum('value'))['total'] or 0
                         dept_sums[idx] += value
-                        total_sum += value
 
-                # Строка с общей суммой по подиндикаторам
+                # Строка общей суммы
                 summary_row = table.add_row().cells
-                summary_row[0].text = f'{main.code} (Барлығы)'
+                summary_row[0].text = f'{main.code}'
                 summary_row[1].text = f'Барлығы: {main.name}'
                 for idx, value in enumerate(dept_sums):
                     summary_row[2 + idx].text = str(value)
                 summary_row[-1].text = str(sum(dept_sums))
 
-                # Подиндикаторы, только суммы
+                # Центрирование
+                align_cell_center(summary_row[0])
+                for idx in range(2, len(summary_row)):
+                    align_cell_center(summary_row[idx])
+
+                # Подиндикаторы
                 for sub in sub_indicators:
                     row = table.add_row().cells
                     row[0].text = sub.code
@@ -581,6 +639,11 @@ def export_department_report_docx(request, faculty_id):
                         sub_total += value
 
                     row[-1].text = str(sub_total)
+
+                    # Центрирование
+                    align_cell_center(row[0])
+                    for idx in range(2, len(row)):
+                        align_cell_center(row[idx])
 
             else:
                 row = table.add_row().cells
@@ -599,11 +662,16 @@ def export_department_report_docx(request, faculty_id):
 
                 row[-1].text = str(total)
 
+                # Центрирование
+                align_cell_center(row[0])
+                for idx in range(2, len(row)):
+                    align_cell_center(row[idx])
+
         document.add_paragraph()
 
     # Сохраняем документ в HTTP-ответ
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    filename = f"report_{faculty.name}_{selected_year.year}.docx"
+    filename = f"Отчет без учителей {faculty.name}_{selected_year.year}.docx"
     encoded_file_name = quote(filename)
     response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
 

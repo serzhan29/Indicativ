@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import  DirectionListView, YearListView, TeacherReportView, UpdateValueView, index
+from .views import  (DirectionListView, YearListView, TeacherReportView,
+                     UpdateValueView, index, TeacherReportAllDirection)
 from .views_docx import download_teacher_report, TeacherReportWordExportView, export_report, export_department_report_docx
 from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
-                       indicator_report_view, report_department, get_departments)
+                       indicator_report_view, report_department, get_departments, observer_index)
 
 urlpatterns = [
     path('', DirectionListView.as_view(), name='direction_list'),
@@ -23,6 +24,10 @@ urlpatterns = [
     path('get_departments/<str:faculty_id>/', get_departments, name='get_departments'),
     path('export_report/<int:faculty_id>/', export_report, name='export_report'),
     path('report_value_department/<int:faculty_id>/', export_department_report_docx, name='export_department_report_docx'),
+    path('observer_grahics/', observer_index, name='observer_index'),
+
+    path('full_teacher_report/', TeacherReportAllDirection.as_view(), name='teacher_full_report'),
+    path('full_teacher_report/<int:year_id>/', TeacherReportAllDirection.as_view(), name='teacher_full_report_with_year')
 
 ]
 

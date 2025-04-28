@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Графики наблюдателя</h1>
+
+  <!-- Фильтры -->
+  <div>
+<form method="get" action="{% url 'observer_index' %}">
+  <select name="faculty">
+    <option value="">Выберите факультет</option>
+    {% for faculty in faculties %}
+      <option value="{{ faculty.id }}" {% if faculty.id == selected_faculty_id %}selected{% endif %}>{{ faculty.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="department">
+    <option value="">Выберите кафедру</option>
+    {% for department in departments %}
+      <option value="{{ department.id }}" {% if department.id == selected_department_id %}selected{% endif %}>{{ department.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="teacher">
+    <option value="">Выберите преподавателя</option>
+    {% for teacher in teachers %}
+      <option value="{{ teacher.id }}" {% if teacher.id == selected_teacher_id %}selected{% endif %}>{{ teacher.username }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="direction">
+    <option value="">Выберите направление</option>
+    {% for direction in directions %}
+      <option value="{{ direction.id }}" {% if direction.id == selected_direction_id %}selected{% endif %}>{{ direction.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="indicator">
+    <option value="">Выберите индикатор</option>
+    {% for indicator in main_indicators %}
+      <option value="{{ indicator.id }}" {% if indicator.id == selected_indicator_id %}selected{% endif %}>{{ indicator.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="year">
+    <option value="">Выберите год</option>
+    {% for year in years %}
+      <option value="{{ year.id }}" {% if year.id == selected_year_id %}selected{% endif %}>{{ year.year }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Применить фильтры</button>
+</form>
+
+  </div>
+
+<!-- График -->
+<div id="chart-container" style="width: 80%; height: 400px; margin-top: 20px;">
+  <canvas id="indicatorChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('indicatorChart').getContext('2d');
+
+  const yearValues = {{ year_values|safe }};
+  const labels = yearValues.map(yearData => yearData.year);
+
+  const datasets = yearValues.map(yearData => {
+    return {
+      label: `Год ${yearData.year}`,
+      data: yearData.teachers.map(teacher => {
+        // Берём все значения индикаторов для каждого преподавателя
+        return teacher.main_indicators.reduce((acc, indicator) => acc + indicator.value, 0);
+      }),
+      borderColor: 'rgba(75, 192, 192, 1)',
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      borderWidth: 1
+    };
+  });
+
+  // Создаем график с улучшениями
+  const indicatorChart = new Chart(ctx, {
+    type: 'line',  // можно изменить на 'bar' для столбиков
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(tooltipItem) {
+              return 'Общее значение: ' + tooltipItem.raw;
+            }
+          }
+        }
+      }
+    }
+  });
+</script>
+
+{% endblock %}

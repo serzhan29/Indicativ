@@ -1,15 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
-{% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{{ direction.name }}</a></li>
-  <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">Барлық жылдар</a></li>
-  <li class="breadcrumb-item active" aria-current="page">{{ year.year }}</li>
-{% endblock %}
-
+{% block title %}Жыл: {{ year }} - барлық бағыттар{% endblock %}
 {% block content %}
 
 <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
-
 <style>
     /* Основной контейнер */
     .page-container {
@@ -29,7 +23,16 @@
         min-width: 250px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         height: fit-content;
+        z-index: 2; /* Чтобы блок направлений был сверху */
     }
+
+    /* Новый блок переключения годов */
+    .switch-direction-container + .switch-direction-container {
+        top: 500px; /* Отступ сверху для блока года, чтобы он не перекрывал блок направлений */
+        background: linear-gradient(135deg, #28a745, #66d97d); /* Другой фон для блока года */
+        z-index: 1; /* Блок годов будет ниже блоков направлений */
+    }
+
 
     .switch-direction-container h4 {
         margin-bottom: 15px;
@@ -107,14 +110,14 @@
     }
 </style>
 
-
 <div class="page-container" style="display: flex; gap: 20px;">
-    <!-- Фиксированный блок со списком направлений -->
+<div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- Блок переключения направлений -->
     <div class="switch-direction-container">
         <h4>Переключить направление:</h4>
         <ul>
           {% for direction_item in directions %}
-            {% if direction_item.id != direction.id %}
+            {% if not current_direction or direction_item.id != current_direction.id %}
               <li>
                 <a href="{% url 'teacher_report' direction_id=direction_item.id year_id=year.id %}" class="text-decoration-none">
                   {{ direction_item.name }}
@@ -126,20 +129,42 @@
         <ul>
             <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}">БАРЛЫҚ БАҒЫТТАР - {{ year.year }}</a>
         </ul>
-            <form action="{% url 'download_teacher_report' teacher_id=teacher.id direction_id=direction.id year_id=year.id %}" method="get">
-                <button type="submit" class="btn-download">Есепті жүктеу</button>
-            </form>
+        <ul>
+          {% if teacher.id and year.id %}
+            <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}" class="btn btn-outline-primary btn-sm w-100">
+              📄 Word-қа жүктеу
+            </a>
+          {% endif %}
+        </ul>
     </div>
 
-    <!-- Блок с отчетом -->
-    <div class="report-container">
-        <div class="report-header">
-            <div>
-                <h2>{{ direction }}</h2>
-                <h3>Жыл: {{ year }}</h3>
-            </div>
-        </div>
+    <!-- Новый блок переключения годов -->
+    <div class="switch-direction-container" style="background: linear-gradient(135deg, #28a745, #66d97d);">
+        <h4>Жылды ауыстыру:</h4>
+        <ul>
+          {% for year_item in all_years %}
+            {% if year_item.id != year.id %}
+              <li>
+                <a href="{% url 'teacher_full_report_with_year' year_id=year_item.id %}" class="text-decoration-none" style="color: white">
+                  {{ year_item.year }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+    </div>
+</div>
 
+
+<div class="report-container">
+    <div class="report-header">
+        <div>
+            <h3>Жыл: {{ year }}</h3>
+        </div>
+    </div>
+
+    {% for direction_item, aggregated_data in all_aggregated_data.items %}
+        <h3 style="margin-top: 30px;">{{ direction_item.name }}</h3>
         <table class="report-table">
             <thead>
                 <tr>
@@ -198,8 +223,9 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    {% endfor %}
 </div>
+
 
 
 <script>
