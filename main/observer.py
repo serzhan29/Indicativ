@@ -258,7 +258,11 @@ def report_department(request):
                     if selected_departments.exists():
                         reports = reports.filter(teacher__profile__department__in=selected_departments)
 
-                    teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.value) for r in reports]
+                    # Берем только те отчёты, где значение больше 0
+                    teacher_values = [
+                        (r.teacher.get_full_name() or r.teacher.username, r.value)
+                        for r in reports if r.value > 0
+                    ]
                     total = sum(v for _, v in teacher_values)
 
                     sub_data = {
@@ -273,12 +277,15 @@ def report_department(request):
             else:
                 aggr_reports = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
 
-                # Фильтруем агрегированные отчеты по кафедрам
+                # Фильтруем агрегированные отчёты по кафедрам
                 if selected_departments.exists():
                     aggr_reports = aggr_reports.filter(teacher__profile__department__in=selected_departments)
 
-                teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.total_value) for r in
-                                  aggr_reports]
+                # Берем только те отчёты, где total_value больше 0
+                teacher_values = [
+                    (r.teacher.get_full_name() or r.teacher.username, r.total_value)
+                    for r in aggr_reports if r.total_value > 0
+                ]
                 total = sum(v for _, v in teacher_values)
 
                 main_data["teachers"] = teacher_values
@@ -307,7 +314,6 @@ def report_department(request):
             for f in faculties
         }
     })
-
 
 # Добавляем представление для получения кафедр в зависимости от факультета
 def get_departments(request, faculty_id):
