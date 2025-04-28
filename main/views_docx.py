@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from docx import Document
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
-from docx.enum.section import WD_ORIENT, WD_ORIENTATION
+from docx.enum.section import WD_ORIENT, WD_ORIENTATION, WD_SECTION_START
 from docx.shared import RGBColor, Pt, Inches
 from docx.oxml.ns import qn
 from urllib.parse import quote_plus
@@ -434,31 +434,70 @@ def export_report(request, faculty_id):
 
     document = Document()
 
-    # Устанавливаем альбомную ориентацию
-    section = document.sections[-1]
+    section = document.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
     new_width, new_height = section.page_height, section.page_width
     section.page_width = new_width
     section.page_height = new_height
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
 
-    document.add_heading(f'Есеп беру — {faculty.name} ({selected_year.year} жыл)', 0)
+    footer = section.footer
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
+
+    document.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p = document.add_paragraph(
+        "«БЕКІТЕМІН»\nСапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
+        f"__________________________ А.Ошибаева\n«____» _______________ {selected_year.year}ж."
+    )
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    for _ in range(6):
+        document.add_paragraph("")
+
+    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    document.add_page_break()
 
     for direction in directions:
-        document.add_heading(direction.name, level=1)
+        for _ in range(6):
+            document.add_paragraph("")
+        # Страница с надписью по центру
+        document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        document.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+        document.add_page_break()
+
+        # Таблица на новой странице
         table = document.add_table(rows=1, cols=3 + len(departments))
         table.style = 'Table Grid'
 
-        hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Код индикатор'
-        hdr_cells[1].text = 'Атауы'
+        cols = table.columns
 
+        # Устанавливаем ширину столбцов
+        cols[0].width = Inches(1)  # Код (меньше)
+        cols[1].width = Inches(5)  # Индикатор атауы (больше)
+        for idx in range(2, len(cols) - 1):  # Все столбцы для департаментов
+            cols[idx].width = Inches(2)  # Размеры столбцов для департаментов
+        cols[-1].width = Inches(1)  # Сумма (меньше)
+
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Код'
+        hdr_cells[1].text = 'Индикатор атауы'
         for idx, dept in enumerate(departments):
             hdr_cells[2 + idx].text = dept.name
-
-        hdr_cells[-1].text = 'Жалпы сумма'
+        hdr_cells[-1].text = 'Сумма'
 
         for cell in hdr_cells:
-            cell.width = Cm(5)
             for paragraph in cell.paragraphs:
                 paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -470,30 +509,31 @@ def export_report(request, faculty_id):
 
             if has_sub_indicators:
                 sub_indicators = main.indicators.filter(years=selected_year)
-
-                # Сначала собираем суммы по каждому департаменту
                 dept_sums = [0] * len(departments)
-                total_sum = 0
 
                 for sub in sub_indicators:
                     for idx, dept in enumerate(departments):
                         value = TeacherReport.objects.filter(
                             indicator=sub,
                             year=selected_year,
-                            teacher__profile__department=dept
+                            teacher__profile__department=dept,
+                            value__gte=1
                         ).aggregate(total=models.Sum('value'))['total'] or 0
                         dept_sums[idx] += value
-                        total_sum += value
 
-                # Строка с общей суммой по подиндикаторам
                 summary_row = table.add_row().cells
-                summary_row[0].text = f'{main.code} (Барлығы)'
-                summary_row[1].text = f'Барлығы: {main.name}'
+                summary_row[0].text = f'{main.code}'
+                summary_row[1].text = f'{main.name}'
+                summary_row[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                summary_row[1].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
                 for idx, value in enumerate(dept_sums):
                     summary_row[2 + idx].text = str(value)
                 summary_row[-1].text = str(sum(dept_sums))
 
-                # Затем строки по каждому подиндикатору
+
+                summary_row[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                summary_row[-1].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
                 for sub in sub_indicators:
                     row = table.add_row().cells
                     row[0].text = sub.code
@@ -504,7 +544,8 @@ def export_report(request, faculty_id):
                         reports = TeacherReport.objects.filter(
                             indicator=sub,
                             year=selected_year,
-                            teacher__profile__department=dept
+                            teacher__profile__department=dept,
+                            value__gte=1
                         )
                         cell_text = "\n".join(f"{r.teacher.get_full_name()}: {r.value}" for r in reports)
                         value_sum = sum(r.value for r in reports)
@@ -513,9 +554,11 @@ def export_report(request, faculty_id):
 
                     row[-1].text = str(sub_total)
 
+                    # Выравнивание для "Код" и "Сумма"
+                    row[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                    row[-1].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
             else:
-                # Если у главного индикатора нет подиндикаторов, то отображаем его данные
                 row = table.add_row().cells
                 row[0].text = main.code
                 row[1].text = main.name
@@ -525,7 +568,8 @@ def export_report(request, faculty_id):
                     aggr_reports = AggregatedIndicator.objects.filter(
                         main_indicator=main,
                         year=selected_year,
-                        teacher__profile__department=dept
+                        teacher__profile__department=dept,
+                        total_value__gte=1
                     )
                     values = [(r.teacher.get_full_name(), r.total_value) for r in aggr_reports]
                     cell_text = "\n".join(f"{t[0]}: {t[1]}" for t in values)
@@ -534,9 +578,12 @@ def export_report(request, faculty_id):
 
                 row[-1].text = str(total)
 
-        document.add_paragraph()
+                # Выравнивание для "Код" и "Сумма"
+                row[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                row[-1].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-    # Сохраняем документ в HTTP-ответ
+        document.add_page_break()
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     filename = f"report_{faculty.name}_{selected_year.year}.docx"
     encoded_file_name = quote(filename)
@@ -544,6 +591,9 @@ def export_report(request, faculty_id):
 
     document.save(response)
     return response
+
+
+
 
 
 def align_cell_center(cell):
