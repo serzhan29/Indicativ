@@ -3,7 +3,7 @@ from .views import  (DirectionListView, YearListView, TeacherReportView,
                      UpdateValueView, index, TeacherReportAllDirection)
 from .views_docx import download_teacher_report, TeacherReportWordExportView, export_report, export_department_report_docx
 from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
-                       indicator_report_view, report_department, get_departments, observer_index)
+                     report_department, get_departments, observer_index)
 
 urlpatterns = [
     path('', DirectionListView.as_view(), name='direction_list'),
@@ -17,8 +17,6 @@ urlpatterns = [
     path('teacher/', teachers_by_faculty, name='teachers_by_faculty'),
 
     path('teacher/report/', TeacherReportReadOnlyView.as_view(), name='teacher_report_readonly'),
-    path('report/', indicator_report_view, name='indicator_report'),
-    path('report/download/', indicator_report_view, name='indicator_report_download'),
     path('teacher-report/download/', TeacherReportWordExportView.as_view(), name='teacher_report_download'),
     path('report/department/', report_department, name='report_department'),
     path('get_departments/<str:faculty_id>/', get_departments, name='get_departments'),
