@@ -18,15 +18,16 @@ from docx.shared import Cm
 from docx.enum.table import WD_ALIGN_VERTICAL
 from django.db import models
 from datetime import datetime
-
+from django.utils.timezone import now
 
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
-    """Генерация отчета в Word с таблицей в альбомном формате"""
-    # Получаем учителя по переданному ID
-    teacher = get_object_or_404(User, id=teacher_id)  # Получаем учителя по ID
+    """Генерация отчета в Word с правильным форматированием"""
+    teacher = get_object_or_404(User, id=teacher_id)
     direction = get_object_or_404(Direction, id=direction_id)
     year = get_object_or_404(Year, id=year_id)
+    next_year = year.year + 1  # Следующий учебный год
+    faculty_name = "Инженерия"  # Здесь можно подставить динамически, если нужно
 
     aggregated_data = AggregatedIndicator.objects.filter(
         teacher=teacher,
@@ -36,220 +37,128 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
 
     doc = Document()
 
-    # Верхний текст
-    para = doc.add_paragraph('Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті', style='Heading 1')
-    run = para.runs[0]
-    run.font.name = 'Times New Roman'
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(0, 0, 0)
-    para.alignment = 1  # Центр
-
-    para = doc.add_paragraph('«БЕКІТЕМІН»', style='Heading 2')
-    run = para.runs[0]
-    run.font.name = 'Times New Roman'
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(0, 0, 0)
-    para.alignment = 2  # Право
+    # --- Первая страница ---
+    doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     para = doc.add_paragraph(
-        f'Инженерия факультетінің деканы ____________________ {teacher.first_name} {teacher.last_name}')
-    para.alignment = 2
-
-    para = doc.add_paragraph('«____» ______________ 2024 ж.')
-    para.alignment = 2
-
-    para = doc.add_paragraph('КОМПЬЮТЕРЛІК ИНЖЕНЕРИЯ кафедрасының', style='Heading 2')
-    para.alignment = 1
-
-    para = doc.add_paragraph(
-        f'{year.year} ОҚУ ЖЫЛЫНДАҒЫ {direction.name} БОЙЫНША ИНДИКАТИВТІ ЖӘНЕ {year.year} СТРАТЕГИЯЛЫҚ КӨРСЕТКІШТЕРІНІҢ ЕСЕБІ',
-        style='Heading 1'
+        "«БЕКІТЕМІН»\n"
+        "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
+        "__________________________ А.Ошибаева\n"
+        f"«____» _______________ {year.year}ж."
     )
-    para.alignment = 1
+    para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
-    # Устанавливаем альбомную ориентацию
-    section = doc.sections[0]
+    # Пустые строки
+    for _ in range(6):
+        doc.add_paragraph("")
+
+    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # --- Теперь страница для выбранного направления ---
+    doc.add_page_break()
+
+    for _ in range(6):
+        doc.add_paragraph("")
+
+    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{year.year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # --- Страница с таблицей ---
+    doc.add_page_break()
+
+    # Настройка страницы для таблицы
+    section = doc.sections[-1]
     section.orientation = WD_ORIENT.LANDSCAPE
-    new_width, new_height = section.page_height, section.page_width
-    section.page_width = new_width
-    section.page_height = new_height
+    section.page_width, section.page_height = section.page_height, section.page_width
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
 
-    # Создаем таблицу
-    table = doc.add_table(rows=1, cols=3)
+    # Нижний колонтитул
+    footer = section.footer
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.text = f"Жүктеу күні мен уақыты: {now().strftime('%d-%m-%Y %H:%M:%S')}"
+
+    # --- Таблица ---
+    table = doc.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
 
-    # Устанавливаем ширину колонок
-    table.columns[0].width = Inches(8)
-    table.columns[1].width = Inches(1)
-    table.columns[2].width = Inches(1)
-
+    # Установка ширины столбцов
+    column_widths = [Cm(1), Cm(24), Cm(1),
+                     Cm(1)]
     # Заголовки
     hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = "Главный индикатор и подиндикаторы"
-    hdr_cells[1].text = "Единица измерения"
-    hdr_cells[2].text = "Жоспар"
-
-    for cell in hdr_cells:
-        run = cell.paragraphs[0].runs[0]
+    headers = ["Код", "Индикатор атауы", "Өлшем бірлігі", "Сумма"]
+    for idx, text in enumerate(headers):
+        hdr_cells[idx].text = text
+        # Установка ширины ячеек
+        hdr_cells[idx].width = column_widths[idx]
+        hdr_cells[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = hdr_cells[idx].paragraphs[0].runs[0]
         run.bold = True
         run.font.name = 'Times New Roman'
         run.font.size = Pt(14)
-        run.font.color.rgb = RGBColor(0, 0, 0)
-        cell.paragraphs[0].alignment = 1  # Центр
 
-    # Заполнение данных
+    # Данные
     for data in aggregated_data:
         row = table.add_row().cells
-        row[0].text = data.main_indicator.name
-        row[1].text = data.main_indicator.unit
-        row[2].text = str(data.total_value)
-
-        # Форматирование строк
-        for i, cell in enumerate(row):
-            run = cell.paragraphs[0].runs[0]
+        row_data = [
+            data.main_indicator.code or "-",
+            data.main_indicator.name,
+            data.main_indicator.unit,
+            str(data.total_value),
+        ]
+        for idx, value in enumerate(row_data):
+            row[idx].text = value
+            row[idx].width = column_widths[idx]  # Устанавливаем ширину для каждой ячейки
+            run = row[idx].paragraphs[0].runs[0]
             run.font.name = 'Times New Roman'
             run.font.size = Pt(14)
-            run.font.color.rgb = RGBColor(0, 0, 0)
-            cell.paragraphs[0].alignment = 0 if i == 0 else 1  # Главный индикатор слева, остальное в центре
+            row[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
 
         # Подиндикаторы
         sub_indicators = Indicator.objects.filter(main_indicator=data.main_indicator, years=year)
         for ind in sub_indicators:
             sub_row = table.add_row().cells
-            sub_row[0].text = ind.name
-            sub_row[1].text = ind.unit
-            sub_row[2].text = str(
-                TeacherReport.objects.filter(
-                    teacher=teacher,
-                    indicator=ind,
-                    year=year
-                ).first().value or 0
-            )
-
-            # Форматирование подиндикаторов
-            for i, cell in enumerate(sub_row):
-                run = cell.paragraphs[0].runs[0]
+            sub_row_data = [
+                ind.code or "-",
+                ind.name,
+                ind.unit,
+                str(
+                    TeacherReport.objects.filter(
+                        teacher=teacher,
+                        indicator=ind,
+                        year=year
+                    ).first().value or 0
+                ),
+            ]
+            for idx, value in enumerate(sub_row_data):
+                sub_row[idx].text = value
+                sub_row[idx].width = column_widths[idx]
+                run = sub_row[idx].paragraphs[0].runs[0]
                 run.font.name = 'Times New Roman'
                 run.font.size = Pt(14)
-                run.font.color.rgb = RGBColor(0, 0, 0)
-                cell.paragraphs[0].alignment = 0 if i == 0 else 1  # Подиндикаторы слева, остальное в центре
+                sub_row[idx].paragraphs[
+                    0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
 
-    # Отправляем файл пользователю
+    # Отправка файла пользователю
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    file_name = f"Отчет учителя {teacher.first_name} {teacher.last_name} {year.year}.docx"
-    encoded_file_name = quote_plus(file_name)
+    file_name = f"Индикативті жоспар - {teacher.first_name} {teacher.last_name} {year.year} жыл.docx"
+    encoded_file_name = quote(file_name)
     response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
 
     doc.save(response)
     return response
 
+
 ###### Indicator
-
-def indicator_report_view(request):
-    try:
-        # Получаем параметр года из запроса
-        year_id = request.GET.get("year")
-        years = Year.objects.all().order_by("-year")
-
-        # Если год передан, то выбираем его, если нет — выбираем первый из списка
-        if year_id:
-            selected_year = Year.objects.get(id=year_id)
-        else:
-            selected_year = years.first()
-
-        # Логируем выбранный год
-        print(f"Выбранный год: {selected_year.year}")
-
-        # Проверка на наличие направлений
-        directions = Direction.objects.all()
-        if not directions:
-            return HttpResponse("Нет доступных направлений для отчета.", status=404)
-
-        data = []
-        for direction in directions:
-            direction_data = {
-                "name": direction.name,
-                "main_indicators": []
-            }
-
-            # Получаем основные индикаторы для выбранного года и направления
-            main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related(
-                "indicators")
-
-            for main in main_indicators:
-                has_sub_indicators = main.indicators.exists()
-                main_data = {
-                    "name": main.name,
-                    "unit": main.unit,
-                    "teachers": [],
-                    "total": 0,
-                    "sub_indicators": [],
-                    "has_sub_indicators": has_sub_indicators
-                }
-
-                if has_sub_indicators:
-                    # Если подиндикаторы есть, то обрабатываем их
-                    for sub in main.indicators.filter(years=selected_year):
-                        reports = TeacherReport.objects.filter(indicator=sub, year=selected_year)
-                        teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.value) for r in reports]
-                        total = sum(v for _, v in teacher_values)
-
-                        sub_data = {
-                            "name": sub.name,
-                            "unit": sub.unit,
-                            "teachers": teacher_values,
-                            "total": total
-                        }
-
-                        main_data["sub_indicators"].append(sub_data)
-                else:
-                    # Если подиндикаторов нет, смотрим агрегированные значения
-                    aggr_reports = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
-                    teacher_values = [(r.teacher.get_full_name() or r.teacher.username, r.total_value) for r in
-                                      aggr_reports]
-                    total = sum(v for _, v in teacher_values)
-
-                    main_data["teachers"] = teacher_values
-                    main_data["total"] = total
-
-                direction_data["main_indicators"].append(main_data)
-
-            data.append(direction_data)
-
-        # Суммируем по подиндикаторам
-        for direction in data:
-            for main in direction['main_indicators']:
-                if main['has_sub_indicators']:
-                    main['sub_total_sum'] = sum(sub['total'] for sub in main['sub_indicators'])
-
-        # Создаем документ Word
-        doc = Document()
-        doc.add_heading(f"Отчет за {selected_year.year} год", 0)
-
-        for direction in data:
-            doc.add_heading(direction['name'], level=1)
-
-            for main in direction['main_indicators']:
-                doc.add_heading(main['name'], level=2)
-                doc.add_paragraph(f"Единица измерения: {main['unit']}")
-
-                if main['has_sub_indicators']:
-                    doc.add_paragraph(f"Итого по подиндикаторам: {main['sub_total_sum']}")
-                    for sub in main['sub_indicators']:
-                        doc.add_paragraph(f"{sub['name']} ({sub['unit']}) - Сумма: {sub['total']}")
-                else:
-                    doc.add_paragraph(f"Итого: {main['total']}")
-
-        # Возвращаем файл Word
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        response['Content-Disposition'] = f'attachment; filename="report_{selected_year.year}.docx"'
-        doc.save(response)
-
-        return response
-    except Exception as e:
-        # Логируем ошибку и возвращаем сообщение
-        print(f"Ошибка при создании отчета: {e}")
-        return HttpResponse("Произошла ошибка при создании отчета", status=500)
 
 
 def set_cell_font(cell, bold=False, align_center=False):
