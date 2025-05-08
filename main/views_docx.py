@@ -20,6 +20,35 @@ from django.db import models
 from datetime import datetime
 from django.utils.timezone import now
 
+
+def create_first_page(doc, faculty_name, year):
+    """Функция для создания первой страницы отчета"""
+    next_year = year + 1  # Следующий учебный год
+
+    # --- Первая страница ---
+    doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    para = doc.add_paragraph(
+        "«БЕКІТЕМІН»\n"
+        "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
+        "__________________________ А.Ошибаева\n"
+        f"«____» _______________ {year}ж."
+    )
+    para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    # Пустые строки
+    for _ in range(6):
+        doc.add_paragraph("")
+
+    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("\nКентау").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Добавляем разрыв страницы для следующей части отчета
+    doc.add_page_break()
+
+
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
     """Генерация отчета в Word с правильным форматированием"""
@@ -27,7 +56,7 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     direction = get_object_or_404(Direction, id=direction_id)
     year = get_object_or_404(Year, id=year_id)
     next_year = year.year + 1  # Следующий учебный год
-    faculty_name = "Инженерия"  # Здесь можно подставить динамически, если нужно
+    faculty_name = teacher.profile.faculty.name if teacher.profile.faculty else "Көрсетілмеген"
 
     aggregated_data = AggregatedIndicator.objects.filter(
         teacher=teacher,
@@ -38,27 +67,7 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     doc = Document()
 
     # --- Первая страница ---
-    doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    para = doc.add_paragraph(
-        "«БЕКІТЕМІН»\n"
-        "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
-        "__________________________ А.Ошибаева\n"
-        f"«____» _______________ {year.year}ж."
-    )
-    para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-    # Пустые строки
-    for _ in range(6):
-        doc.add_paragraph("")
-
-    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    # --- Теперь страница для выбранного направления ---
-    doc.add_page_break()
+    create_first_page(doc, faculty_name, year.year)
 
     for _ in range(6):
         doc.add_paragraph("")
@@ -206,31 +215,16 @@ class TeacherReportWordExportView(View):
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
 
+        # --- Первая страница ---
+        create_first_page(doc, faculty_name, year.year)
+
         # Добавление нижнего колонтитула на все страницы
         footer = section.footer
         paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
         paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
 
-        # Бастапқы бет
-        doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph(
-            "«БЕКІТЕМІН»\nСапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
-            f"__________________________ А.Ошибаева\n«____» _______________ {year.year}ж."
-        ).alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-        # Пустые строки для вертикальной центрировки
-        for _ in range(6):
-            doc.add_paragraph("")
-
-        doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
-
         for direction in directions:
-            # Отдельная страница - заголовок направления
-            doc.add_page_break()
 
             for _ in range(6):
                 doc.add_paragraph("")
@@ -502,9 +496,6 @@ def export_report(request, faculty_id):
     return response
 
 
-
-
-
 def align_cell_center(cell):
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
@@ -513,6 +504,7 @@ def align_cell_center(cell):
 # Отчет без списков учителей
 @login_required
 def export_department_report_docx(request, faculty_id):
+    """без учителей"""
     year_id = request.GET.get('year')
     selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
 

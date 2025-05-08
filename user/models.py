@@ -24,6 +24,7 @@ class Profile(models.Model):
     ROLES = (
         ('teacher', 'Мұғалім'),
         ('viewer', 'Қараушы'),
+        ('dean', 'Декан'),
     )
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     role = models.CharField(max_length=10, choices=ROLES, default='viewer', verbose_name="Роль")

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_tags %}
+
+<h2 class="header-title">Есеп беру — {{ faculty.name }} ({{ year.year }} жыл)</h2>
+{% block content %}
+<!-- Форма для выбора года -->
+<form method="get" class="filter-form">
+    <label for="year" class="filter-label">Жыл бойынша сүзгі:</label>
+    <select name="year" id="year" class="filter-select" onchange="this.form.submit()">
+        {% for y in years %}
+            <option value="{{ y.id }}" {% if y.id == year.id %}selected{% endif %}>{{ y.year }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- Основной контент: направления -->
+{% for direction in data %}
+    <div class="direction-section">
+        <h3 class="direction-title">{{ direction.name }}</h3>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Код</th>
+                    <th>Индикатор атауы</th>
+                    {% for dept in departments %}
+                        <th>{{ dept.name }}</th>
+                    {% endfor %}
+                    <th>Жалпы сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ind in direction.main_indicators %}
+                    {% if ind.has_sub %}
+                        <tr>
+                            <td class="text-center">{{ ind.main.code }}</td>
+                            <td><strong>Барлығы: {{ ind.main.name }}</strong></td>
+                            {% for val in ind.summary_row %}
+                                <td class="text-center">{{ val.value }}</td>
+                            {% endfor %}
+                            <td class="text-center">{{ ind.summary_row|sum_teachers_values }}</td>
+                        </tr>
+                        {% for sub, row in ind.sub_indicators %}
+                            <tr>
+                                <td class="text-center">{{ sub.code }}</td>
+                                <td>{{ sub.name }}</td>
+                                {% for val in row %}
+                                    <td class="text-center">
+                                        {{ val.value }}
+                                        {% if val.teachers %}
+                                            <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                <td class="text-center">{{ row|sum_teachers_values }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="text-center">{{ ind.main.code }}</td>
+                            <td>{{ ind.main.name }}</td>
+                            {% for val in ind.row %}
+                                <td class="text-center">
+                                    {{ val.value }}
+                                    {% if val.teachers %}
+                                        <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            <td class="text-center">{{ ind.row|sum_teachers_values }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endfor %}
+
+<!-- Модальное окно для списка преподавателей -->
+<div id="teacherModal" class="modal" onclick="closeModal(event)">
+    <h4 class="modal-title">Преподаватели</h4>
+    <table id="teacherList" class="modal-table">
+        <thead>
+            <tr>
+                <th class="modal-header">ФИО</th>
+                <th class="modal-header">Значение</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button class="modal-close" onclick="document.getElementById('teacherModal').style.display='none'">Закрыть</button>
+</div>
+<!-- Скрипт для модального окна -->
+<script>
+function showTeachersModal(teachers) {
+    const tableBody = document.getElementById("teacherList").querySelector("tbody");
+    tableBody.innerHTML = "";
+
+    teachers
+        .filter(obj => obj.value > 0)
+        .forEach(obj => {
+            const row = document.createElement("tr");
+
+            const nameCell = document.createElement("td");
+            nameCell.textContent = obj.name;
+
+            const valueCell = document.createElement("td");
+            valueCell.textContent = obj.value;
+            valueCell.style.textAlign = "right";
+
+            row.appendChild(nameCell);
+            row.appendChild(valueCell);
+            tableBody.appendChild(row);
+        });
+
+    document.getElementById("teacherModal").style.display = "block";
+}
+
+function closeModal(event) {
+    if (event.target === document.getElementById("teacherModal")) {
+        document.getElementById("teacherModal").style.display = "none";
+    }
+}
+</script>
+
+<!-- Стиль для улучшенного дизайна -->
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f7fc;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .header-title {
+        text-align: center;
+        font-size: 24px;
+        color: #444;
+        margin-top: 30px;
+    }
+
+    .filter-form {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .filter-label {
+        margin-right: 10px;
+        font-size: 16px;
+        color: #555;
+    }
+
+    .filter-select {
+        padding: 8px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    .direction-section {
+        margin: 20px;
+    }
+
+    .direction-title {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+    }
+
+    .data-table th, .data-table td {
+        padding: 10px;
+        text-align: left;
+    }
+
+    .data-table th {
+        background-color: #f1f1f1;
+        font-weight: bold;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .teachers-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 16px;
+        border-radius: 4px;
+    }
+
+    .teachers-button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Модальное окно */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -20%);
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #aaa;
+        z-index: 1000;
+        width: 600px;
+        height: 500px;
+        border-radius: 8px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .modal-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .modal-header {
+        text-align: left;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+    }
+
+    .modal-close {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+
+    .modal-close:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock %}

@@ -12,7 +12,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseForbidden
 
 @login_required
 def teachers_by_faculty(request):
@@ -131,36 +132,60 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
         return context
 
 
-
 @login_required
 def report_department(request):
+    """ кафедра менгерушиси """
+    user_profile = request.user.profile  # Получаем профиль пользователя
+    user_role = user_profile.role
+
     year_id = request.GET.get("year")
     department_ids = request.GET.getlist("departments")
-    faculty_ids = request.GET.getlist("faculties")  # Новый параметр
+    faculty_ids = request.GET.getlist("faculties")
 
-    # Получаем список всех лет, и выбираем тот, который был выбран пользователем
     years = Year.objects.all().order_by("-year")
     selected_year = Year.objects.get(id=year_id) if year_id else years.first()
 
-    faculties = Faculty.objects.all()
-    departments = Department.objects.all()
+    all_faculties = Faculty.objects.all()
+    all_departments = Department.objects.all()
 
-    # Если факультеты выбраны, то фильтруем кафедры по ним
-    if faculty_ids and 'all' not in faculty_ids:
-        selected_faculties = faculties.filter(id__in=faculty_ids)
-        selected_departments = departments.filter(faculty__id__in=faculty_ids)
-    else:
-        selected_faculties = faculties
-        selected_departments = departments
+    # ----------- Фильтрация факультетов и кафедр по ролям ----------- #
+    if request.user.is_superuser:
+        faculties = all_faculties
+        departments = all_departments
 
-    # Применяем фильтрацию для выбранных кафедр
-    selected_departments = selected_departments.filter(
-        id__in=department_ids) if department_ids else selected_departments
+    elif user_role == 'viewer':
+        # Просмотр кафедры пользователя
+        faculties = Faculty.objects.filter(
+            id=user_profile.faculty.id) if user_profile.faculty else Faculty.objects.none()
+        departments = Department.objects.filter(
+            id=user_profile.department.id) if user_profile.department else Department.objects.none()
+        faculty_ids = [str(user_profile.faculty.id)] if user_profile.faculty else []
+        department_ids = [str(user_profile.department.id)] if user_profile.department else []
 
+    elif user_role == 'dean':
+        # Декан видит все кафедры своего факультета
+        faculties = Faculty.objects.filter(
+            id=user_profile.faculty.id) if user_profile.faculty else Faculty.objects.none()
+        departments = Department.objects.filter(
+            faculty=user_profile.faculty) if user_profile.faculty else Department.objects.none()
+        faculty_ids = [str(user_profile.faculty.id)] if user_profile.faculty else []
+
+    else:  # Для преподавателей и других
+        faculties = Faculty.objects.none()
+        departments = Department.objects.none()
+
+    # ------------------------------------- #
+    # Исключаем 'all' из department_ids
+    department_ids = [d for d in department_ids if d != 'all']
+
+    selected_faculties = faculties.filter(id__in=faculty_ids) if faculty_ids else faculties
+    selected_departments = departments.filter(id__in=department_ids) if department_ids else departments
+
+    # Получаем направления
     directions = Direction.objects.all()
     data = []
 
-    # Получаем данные для каждого направления
+    # Обрабатываем данные для отчета
     for direction in directions:
         direction_data = {
             "name": direction.name,
@@ -186,11 +211,9 @@ def report_department(request):
                 for sub in main.indicators.filter(years=selected_year):
                     reports = TeacherReport.objects.filter(indicator=sub, year=selected_year)
 
-                    # Фильтруем отчеты по выбранным кафедрам
                     if selected_departments.exists():
                         reports = reports.filter(teacher__profile__department__in=selected_departments)
 
-                    # Берем только те отчёты, где значение больше 0
                     teacher_values = [
                         (r.teacher.get_full_name() or r.teacher.username, r.value)
                         for r in reports if r.value > 0
@@ -209,11 +232,9 @@ def report_department(request):
             else:
                 aggr_reports = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
 
-                # Фильтруем агрегированные отчёты по кафедрам
                 if selected_departments.exists():
                     aggr_reports = aggr_reports.filter(teacher__profile__department__in=selected_departments)
 
-                # Берем только те отчёты, где total_value больше 0
                 teacher_values = [
                     (r.teacher.get_full_name() or r.teacher.username, r.total_value)
                     for r in aggr_reports if r.total_value > 0
@@ -227,7 +248,7 @@ def report_department(request):
 
         data.append(direction_data)
 
-    # Считаем сумму по подиндикаторам
+    # Обработка сумм подиндикаторов
     for direction in data:
         for main in direction['main_indicators']:
             if main['has_sub_indicators']:
@@ -237,15 +258,131 @@ def report_department(request):
         "years": years,
         "selected_year": selected_year,
         "data": data,
-        "departments": departments,
-        "faculties": faculties,
+        "departments": selected_departments,
+        "faculties": selected_faculties,
         "selected_departments": [int(d.id) for d in selected_departments],
         "selected_faculties": [int(f.id) for f in selected_faculties],
         "department_map": {
             f.id: list(f.departments.values("id", "name"))
-            for f in faculties
+            for f in selected_faculties
         }
     })
+
+
+def group_by_department(teacher_values):
+    grouped = defaultdict(list)
+    totals = {}
+
+    for name, value in teacher_values:
+        parts = name.split('—', 1)
+        if len(parts) == 2:
+            dept_name, teacher_name = parts
+        else:
+            dept_name = "Неизвестная кафедра"
+            teacher_name = name
+
+        grouped[dept_name.strip()].append((teacher_name.strip(), value))
+        totals[dept_name.strip()] = totals.get(dept_name.strip(), 0) + value
+
+    return grouped, totals
+
+
+@login_required
+def dean_report(request):
+    year_id = request.GET.get('year')
+    selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
+
+    # 🔥 Добавим все года для выпадающего списка
+    years = Year.objects.all().order_by('-year')
+
+
+
+    user_profile = request.user.profile
+    faculty = user_profile.faculty
+    departments = Department.objects.filter(faculty=faculty)
+    directions = Direction.objects.all()
+
+    data = []
+
+    for direction in directions:
+        direction_data = {
+            'name': direction.name,
+            'main_indicators': []
+        }
+
+        main_indicators = MainIndicator.objects.filter(
+            direction=direction,
+            years=selected_year
+        ).prefetch_related("indicators")
+
+        for main in main_indicators:
+            indicator_data = {
+                'main': main,
+                'has_sub': main.indicators.exists(),
+                'summary_row': [],
+                'sub_indicators': [],
+                'row': []
+            }
+
+            if main.indicators.exists():
+                sub_indicators = main.indicators.filter(years=selected_year)
+
+                dept_sums = []
+
+                for dept in departments:
+                    total_value = 0
+                    teachers = set()
+                    for sub in sub_indicators:
+                        reports = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        )
+                        value = reports.aggregate(total=Sum('value'))['total'] or 0
+                        total_value += value
+                        teachers.update([r.teacher.get_full_name() for r in reports])
+                    dept_sums.append({'value': total_value, 'teachers': list(teachers)})
+
+                indicator_data['summary_row'] = dept_sums
+
+                for sub in sub_indicators:
+                    sub_row = []
+                    for dept in departments:
+                        reports = TeacherReport.objects.filter(
+                            indicator=sub,
+                            year=selected_year,
+                            teacher__profile__department=dept
+                        )
+                        value = reports.aggregate(total=Sum('value'))['total'] or 0
+                        teachers = [{"name": r.teacher.get_full_name(), "value": r.value} for r in reports]
+                        sub_row.append({'value': value, 'teachers': teachers})
+                    indicator_data['sub_indicators'].append((sub, sub_row))
+            else:
+                row = []
+                for dept in departments:
+                    reports = AggregatedIndicator.objects.filter(
+                        main_indicator=main,
+                        year=selected_year,
+                        teacher__profile__department=dept
+                    )
+                    value = reports.aggregate(total=Sum('total_value'))['total'] or 0
+                    teachers = [{"name": r.teacher.get_full_name(), "value": r.total_value} for r in reports]
+
+                    row.append({'value': value, 'teachers': teachers})
+                indicator_data['row'] = row
+
+            direction_data['main_indicators'].append(indicator_data)
+        data.append(direction_data)
+
+    return render(request, "main/view/dean_report.html", {
+        'faculty': faculty,
+        'departments': departments,
+        'data': data,
+        'year': selected_year,
+        'years': years,
+    })
+
+
 
 # Добавляем представление для получения кафедр в зависимости от факультета
 def get_departments(request, faculty_id):

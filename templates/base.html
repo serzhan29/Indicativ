@@ -151,10 +151,12 @@
       <a class="navbar-brand" href="{% url 'index' %}">Indicatorium</a>
       <a class="navbar-brand" href="{% url 'direction_list' %}">Бағыттар</a>
 
-      {% if user.is_staff %}
-        <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
-        <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
-      {% endif %}
+    {% if user.is_staff or user.profile.role == 'viewer' or user.profile.role == 'dean' %}
+      <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
+      <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
+      <a class="navbar-brand" href="{% url 'dean_report' %}">Dekan</a>
+    {% endif %}
+
 
       <!-- Кнопка для мобильного меню -->
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

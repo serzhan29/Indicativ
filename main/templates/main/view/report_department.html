@@ -2,114 +2,11 @@
 {% load static %}
 {% block content %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="{% static 'main/css/report_department.css' %}" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<style>
-    body {
-        background-color: #f9f9f9;
-    }
-
-    .container {
-        padding-left: 0 !important;
-        max-width: 95%;
-        margin-left: 20px;
-    }
-
-    .content-wrapper {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 4rem;
-        margin-right: 3rem;
-    }
-
-    .filter-container {
-        position: sticky;
-        top: 20px;
-        flex: 0 0 25%;
-        padding-left: 0 !important;
-        max-height: calc(100vh - 20px);
-        overflow-y: auto;
-    }
-
-    .content-column {
-        flex: 1;
-    }
-
-    .direction-card {
-        margin-bottom: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 12px;
-        background-color: #ffffff;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .direction-header {
-        font-weight: bold;
-        font-size: 1.1rem;
-        cursor: pointer;
-        background-color: #e7f1ff;
-        color: #0d6efd;
-        border: none;
-        width: 100%;
-        text-align: left;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 0.5rem;
-    }
-
-    .direction-content {
-        display: none;
-        padding: 0 1rem 1rem;
-    }
-
-    .direction-card.open .direction-content {
-        display: block;
-    }
-
-    .indicator-card {
-        padding: 1rem 0;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .indicator-card:last-child {
-        border-bottom: none;
-    }
-
-    .btn-group {
-        margin-top: 1rem;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .btn-group .btn {
-        margin-bottom: 0.5rem;
-    }
-
-    .direction-navigation {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background-color: #f1f1f1;
-        border-radius: 12px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .direction-navigation a {
-        display: block;
-        padding: 0.75rem;
-        color: #0d6efd;
-        text-decoration: none;
-        font-weight: bold;
-    }
-
-    .direction-navigation a:hover {
-        background-color: #e7f1ff;
-        border-radius: 6px;
-    }
-</style>
 
 <div class="container py-6">
     <h1 class="mb-4 text-center">{{ selected_year.year }} жылғы көрсеткіштерге шолу</h1>
-
     <div class="content-wrapper">
         <!-- Фильтр -->
         <div class="filter-container">
@@ -126,6 +23,16 @@
                             </select>
                         </div>
                         <div class="col-md-12">
+                            <label for="department" class="form-label">Кафедра:</label>
+                            <select name="departments" id="department-select" class="form-select">
+                                <option value="all" {% if not selected_departments %}selected{% endif %}>Все кафедры</option>
+                                {% for department in departments %}
+                                    <option value="{{ department.id }}" {% if department.id in selected_departments %}selected{% endif %} data-faculty="{{ department.faculty.id }}">{{ department.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
                             <label for="year" class="form-label">Жыл:</label>
                             <select name="year" id="year" class="form-select">
                                 {% for year in years %}
@@ -135,6 +42,9 @@
                         </div>
                         <div class="col-md-12">
                             <button type="submit" class="btn btn-primary w-100">Қолдану</button>
+                        </div>
+                        <div class="col-md-12">
+                            <a href="{% url 'report_department' %}"><button type="submit" class="btn btn-primary w-100">Қалпына келтіру</button></a>
                         </div>
                     </div>
                 </form>
@@ -190,7 +100,7 @@
                                     {% endfor %}
                                 {% else %}
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span><strong>{{ main.code }} {{ main.name }}</strong> ({{ main.unit }})</span>
+                                        <span></span>
                                         <span>
                                             {{ main.total }}
                                             {% if main.teachers %}
@@ -216,7 +126,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Учителя по показателю: {{ indicator.name }}</h5>
+                            <h5 class="modal-title">{{ indicator.name }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -224,7 +134,9 @@
                                 {% for teacher in indicator.teachers %}
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ teacher.0 }}
-                                        <span style="min-width: 40px; text-align: right;">{{ teacher.1 }}</span>
+                                        <span style="min-width: 40px; text-align: right;">
+                                            {{ teacher.1 }}
+                                        </span>
 
                                     </li>
                                 {% endfor %}
@@ -240,7 +152,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">Учителя по подиндикатору: {{ sub.name }}</h5>
+                                <h5 class="modal-title">{{ sub.name }}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
@@ -248,8 +160,7 @@
                                     {% for teacher in sub.teachers %}
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             {{ teacher.0 }}
-                                            <span style="min-width: 40px; text-align: right;">{{ teacher.1 }}</span>
-
+                                            <span style="min-width: 40px; text-align: right;">{{ teacher.1 }} </span>
                                         </li>
                                     {% endfor %}
                                 </ul>
@@ -262,9 +173,10 @@
     {% endfor %}
 {% endfor %}
 
-<!-- Скрипт для открытия/закрытия направлений -->
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // Разворачиваем/сворачиваем карточки при клике на заголовок
         const headers = document.querySelectorAll('.direction-header');
         headers.forEach(header => {
             header.addEventListener('click', function () {
@@ -273,5 +185,30 @@
             });
         });
     });
+
+    // Функция для обновления списка кафедр в зависимости от выбранного факультета
+    function updateDepartments() {
+        var facultySelect = document.getElementById('faculty-select');
+        var departmentSelect = document.getElementById('department-select');
+        var selectedFaculty = facultySelect.value;
+
+        // Показываем все кафедры, если выбран факультет "Все факультеты"
+        if (selectedFaculty == 'all') {
+            for (var i = 0; i < departmentSelect.options.length; i++) {
+                departmentSelect.options[i].style.display = '';  // Возвращаем дефолтный display
+            }
+        } else {
+            for (var i = 0; i < departmentSelect.options.length; i++) {
+                var option = departmentSelect.options[i];
+                // Показываем только кафедры, относящиеся к выбранному факультету
+                if (option.getAttribute('data-faculty') == selectedFaculty) {
+                    option.style.display = '';  // Показываем кафедру
+                } else {
+                    option.style.display = 'none';  // Скрываем кафедру
+                }
+            }
+        }
+    }
 </script>
+
 {% endblock %}
