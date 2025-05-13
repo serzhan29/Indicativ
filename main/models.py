@@ -78,3 +78,24 @@ class AggregatedIndicator(models.Model):
 
     def __str__(self):
         return f"{self.teacher} - {self.main_indicator.code} {self.main_indicator.name} ({self.year.year}) - Сумма: {self.total_value}"
+
+
+class UploadedWork(models.Model):
+    """ Для подиндикаторов (подтверждение заданного плана) """
+    report = models.ForeignKey(TeacherReport, on_delete=models.CASCADE, related_name="uploaded_works")
+    file = models.FileField(upload_to="uploads/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return f"{self.report.teacher} | {self.report.indicator.name} | {self.report.year.year}"
+
+
+class UploadedMainWork(models.Model):
+    """ Для главных индикаторов """
+    aggregated_report = models.ForeignKey(AggregatedIndicator, on_delete=models.CASCADE, related_name="uploaded_works")
+    file = models.FileField(upload_to="main_indicator_uploads/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.aggregated_report.teacher} | {self.aggregated_report.main_indicator.name} | {self.aggregated_report.year.year}"
