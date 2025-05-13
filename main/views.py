@@ -2,15 +2,19 @@ import json
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from .models import Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator, User
+from .models import Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator, UploadedWork, UploadedMainWork
 from django.db.models import Sum
+from django.views.generic.edit import FormView
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
 from django.views.generic import TemplateView
 from django.db.models import F
+from .forms import UploadedWorkForm, UploadedMainWorkForm
+
 
 class DirectionListView(LoginRequiredMixin, ListView):
     """Шаг 1: Выбор направления"""
@@ -31,6 +35,44 @@ class YearListView(LoginRequiredMixin, ListView):
         return context
 
 
+class UploadSubIndicatorFileView(LoginRequiredMixin, FormView):
+    """ Для подиндикаторов """
+    form_class = UploadedWorkForm
+
+    def form_valid(self, form):
+        report_id = self.kwargs['report_id']
+        report = get_object_or_404(TeacherReport, id=report_id, teacher=self.request.user)
+        uploaded_file = form.save(commit=False)
+        uploaded_file.report = report
+        uploaded_file.save()
+        return redirect(self.request.META.get('HTTP_REFERER'))
+
+class UploadMainIndicatorFileView(LoginRequiredMixin, FormView):
+    """ Для главного индикатора """
+    form_class = UploadedMainWorkForm
+
+    def form_valid(self, form):
+        aggregated_id = self.kwargs['aggregated_id']
+        aggregated_report = get_object_or_404(AggregatedIndicator, id=aggregated_id, teacher=self.request.user)
+        uploaded_file = form.save(commit=False)
+        uploaded_file.aggregated_report = aggregated_report
+        uploaded_file.save()
+        return redirect(self.request.META.get('HTTP_REFERER'))
+
+
+@login_required
+def get_indicator_files(request, report_id):
+    file_type = request.GET.get('type')
+    if file_type == 'main':
+        report = get_object_or_404(AggregatedIndicator, id=report_id, teacher=request.user)
+        files = report.files.all()
+    else:
+        report = get_object_or_404(TeacherReport, id=report_id, teacher=request.user)
+        files = report.files.all()
+
+    file_data = [{"id": f.id, "name": f.file.name.split('/')[-1], "url": f.file.url} for f in files]
+    return JsonResponse({'files': file_data})
+
 class TeacherReportView(LoginRequiredMixin, TemplateView):
     """Генерация отчетов для учителя и их агрегация"""
     template_name = 'main/teacher_report.html'
@@ -43,6 +85,7 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
 
         main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
         aggregated_data = []
+
 
         for main_indicator in main_indicators:
             indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
@@ -76,12 +119,16 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
                 teacher=teacher, indicator__in=indicators, year=year
             ).select_related('indicator')
 
+            for report in teacher_reports:
+                report.uploaded_files = report.uploaded_works.all()
+
             aggregated_data.append({
                 'id': aggregated_indicator.id,
                 'main_indicator': main_indicator,
                 'total_value': total_value,
                 'additional_value': aggregated_indicator.additional_value,
-                'teacher_reports': teacher_reports
+                'teacher_reports': teacher_reports,
+                'uploaded_works': aggregated_indicator.uploaded_works.all()
             })
 
         context.update({
@@ -233,7 +280,6 @@ class UpdateValueView(LoginRequiredMixin, View):
 
 
 # index.html
-
 def index(request):
     teacher = request.user
     years = Year.objects.order_by('year')

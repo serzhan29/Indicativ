@@ -1,0 +1,94 @@
+    /* Основной контейнер */
+    .page-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    /* Блок списка направлений */
+    .switch-direction-container {
+        position: sticky; /* Чтобы блок был "липким" */
+        top: 20px; /* Отступ сверху */
+        background: linear-gradient(135deg, #007bff, #66d9ff);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        min-width: 250px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        height: fit-content;
+    }
+
+    .switch-direction-container h4 {
+        margin-bottom: 15px;
+        font-size: 20px;
+        border-bottom: 2px solid white;
+        padding-bottom: 5px;
+    }
+
+    .switch-direction-container ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .switch-direction-container li {
+        margin-bottom: 10px;
+    }
+
+    .switch-direction-container a {
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+        display: block;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.3s;
+    }
+
+    .switch-direction-container a:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-download {
+        display: inline-block;
+        margin-top: 20px;
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(90deg, #00b894, #00ce7c);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.3s, transform 0.2s;
+        box-shadow: 0 4px 6px rgba(0, 206, 124, 0.4);
+    }
+
+    /* При наведении */
+    .btn-download:hover {
+        background: linear-gradient(90deg, #00ce7c, #00b894);
+        transform: scale(1.05);
+    }
+
+    /* При нажатии */
+    .btn-download:active {
+        transform: scale(0.98);
+        background: linear-gradient(90deg, #00a86b, #00c473);
+    }
+
+    /* Блок отчета (уже был) */
+    .report-container {
+        flex: 1;
+        background: linear-gradient(135deg, #007bff, #66d9ff);
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 768px) {
+        .page-container {
+            flex-direction: column;
+        }
+    }
