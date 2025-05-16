@@ -3,17 +3,14 @@ from django.http import HttpResponse
 from docx import Document
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
-from docx.enum.section import WD_ORIENT, WD_ORIENTATION, WD_SECTION_START
-from docx.shared import RGBColor, Pt, Inches
+from docx.enum.section import WD_ORIENT
+from docx.shared import Pt, Inches
 from docx.oxml.ns import qn
-from urllib.parse import quote_plus
 from .models import AggregatedIndicator, Direction, Year, Indicator, TeacherReport, User, MainIndicator
-from docx.oxml import OxmlElement
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_PARAGRAPH_ALIGNMENT
 from django.views import View
 from urllib.parse import quote
 from user.models import Department, Faculty
-from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.shared import Cm
 from docx.enum.table import WD_ALIGN_VERTICAL
 from django.db import models
@@ -47,7 +44,110 @@ def create_first_page(doc, faculty_name, year):
 
     # Добавляем разрыв страницы для следующей части отчета
     doc.add_page_break()
+def init_document(selected_year, faculty):
+    document = Document()
 
+    section = document.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    new_width, new_height = section.page_height, section.page_width
+    section.page_width = new_width
+    section.page_height = new_height
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
+
+    footer = section.footer
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
+
+    document.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p = document.add_paragraph(
+        "«БЕКІТЕМІН»\nСапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
+        f"__________________________ А.Ошибаева\n«____» _______________ {selected_year.year}ж."
+    )
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    for _ in range(6):
+        document.add_paragraph("")
+
+    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    document.add_page_break()
+
+    return document
+
+def add_direction_title(document, selected_year, faculty, direction):
+    for _ in range(6):
+        document.add_paragraph("")
+    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_page_break()
+
+def create_indicator_table(document, departments):
+    # Создаем таблицу с 3 + количеством департаментов столбцов
+    table = document.add_table(rows=1, cols=3 + len(departments))
+    table.style = 'Table Grid'
+
+    cols = table.columns
+
+    # Устанавливаем ширину столбцов
+    cols[0].width = Inches(1)  # Код (меньше)
+    cols[1].width = Inches(5)  # Индикатор атауы (больше)
+    for idx in range(2, len(cols) - 1):  # столбцы для департаментов
+        cols[idx].width = Inches(2)
+    cols[-1].width = Inches(1)  # Сумма (меньше)
+
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Код'
+    hdr_cells[1].text = 'Индикатор атауы'
+    for idx, dept in enumerate(departments):
+        hdr_cells[2 + idx].text = dept.name
+    hdr_cells[-1].text = 'Сумма'
+
+    # Выравнивание текста в заголовках по центру
+    for cell in hdr_cells:
+        for paragraph in cell.paragraphs:
+            paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    return table
+
+def add_footer(section):
+    """
+    Время нижный колонтинул
+    """
+    footer = section.footer
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.text = f"Жүктеу күні мен уақыты: {now().strftime('%d-%m-%Y %H:%M:%S')}"
+
+
+def generate_docx_response(doc, teacher, year):
+    """
+    Генерирует HttpResponse с Word-документом для скачивания.
+
+    :param doc: Объект Document (python-docx)
+    :param teacher: Объект учителя
+    :param year: Объект года
+    :return: HttpResponse с документом
+    """
+    file_name = f"Мұғалім {teacher.last_name} {teacher.first_name} - {year.year}ж.docx"
+    encoded_file_name = quote(file_name)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
+
+    doc.save(response)
+    return response
 
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
@@ -58,14 +158,8 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     next_year = year.year + 1  # Следующий учебный год
     faculty_name = teacher.profile.faculty.name if teacher.profile.faculty else "Көрсетілмеген"
 
-    aggregated_data = AggregatedIndicator.objects.filter(
-        teacher=teacher,
-        year=year,
-        main_indicator__direction=direction
-    )
-
+    aggregated_data = AggregatedIndicator.objects.filter( teacher=teacher, year=year, main_indicator__direction=direction)
     doc = Document()
-
     # --- Первая страница ---
     create_first_page(doc, faculty_name, year.year)
 
@@ -89,19 +183,16 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     section.top_margin = Inches(1)
     section.bottom_margin = Inches(1)
 
-    # Нижний колонтитул
-    footer = section.footer
-    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    paragraph.text = f"Жүктеу күні мен уақыты: {now().strftime('%d-%m-%Y %H:%M:%S')}"
+    # Время
+    section = doc.sections[-1]
+    add_footer(section)
 
     # --- Таблица ---
     table = doc.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
 
     # Установка ширины столбцов
-    column_widths = [Cm(1), Cm(24), Cm(1),
-                     Cm(1)]
+    column_widths = [Cm(1), Cm(24), Cm(1), Cm(1)]
     # Заголовки
     hdr_cells = table.rows[0].cells
     headers = ["Код", "Индикатор атауы", "Өлшем бірлігі", "Сумма"]
@@ -168,8 +259,6 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
 
 
 ###### Indicator
-
-
 def set_cell_font(cell, bold=False, align_center=False):
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER if align_center else WD_ALIGN_PARAGRAPH.LEFT
@@ -196,11 +285,7 @@ class TeacherReportWordExportView(View):
         next_year = year.year + 1
 
         # Получаем факультет из профиля
-        faculty_name = (
-            teacher.profile.faculty.name
-            if hasattr(teacher, 'profile') and teacher.profile.faculty
-            else "Факультет"
-        )
+        faculty_name = (teacher.profile.faculty.name if hasattr(teacher, 'profile') and teacher.profile.faculty else "Факультет")
 
         doc = Document()
 
@@ -217,12 +302,9 @@ class TeacherReportWordExportView(View):
 
         # --- Первая страница ---
         create_first_page(doc, faculty_name, year.year)
-
-        # Добавление нижнего колонтитула на все страницы
-        footer = section.footer
-        paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
+        # Время
+        section = doc.sections[-1]
+        add_footer(section)
 
         for direction in directions:
 
@@ -314,16 +396,20 @@ class TeacherReportWordExportView(View):
                     set_cell_font(ind_row[3], align_center=True)
 
         # Файлды қайтару
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        file_name = f"Мұғалім {teacher.last_name} {teacher.first_name} - {year.year}ж.docx"
-        encoded_file_name = quote(file_name)
-        response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
-        doc.save(response)
-        return response
+        return generate_docx_response(doc, teacher, year)
 
+# -----====== Dean ======--------
+def generate_dean(document, filename_base):
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    filename = f"{filename_base}.docx"
+    encoded_file_name = quote(filename)
+    response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_file_name}"
+    document.save(response)
+    return response
 
 
 def export_report(request, faculty_id):
+    """ с учителем """
     year_id = request.GET.get('year')
 
     if year_id:
@@ -335,75 +421,12 @@ def export_report(request, faculty_id):
     departments = Department.objects.filter(faculty=faculty)
     directions = Direction.objects.all()
 
-    document = Document()
-
-    section = document.sections[0]
-    section.orientation = WD_ORIENT.LANDSCAPE
-    new_width, new_height = section.page_height, section.page_width
-    section.page_width = new_width
-    section.page_height = new_height
-    section.left_margin = Inches(1)
-    section.right_margin = Inches(1)
-    section.top_margin = Inches(1)
-    section.bottom_margin = Inches(1)
-
-    footer = section.footer
-    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    paragraph.text = f"Жүктеу күні мен уақыты: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}"
-
-    document.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p = document.add_paragraph(
-        "«БЕКІТЕМІН»\nСапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
-        f"__________________________ А.Ошибаева\n«____» _______________ {selected_year.year}ж."
-    )
-    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-
-    for _ in range(6):
-        document.add_paragraph("")
-
-    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    document.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    document.add_page_break()
+    document = init_document(selected_year, faculty)
 
     for direction in directions:
-        for _ in range(6):
-            document.add_paragraph("")
-        # Страница с надписью по центру
-        document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
-        document.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        add_direction_title(document, selected_year, faculty, direction)
 
-        document.add_page_break()
-
-        # Таблица на новой странице
-        table = document.add_table(rows=1, cols=3 + len(departments))
-        table.style = 'Table Grid'
-
-        cols = table.columns
-
-        # Устанавливаем ширину столбцов
-        cols[0].width = Inches(1)  # Код (меньше)
-        cols[1].width = Inches(5)  # Индикатор атауы (больше)
-        for idx in range(2, len(cols) - 1):  # Все столбцы для департаментов
-            cols[idx].width = Inches(2)  # Размеры столбцов для департаментов
-        cols[-1].width = Inches(1)  # Сумма (меньше)
-
-        hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Код'
-        hdr_cells[1].text = 'Индикатор атауы'
-        for idx, dept in enumerate(departments):
-            hdr_cells[2 + idx].text = dept.name
-        hdr_cells[-1].text = 'Сумма'
-
-        for cell in hdr_cells:
-            for paragraph in cell.paragraphs:
-                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        table = create_indicator_table(document, departments)
 
         main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
 
@@ -487,13 +510,8 @@ def export_report(request, faculty_id):
 
         document.add_page_break()
 
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    filename = f"report_{faculty.name}_{selected_year.year}.docx"
-    encoded_file_name = quote(filename)
-    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
-
-    document.save(response)
-    return response
+    filename_base = f"Факультет есебі - {faculty.name} {selected_year.year} (мұғаліммен)"
+    return generate_dean(document, filename_base)
 
 
 def align_cell_center(cell):
@@ -504,7 +522,6 @@ def align_cell_center(cell):
 # Отчет без списков учителей
 @login_required
 def export_department_report_docx(request, faculty_id):
-    """без учителей"""
     year_id = request.GET.get('year')
     selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
 
@@ -512,16 +529,11 @@ def export_department_report_docx(request, faculty_id):
     departments = Department.objects.filter(faculty=faculty)
     directions = Direction.objects.all()
 
-    document = Document()
-
-    # Альбомная ориентация
-    section = document.sections[-1]
-    section.page_width, section.page_height = section.page_height, section.page_width
-
-    document.add_heading(f'Есеп беру — {faculty.name} ({selected_year.year} жыл)', 0)
+    document = init_document(selected_year, faculty)  # Инициализация документа, с нужным заголовком и форматированием
 
     for direction in directions:
-        document.add_heading(direction.name, level=1)
+        add_direction_title(document, selected_year, faculty, direction)  # Добавляем заголовок с новой страницы
+
 
         num_depts = len(departments)
         table = document.add_table(rows=1, cols=3 + num_depts)
@@ -560,7 +572,6 @@ def export_department_report_docx(request, faculty_id):
                         ).aggregate(total=Sum('value'))['total'] or 0
                         dept_sums[idx] += value
 
-                # Строка общей суммы
                 summary_row = table.add_row().cells
                 summary_row[0].text = f'{main.code}'
                 summary_row[1].text = f'Барлығы: {main.name}'
@@ -568,12 +579,10 @@ def export_department_report_docx(request, faculty_id):
                     summary_row[2 + idx].text = str(value)
                 summary_row[-1].text = str(sum(dept_sums))
 
-                # Центрирование
                 align_cell_center(summary_row[0])
                 for idx in range(2, len(summary_row)):
                     align_cell_center(summary_row[idx])
 
-                # Подиндикаторы
                 for sub in sub_indicators:
                     row = table.add_row().cells
                     row[0].text = sub.code
@@ -591,7 +600,6 @@ def export_department_report_docx(request, faculty_id):
 
                     row[-1].text = str(sub_total)
 
-                    # Центрирование
                     align_cell_center(row[0])
                     for idx in range(2, len(row)):
                         align_cell_center(row[idx])
@@ -613,18 +621,11 @@ def export_department_report_docx(request, faculty_id):
 
                 row[-1].text = str(total)
 
-                # Центрирование
                 align_cell_center(row[0])
                 for idx in range(2, len(row)):
                     align_cell_center(row[idx])
+        document.add_page_break()
 
-        document.add_paragraph()
+    filename_base = f"Факультет есебі - {faculty.name} {selected_year.year} (мұғалімсіз)"
+    return generate_dean(document, filename_base)
 
-    # Сохраняем документ в HTTP-ответ
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    filename = f"Отчет без учителей {faculty.name}_{selected_year.year}.docx"
-    encoded_file_name = quote(filename)
-    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
-
-    document.save(response)
-    return response
