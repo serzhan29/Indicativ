@@ -44,6 +44,7 @@ def create_first_page(doc, faculty_name, year):
 
     # Добавляем разрыв страницы для следующей части отчета
     doc.add_page_break()
+
 def init_document(selected_year, faculty):
     document = Document()
 
@@ -119,6 +120,16 @@ def create_indicator_table(document, departments):
 
     return table
 
+def set_cell_font(cell, bold=False, align_center=False):
+    for paragraph in cell.paragraphs:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER if align_center else WD_ALIGN_PARAGRAPH.LEFT
+        for run in paragraph.runs:
+            run.font.name = 'Times New Roman'
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Times New Roman')
+            run.font.size = Pt(12)
+            run.font.bold = bold
+            run.font.color.rgb = None  # чёрный
+
 def add_footer(section):
     """
     Время нижный колонтинул
@@ -127,7 +138,6 @@ def add_footer(section):
     paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
     paragraph.text = f"Жүктеу күні мен уақыты: {now().strftime('%d-%m-%Y %H:%M:%S')}"
-
 
 def generate_docx_response(doc, teacher, year):
     """
@@ -148,6 +158,21 @@ def generate_docx_response(doc, teacher, year):
 
     doc.save(response)
     return response
+
+def configure_page(doc):
+    """
+    Настраивает ориентацию и отступы страницы документа Word.
+
+    :param doc: объект docx.Document
+    """
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    # Меняем местами ширину и высоту, т.к. ландшафт
+    section.page_width, section.page_height = section.page_height, section.page_width
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
 
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
@@ -173,24 +198,14 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
 
     # --- Страница с таблицей ---
     doc.add_page_break()
-
-    # Настройка страницы для таблицы
-    section = doc.sections[-1]
-    section.orientation = WD_ORIENT.LANDSCAPE
-    section.page_width, section.page_height = section.page_height, section.page_width
-    section.left_margin = Inches(1)
-    section.right_margin = Inches(1)
-    section.top_margin = Inches(1)
-    section.bottom_margin = Inches(1)
-
+    # --- Настройка страницы ---
+    configure_page(doc)
     # Время
     section = doc.sections[-1]
     add_footer(section)
-
     # --- Таблица ---
     table = doc.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
-
     # Установка ширины столбцов
     column_widths = [Cm(1), Cm(24), Cm(1), Cm(1)]
     # Заголовки
@@ -248,26 +263,8 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
                 sub_row[idx].paragraphs[
                     0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
 
-    # Отправка файла пользователю
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    file_name = f"Индикативті жоспар - {teacher.first_name} {teacher.last_name} {year.year} жыл.docx"
-    encoded_file_name = quote(file_name)
-    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_file_name}'
-
-    doc.save(response)
-    return response
-
-
-###### Indicator
-def set_cell_font(cell, bold=False, align_center=False):
-    for paragraph in cell.paragraphs:
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER if align_center else WD_ALIGN_PARAGRAPH.LEFT
-        for run in paragraph.runs:
-            run.font.name = 'Times New Roman'
-            run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Times New Roman')
-            run.font.size = Pt(12)
-            run.font.bold = bold
-            run.font.color.rgb = None  # чёрный
+    # Файлды қайтару
+    return generate_docx_response(doc, teacher, year)
 
 
 class TeacherReportWordExportView(View):
@@ -288,18 +285,8 @@ class TeacherReportWordExportView(View):
         faculty_name = (teacher.profile.faculty.name if hasattr(teacher, 'profile') and teacher.profile.faculty else "Факультет")
 
         doc = Document()
-
-        # Настройка страницы
-        section = doc.sections[0]
-        section.orientation = WD_ORIENT.LANDSCAPE
-        new_width, new_height = section.page_height, section.page_width
-        section.page_width = new_width
-        section.page_height = new_height
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-
+        # --- Настройка страницы ---
+        configure_page(doc)
         # --- Первая страница ---
         create_first_page(doc, faculty_name, year.year)
         # Время
@@ -340,13 +327,14 @@ class TeacherReportWordExportView(View):
             # Устанавливаем ширину столбцов
             for col in table.columns:
                 if col.cells[0].text == 'Код':
-                    col.width = Inches(0.5)  # Уменьшаем ширину столбца для кода индикатора
+                    col.width = Cm(2)  # Код индикатора
                 elif col.cells[0].text == 'Индикатор':
-                    col.width = Inches(7.5)  # Увеличиваем ширину столбца для названия индикатора
+                    col.width = Cm(14)  # Название индикатора — широкий столбец
                 elif col.cells[0].text == 'Өлшем бірлігі':
-                    col.width = Inches(0.5)  # Уменьшаем ширину столбца для единицы измерения
+                    col.width = Cm(2)  # Единица измерения
                 else:
-                    col.width = Inches(1)  # Устанавливаем ширину для значения
+                    col.width = Cm(2)  # Значение
+
 
             # Центрируем заголовки столбцов
             for cell in hdr_cells:
@@ -394,6 +382,8 @@ class TeacherReportWordExportView(View):
                     set_cell_font(ind_row[1])
                     set_cell_font(ind_row[2], align_center=True)
                     set_cell_font(ind_row[3], align_center=True)
+            if direction != directions.last():
+                doc.add_page_break()
 
         # Файлды қайтару
         return generate_docx_response(doc, teacher, year)
@@ -508,7 +498,8 @@ def export_report(request, faculty_id):
                 row[0].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
                 row[-1].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-        document.add_page_break()
+        if direction != directions.last():
+            document.add_page_break()
 
     filename_base = f"Факультет есебі - {faculty.name} {selected_year.year} (мұғаліммен)"
     return generate_dean(document, filename_base)
@@ -533,7 +524,6 @@ def export_department_report_docx(request, faculty_id):
 
     for direction in directions:
         add_direction_title(document, selected_year, faculty, direction)  # Добавляем заголовок с новой страницы
-
 
         num_depts = len(departments)
         table = document.add_table(rows=1, cols=3 + num_depts)
