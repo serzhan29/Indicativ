@@ -4,111 +4,8 @@
 {% block content %}
 
 <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
-<style>
-    /* Основной контейнер */
-    .page-container {
-        display: flex;
-        gap: 20px;
-        margin-top: 20px;
-    }
-
-    /* Блок списка направлений */
-    .switch-direction-container {
-        position: sticky; /* Чтобы блок был "липким" */
-        top: 20px; /* Отступ сверху */
-        background: linear-gradient(135deg, #007bff, #66d9ff);
-        padding: 20px;
-        border-radius: 12px;
-        color: white;
-        min-width: 250px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        height: fit-content;
-        z-index: 2; /* Чтобы блок направлений был сверху */
-    }
-
-    /* Новый блок переключения годов */
-    .switch-direction-container + .switch-direction-container {
-        top: 500px; /* Отступ сверху для блока года, чтобы он не перекрывал блок направлений */
-        background: linear-gradient(135deg, #28a745, #66d97d); /* Другой фон для блока года */
-        z-index: 1; /* Блок годов будет ниже блоков направлений */
-    }
-
-
-    .switch-direction-container h4 {
-        margin-bottom: 15px;
-        font-size: 20px;
-        border-bottom: 2px solid white;
-        padding-bottom: 5px;
-    }
-
-    .switch-direction-container ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .switch-direction-container li {
-        margin-bottom: 10px;
-    }
-
-    .switch-direction-container a {
-        color: white;
-        font-weight: bold;
-        text-decoration: none;
-        display: block;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background-color 0.3s;
-    }
-
-    .switch-direction-container a:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-download {
-        display: inline-block;
-        margin-top: 20px;
-        width: 100%;
-        padding: 12px 20px;
-        font-size: 16px;
-        font-weight: 600;
-        color: white;
-        background: linear-gradient(90deg, #00b894, #00ce7c);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        text-align: center;
-        transition: background 0.3s, transform 0.2s;
-        box-shadow: 0 4px 6px rgba(0, 206, 124, 0.4);
-    }
-
-    /* При наведении */
-    .btn-download:hover {
-        background: linear-gradient(90deg, #00ce7c, #00b894);
-        transform: scale(1.05);
-    }
-
-    /* При нажатии */
-    .btn-download:active {
-        transform: scale(0.98);
-        background: linear-gradient(90deg, #00a86b, #00c473);
-    }
-
-    /* Блок отчета (уже был) */
-    .report-container {
-        flex: 1;
-        background: linear-gradient(135deg, #007bff, #66d9ff);
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    @media (max-width: 768px) {
-        .page-container {
-            flex-direction: column;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
 
 <div class="page-container" style="display: flex; gap: 20px;">
 <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -127,13 +24,20 @@
           {% endfor %}
         </ul>
         <ul>
-            <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}">БАРЛЫҚ БАҒЫТТАР - {{ year.year }}</a>
+            <li>
+            <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}" class="highlight-link">
+              🧾 БАРЛЫҚ БАҒЫТТАР - {{ year.year }}
+            </a>
+          </li>
         </ul>
         <ul>
           {% if teacher.id and year.id %}
-            <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}" class="btn btn-outline-primary btn-sm w-100">
-              📄 Word-қа жүктеу
-            </a>
+            <form method="get" action="{% url 'teacher_report_download' %}">
+              <input type="hidden" name="year" value="{{ year.id }}">
+              <input type="hidden" name="teacher" value="{{ teacher.id }}">
+              <button type="submit" class="btn-download">Есепті жүктеу</button>
+            </form>
+
           {% endif %}
         </ul>
     </div>
@@ -172,6 +76,7 @@
                     <th>Индикатор атауы</th>
                     <th>Өлшеу бірлігі</th>
                     <th>Көрсеткіш саны</th>
+                    <th>Файлдар</th>
                 </tr>
             </thead>
             <tbody>
@@ -197,6 +102,18 @@
                             >
                         {% endif %}
                     </td>
+                    <td>
+                            {% if not data.teacher_reports %}
+                                <button
+                                    class="open-file-modal btn main-indicator"
+                                    data-id="{{ data.id }}"
+                                    data-name="{{ aggregated_report.id }}"
+                                    data-type="main"
+                                >
+                                    Файлдар ({{ data.uploaded_works.count }})
+                                </button>
+                            {% endif %}
+                        </td>
                 </tr>
                 {% if data.teacher_reports %}
                     {% for report in data.teacher_reports %}
@@ -217,6 +134,16 @@
                                 value="{{ report.value }}"
                             >
                         </td>
+                        <td>
+                            <button
+                                class="open-file-modal btn sub-indicator"
+                                data-id="{{ report.id }}"
+                                data-name="{{ report.indicator.name }}"
+                                data-type="sub"
+                            >
+                                Файлдар ({{ report.uploaded_files.count }})
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 {% endif %}
@@ -225,62 +152,45 @@
         </table>
     {% endfor %}
 </div>
+<!-- Само модальное окно -->
+<div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="fileForm" enctype="multipart/form-data" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="fileModalLabel">Жүктелген файлдар</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Жабу"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" name="file" id="fileInput" class="form-control mb-3" required>
+          <input type="hidden" name="report_id" id="modalReportId">
+          <div id="indicatorFieldContainer"></div>
 
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>Файл атауы</th>
+                  <th>Жүктеу күні</th>
+                  <th>Әрекеттер</th>
+                </tr>
+              </thead>
+              <tbody id="uploadedFilesList"></tbody>
+            </table>
+          </div>
+          <p id="fileCount" class="text-muted text-end me-2"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Жүктеу</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".editable").forEach(input => {
-            input.addEventListener("change", function () {
-                let value = this.value.trim();
-                let id = this.dataset.id;
-                let type = this.dataset.type;
-
-                if (!/^(100|[1-9]?\d?)$/.test(value)) {
-                    this.value = this.dataset.defaultValue;
-                    return;
-                }
-
-                fetch("/update_value/", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"
-                    },
-                    body: JSON.stringify({ id: id, value: value, type: type })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (type === "indicator") {
-                            updateTotals();
-                        }
-                        console.log("Значение обновлено");
-                    }
-                });
-            });
-        });
-
-        function updateTotals() {
-            document.querySelectorAll("tbody tr.main-indicator").forEach(row => {
-                let sum = 0;
-                let totalCell = row.querySelector(".total-value");
-
-                let nextRow = row.nextElementSibling;
-                while (nextRow && nextRow.classList.contains("sub-indicator")) {
-                    let input = nextRow.querySelector("input");
-                    if (input) {
-                        sum += parseFloat(input.value) || 0;
-                    }
-                    nextRow = nextRow.nextElementSibling;
-                }
-
-                if (totalCell) {
-                    totalCell.innerText = sum;
-                }
-            });
-        }
-    });
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'main/js/update_value.js' %}"></script>
+<script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
 
 {% endblock %}

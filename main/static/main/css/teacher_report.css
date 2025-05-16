@@ -20,6 +20,21 @@
     --color-btn-active-bg-end: #00c473;   /* Конечный цвет при active */
 }
 
+.highlight-link {
+  display: inline-block;
+  background-color:  #007bff; /* Зеленый Bootstrap */
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.highlight-link:hover {
+  background-color: #146c43;
+  text-decoration: none;
+}
 
 /* Основной контейнер */
 .page-container {

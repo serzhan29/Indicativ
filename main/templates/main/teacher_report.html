@@ -9,7 +9,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
 <link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
-
+<link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
 <div class="page-container" style="display: flex; gap: 20px;">
     <!-- Фиксированный блок со списком направлений -->
     <div class="switch-direction-container">
@@ -26,13 +26,30 @@
           {% endfor %}
         </ul>
         <ul>
-            <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}">БАРЛЫҚ БАҒЫТТАР - {{ year.year }}</a>
+          <li>
+            <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}" class="highlight-link">
+              🧾 БАРЛЫҚ БАҒЫТТАР - {{ year.year }}
+            </a>
+          </li>
         </ul>
             <form action="{% url 'download_teacher_report' teacher_id=teacher.id direction_id=direction.id year_id=year.id %}" method="get">
                 <button type="submit" class="btn-download">Есепті жүктеу</button>
             </form>
+            <div class="switch-direction-container" style="background: linear-gradient(135deg, #28a745, #66d97d);">
+        <h4>Жылды ауыстыру:</h4>
+        <ul>
+          {% for year_item in all_years %}
+            {% if year_item.id != year.id %}
+              <li>
+                <a href="{% url 'teacher_full_report_with_year' year_id=year_item.id %}" class="text-decoration-none" style="color: white">
+                  {{ year_item.year }}
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
     </div>
-
+    </div>
     <!-- Блок с отчетом -->
     <div class="report-container">
         <div class="report-header">
@@ -54,6 +71,7 @@
                 </tr>
             </thead>
             <tbody>
+                <!-- Для главного индикатора -->
                 {% for data in aggregated_data %}
                 <tr class="main-indicator">
                     <td>{{ data.main_indicator.code }}</td>
@@ -76,19 +94,22 @@
                             >
                         {% endif %}
                     </td>
-                    <td>
-                        <!-- Кнопка для открытия модального окна с файлами -->
-                        <button
-                            class="open-file-modal btn btn-sm btn-light"
-                            data-id="{{ data.id }}"
-                            data-name="{{ data.main_indicator.name }}"
-                            data-type="main"
-                            onclick="console.log('Button clicked!', this.dataset.id, this.dataset.name, this.dataset.type)"
-                        >
-                            Файлдар ({{ data.uploaded_works.count }})
-                        </button>
+                        <!-- Кнопка для открытия модального окна с файлами для главного индикатора-->
+                        <td>
+                            {% if not data.teacher_reports %}
+                                <button
+                                    class="open-file-modal btn main-indicator"
+                                    data-id="{{ data.id }}"
+                                    data-name="{{ aggregated_report.id }}"
+                                    data-type="main"
+                                >
+                                    Файлдар ({{ data.uploaded_works.count }})
+                                </button>
+                            {% endif %}
+                        </td>
 
                 </tr>
+                <!-- Для под индикатора -->
                 {% if data.teacher_reports %}
                     {% for report in data.teacher_reports %}
                     <tr class="sub-indicator">
@@ -110,13 +131,12 @@
                         </td>
                         <td>
                             <button
-                                class="open-file-modal btn btn-sm btn-secondary"
+                                class="open-file-modal btn sub-indicator"
                                 data-id="{{ report.id }}"
                                 data-name="{{ report.indicator.name }}"
                                 data-type="sub"
                             >
                                 Файлдар ({{ report.uploaded_files.count }})
-                                {{ report.uploaded_files.uploaded_at }}
                             </button>
                         </td>
 
@@ -129,20 +149,34 @@
     </div>
 </div>
 
-<!-- Модальное окно для загрузки файлов -->
+<!-- Само модальное окно -->
 <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form id="fileForm" enctype="multipart/form-data" method="post">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title" id="fileModalLabel">Файлдар</h5>
+          <h5 class="modal-title" id="fileModalLabel">Жүктелген файлдар</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Жабу"></button>
         </div>
         <div class="modal-body">
           <input type="file" name="file" id="fileInput" class="form-control mb-3" required>
           <input type="hidden" name="report_id" id="modalReportId">
-          <div id="uploadedFilesList"></div>
+          <div id="indicatorFieldContainer"></div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>Файл атауы</th>
+                  <th>Жүктеу күні</th>
+                  <th>Әрекеттер</th>
+                </tr>
+              </thead>
+              <tbody id="uploadedFilesList"></tbody>
+            </table>
+          </div>
+          <p id="fileCount" class="text-muted text-end me-2"></p>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary">Жүктеу</button>
@@ -151,7 +185,9 @@
     </div>
   </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'main/js/update_value.js' %}"></script>
+<script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
 
 {% endblock %}

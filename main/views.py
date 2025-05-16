@@ -241,12 +241,16 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
                     teacher=teacher, indicator__in=indicators, year=year
                 ).select_related('indicator')
 
+                for report in teacher_reports:
+                    report.uploaded_files = report.uploaded_works.all()
+
                 aggregated_data.append({
                     'id': aggregated_indicator.id,
                     'main_indicator': main_indicator,
                     'total_value': total_value,
                     'additional_value': aggregated_indicator.additional_value,
-                    'teacher_reports': teacher_reports
+                    'teacher_reports': teacher_reports,
+                    'uploaded_works': aggregated_indicator.uploaded_works.all()
                 })
 
             all_aggregated_data[dir_item] = aggregated_data
