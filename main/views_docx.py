@@ -401,6 +401,7 @@ def generate_dean(document, filename_base):
 def export_report(request, faculty_id):
     """ с учителем """
     year_id = request.GET.get('year')
+    department_id = request.GET.get('department')  # Получаем id кафедры из GET параметров
 
     if year_id:
         selected_year = Year.objects.get(id=year_id)
@@ -408,7 +409,13 @@ def export_report(request, faculty_id):
         selected_year = Year.objects.latest('year')
 
     faculty = Faculty.objects.get(id=faculty_id)
-    departments = Department.objects.filter(faculty=faculty)
+
+    # Если передан department_id, берем только одну кафедру, иначе все кафедры факультета
+    if department_id:
+        departments = Department.objects.filter(id=department_id)
+    else:
+        departments = Department.objects.filter(faculty=faculty)
+
     directions = Direction.objects.all()
 
     document = init_document(selected_year, faculty)
@@ -505,25 +512,30 @@ def export_report(request, faculty_id):
     return generate_dean(document, filename_base)
 
 
+
 def align_cell_center(cell):
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-
-# Отчет без списков учителей
 @login_required
 def export_department_report_docx(request, faculty_id):
     year_id = request.GET.get('year')
     selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
 
     faculty = Faculty.objects.get(id=faculty_id)
-    departments = Department.objects.filter(faculty=faculty)
-    directions = Direction.objects.all()
 
-    document = init_document(selected_year, faculty)  # Инициализация документа, с нужным заголовком и форматированием
+    # Получаем выбранную кафедру
+    department_id = request.GET.get('department')
+    if department_id and department_id != 'all':
+        departments = Department.objects.filter(id=department_id, faculty=faculty)
+    else:
+        departments = Department.objects.filter(faculty=faculty)
+
+    directions = Direction.objects.all()
+    document = init_document(selected_year, faculty)  # Заголовок и форматирование
 
     for direction in directions:
-        add_direction_title(document, selected_year, faculty, direction)  # Добавляем заголовок с новой страницы
+        add_direction_title(document, selected_year, faculty, direction)  # Заголовок раздела
 
         num_depts = len(departments)
         table = document.add_table(rows=1, cols=3 + num_depts)
@@ -536,7 +548,6 @@ def export_department_report_docx(request, faculty_id):
             hdr_cells[2 + idx].text = dept.name
         hdr_cells[-1].text = 'Жалпы сумма'
 
-        # Индивидуальные ширины ячеек
         column_widths = [Cm(1), Cm(23)] + [Cm(1) for _ in departments] + [Cm(1)]
         for idx, cell in enumerate(hdr_cells):
             cell.width = column_widths[idx]
@@ -614,7 +625,9 @@ def export_department_report_docx(request, faculty_id):
                 align_cell_center(row[0])
                 for idx in range(2, len(row)):
                     align_cell_center(row[idx])
-        document.add_page_break()
+
+        if direction != directions.last():
+            document.add_page_break()
 
     filename_base = f"Факультет есебі - {faculty.name} {selected_year.year} (мұғалімсіз)"
     return generate_dean(document, filename_base)

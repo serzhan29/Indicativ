@@ -49,20 +49,17 @@
                     </div>
                 </form>
             </div>
-
             <div class="btn-group">
-                <!-- Кнопка для отчета без учителей -->
-                <a href="{% url 'export_report' selected_faculties.0 %}?year={{ selected_year.id }}" class="btn btn-success btn-lg shadow">
+                <!-- Кнопка для отчета с учителями -->
+                <a href="{% url 'export_report' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success btn-lg shadow">
                     📄 Word файл (мұғаліммен)
                 </a>
 
-                <!-- Кнопка для отчета с учителями -->
-                <a href="{% url 'export_department_report_docx' selected_faculties.0 %}?year={{ selected_year.id }}{% for d in selected_departments %}&departments={{ d }}{% endfor %}" class="btn btn-success btn-lg shadow">
+                <!-- Кнопка для отчета без учителей -->
+                <a href="{% url 'export_department_report_docx' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success btn-lg shadow">
                     📄 Word файл (мұғалімсіз)
                 </a>
             </div>
-
-
             <div class="direction-navigation">
                 <h4>Направления</h4>
                 {% for direction in data %}
