@@ -4,78 +4,100 @@
 
 <h2 class="header-title">Есеп беру — {{ faculty.name }} ({{ year.year }} жыл)</h2>
 {% block content %}
-<!-- Форма для выбора года -->
-<form method="get" class="filter-form">
-    <label for="year" class="filter-label">Жыл бойынша сүзгі:</label>
-    <select name="year" id="year" class="filter-select" onchange="this.form.submit()">
-        {% for y in years %}
-            <option value="{{ y.id }}" {% if y.id == year.id %}selected{% endif %}>{{ y.year }}</option>
-        {% endfor %}
-    </select>
-</form>
+<link rel="stylesheet" href="{% static 'main/css/main.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
+<div class="page-container">
+    <!-- Блок выбора года -->
+    <div class="switch-direction-container">
+        <h4>Жылды ауыстыру:</h4>
+        <ul>
+            {% for y in years %}
+                <li>
+                    <a href="?year={{ y.id }}" class="{% if y.id == year.id %}highlight-link{% endif %}">
+                        {{ y.year }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <ul style="list-style: none; padding: 0;">
+            <li><a href="{% url 'export_report' faculty.id %}?year={{ year.id }}" class="btn btn-success" style="display: block; margin-bottom: 10px;">
+                Word файлы ( мұғаліммен )
+            </a></li>
+            <li><a href="{% url 'export_department_report_docx' faculty.id %}?year={{ year.id }}" class="btn btn-primary" style="display: block;">
+                Word файлы ( мұғалісіз )
+            </a></li>
+        </ul>
 
-<!-- Основной контент: направления -->
-{% for direction in data %}
-    <div class="direction-section">
-        <h3 class="direction-title">{{ direction.name }}</h3>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Код</th>
-                    <th>Индикатор атауы</th>
-                    {% for dept in departments %}
-                        <th>{{ dept.name }}</th>
-                    {% endfor %}
-                    <th>Жалпы сумма</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ind in direction.main_indicators %}
-                    {% if ind.has_sub %}
-                        <tr>
-                            <td class="text-center">{{ ind.main.code }}</td>
-                            <td><strong>Барлығы: {{ ind.main.name }}</strong></td>
-                            {% for val in ind.summary_row %}
-                                <td class="text-center">{{ val.value }}</td>
-                            {% endfor %}
-                            <td class="text-center">{{ ind.summary_row|sum_teachers_values }}</td>
-                        </tr>
-                        {% for sub, row in ind.sub_indicators %}
-                            <tr>
-                                <td class="text-center">{{ sub.code }}</td>
-                                <td>{{ sub.name }}</td>
-                                {% for val in row %}
-                                    <td class="text-center">
-                                        {{ val.value }}
-                                        {% if val.teachers %}
-                                            <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
-                                        {% endif %}
-                                    </td>
-                                {% endfor %}
-                                <td class="text-center">{{ row|sum_teachers_values }}</td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td class="text-center">{{ ind.main.code }}</td>
-                            <td>{{ ind.main.name }}</td>
-                            {% for val in ind.row %}
-                                <td class="text-center">
-                                    {{ val.value }}
-                                    {% if val.teachers %}
-                                        <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                            <td class="text-center">{{ ind.row|sum_teachers_values }}</td>
-                        </tr>
-                    {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
-{% endfor %}
+
+
+    <!-- Основной контент: направления и индикаторы -->
+    <div class="report-container">
+        {% for direction in data %}
+            <div class="direction-section">
+                <h3 class="direction-title">{{ direction.name }}</h3>
+
+                <table class="report-table">
+                    <thead class="main-indicator">
+                        <tr>
+                            <th>Код</th>
+                            <th>Индикатор атауы</th>
+                            {% for dept in departments %}
+                                <th>{{ dept.name }}</th>
+                            {% endfor %}
+                            <th>Жалпы сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ind in direction.main_indicators %}
+                            {% if ind.has_sub %}
+                                <tr class="main-indicator">
+                                    <td class="text-center">{{ ind.main.code }}</td>
+                                    <td><strong>Барлығы: {{ ind.main.name }}</strong></td>
+                                    {% for val in ind.summary_row %}
+                                        <td class="text-center">{{ val.value }}</td>
+                                    {% endfor %}
+                                    <td class="text-center">{{ ind.summary_row|sum_teachers_values }}</td>
+                                </tr>
+                                {% for sub, row in ind.sub_indicators %}
+                                    <tr class="sub-indicator">
+                                        <td class="text-center">{{ sub.code }}</td>
+                                        <td>{{ sub.name }}</td>
+                                        {% for val in row %}
+                                            <td class="text-center">
+                                                {{ val.value }}
+                                                {% if val.teachers %}
+                                                    <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="text-center">{{ row|sum_teachers_values }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr class="main-indicator">
+                                    <td class="text-center">{{ ind.main.code }}</td>
+                                    <td>{{ ind.main.name }}</td>
+                                    {% for val in ind.row %}
+                                        <td class="text-center">
+                                            {{ val.value }}
+                                            {% if val.teachers %}
+                                                <button class="teachers-button" onclick="showTeachersModal({{ val.teachers|safe }})">👥</button>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td class="text-center">{{ ind.row|sum_teachers_values }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+</div>
 
 <!-- Модальное окно для списка преподавателей -->
 <div id="teacherModal" class="modal" onclick="closeModal(event)">

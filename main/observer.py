@@ -17,13 +17,16 @@ from django.http import HttpResponseForbidden
 
 @login_required
 def teachers_by_faculty(request):
-    try:
-        profile = request.user.profile
-    except Profile.DoesNotExist:
-        return redirect('home')
+    if request.user.is_superuser:
+        profile = None  # можно вообще не использовать профиль
+    else:
+        try:
+            profile = request.user.profile
+        except Profile.DoesNotExist:
+            return redirect('home')
 
-    if profile.role != 'viewer':
-        return render(request, 'main/view/no_permission.html')
+        if profile.role != 'viewer':
+            return render(request, 'main/view/no_permission.html')
 
     faculties = Faculty.objects.filter(profile__role='teacher').distinct()
     selected_faculty_id = request.GET.get('faculty')
@@ -294,8 +297,6 @@ def dean_report(request):
 
     # 🔥 Добавим все года для выпадающего списка
     years = Year.objects.all().order_by('-year')
-
-
 
     user_profile = request.user.profile
     faculty = user_profile.faculty
