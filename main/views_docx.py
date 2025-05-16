@@ -517,6 +517,8 @@ def align_cell_center(cell):
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+
 @login_required
 def export_department_report_docx(request, faculty_id):
     year_id = request.GET.get('year')
@@ -524,7 +526,6 @@ def export_department_report_docx(request, faculty_id):
 
     faculty = Faculty.objects.get(id=faculty_id)
 
-    # Получаем выбранную кафедру
     department_id = request.GET.get('department')
     if department_id and department_id != 'all':
         departments = Department.objects.filter(id=department_id, faculty=faculty)
@@ -532,10 +533,10 @@ def export_department_report_docx(request, faculty_id):
         departments = Department.objects.filter(faculty=faculty)
 
     directions = Direction.objects.all()
-    document = init_document(selected_year, faculty)  # Заголовок и форматирование
+    document = init_document(selected_year, faculty)
 
     for direction in directions:
-        add_direction_title(document, selected_year, faculty, direction)  # Заголовок раздела
+        add_direction_title(document, selected_year, faculty, direction)
 
         num_depts = len(departments)
         table = document.add_table(rows=1, cols=3 + num_depts)
@@ -574,13 +575,22 @@ def export_department_report_docx(request, faculty_id):
                         dept_sums[idx] += value
 
                 summary_row = table.add_row().cells
-                summary_row[0].text = f'{main.code}'
-                summary_row[1].text = f'Барлығы: {main.name}'
+
+                # Код (жирный)
+                p_code = summary_row[0].paragraphs[0]
+                run_code = p_code.add_run(f'{main.code}')
+                run_code.bold = True
+                align_cell_center(summary_row[0])
+
+                # Название (жирный)
+                p = summary_row[1].paragraphs[0]
+                run = p.add_run(f'Барлығы: {main.name}')
+                run.bold = True
+
                 for idx, value in enumerate(dept_sums):
                     summary_row[2 + idx].text = str(value)
                 summary_row[-1].text = str(sum(dept_sums))
 
-                align_cell_center(summary_row[0])
                 for idx in range(2, len(summary_row)):
                     align_cell_center(summary_row[idx])
 
@@ -607,8 +617,17 @@ def export_department_report_docx(request, faculty_id):
 
             else:
                 row = table.add_row().cells
-                row[0].text = main.code
-                row[1].text = main.name
+
+                # Код (жирный)
+                p_code = row[0].paragraphs[0]
+                run_code = p_code.add_run(main.code)
+                run_code.bold = True
+                align_cell_center(row[0])
+
+                # Название (жирный)
+                p = row[1].paragraphs[0]
+                run = p.add_run(main.name)
+                run.bold = True
 
                 total = 0
                 for idx, dept in enumerate(departments):
@@ -622,7 +641,6 @@ def export_department_report_docx(request, faculty_id):
 
                 row[-1].text = str(total)
 
-                align_cell_center(row[0])
                 for idx in range(2, len(row)):
                     align_cell_center(row[idx])
 
@@ -631,4 +649,5 @@ def export_department_report_docx(request, faculty_id):
 
     filename_base = f"Факультет есебі - {faculty.name} {selected_year.year} (мұғалімсіз)"
     return generate_dean(document, filename_base)
+
 
