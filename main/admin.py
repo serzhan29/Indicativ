@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Year, Direction, MainIndicator, Indicator, TeacherReport, AggregatedIndicator
+from .models import Year, Direction, MainIndicator, Indicator, TeacherReport, AggregatedIndicator, UploadedWork, UploadedMainWork
 from user.models import User, Department, Faculty
 
 
@@ -106,22 +106,64 @@ class DepartmentFilter(admin.SimpleListFilter):
             ).distinct()
         return queryset
 
+class UploadedWorkInline(admin.TabularInline):
+    model = UploadedWork
+    extra = 0
+    readonly_fields = ("uploaded_at",)
+    fields = ("file", "uploaded_at")
+
+
+class UploadedMainWorkInline(admin.TabularInline):
+    model = UploadedMainWork
+    extra = 0
+    readonly_fields = ("uploaded_at",)
+    fields = ("file", "uploaded_at")
+
+
 @admin.register(TeacherReport)
 class TeacherReportAdmin(admin.ModelAdmin):
-    list_display = ("teacher", "short_indicator", "year", "highlight_value")
+    list_display = (
+        "teacher_info",
+        "teacher",
+        "short_indicator",
+        "year",
+        "highlight_value",
+        "uploaded_file_count"
+    )
+    inlines = [UploadedWorkInline]
     search_fields = ("teacher__username", "indicator__name", "year__year")
     ordering = ("year", "teacher")
 
     def short_indicator(self, obj):
-        return obj.indicator.name[:30] + "..." if len(obj.indicator.name) > 30 else obj.indicator.name
+        name = obj.indicator.name
+        code = obj.indicator.code
+        short_name = name[:30] + "..." if len(name) > 30 else name
+        return f"{code} - {short_name}"
+
+    short_indicator.short_description = "Индикатор (код + имя)"
 
     short_indicator.short_description = "Индикатор (сокр.)"
+
+    def indicator_code(self, obj):
+        return obj.indicator.code
+
+    indicator_code.short_description = "Код"
 
     def highlight_value(self, obj):
         color = "red" if obj.value == 0 else "green"
         return format_html(f'<span style="color: {color}; font-weight: bold;">{obj.value}</span>')
 
     highlight_value.short_description = "Значение"
+
+    def uploaded_file_count(self, obj):
+        return obj.uploaded_works.count()
+
+    uploaded_file_count.short_description = "Файлы (шт.)"
+
+    def teacher_info(self, obj):
+        return f"{obj.teacher.last_name} {obj.teacher.first_name}"
+
+    teacher_info.short_description = "Преподаватель"
 
     class ShortIndicatorFilter(admin.SimpleListFilter):
         title = "Индикатор (сокр.)"
@@ -148,16 +190,20 @@ class TeacherReportAdmin(admin.ModelAdmin):
     )
 
 
+
 # === Регистрация модели AggregatedIndicator ===
 @admin.register(AggregatedIndicator)
 class AggregatedIndicatorAdmin(admin.ModelAdmin):
     list_display = (
+        "teacher_info",
         "teacher",
         "short_main_indicator",
         "year",
         "total_value",
-        "additional_value"
+        "additional_value",
+        "uploaded_main_file_count"
     )
+    inlines = [UploadedMainWorkInline]
     list_filter = (
         "year",
         "teacher",
@@ -175,6 +221,24 @@ class AggregatedIndicatorAdmin(admin.ModelAdmin):
     ordering = ("year", "teacher")
 
     def short_main_indicator(self, obj):
-        return obj.main_indicator.name[:15] + "..." if len(obj.main_indicator.name) > 15 else obj.main_indicator.name
+        code = obj.main_indicator.code
+        name = obj.main_indicator.name
+        short_name = name[:15] + "..." if len(name) > 15 else name
+        return f"{code} - {short_name}"
 
-    short_main_indicator.short_description = "Главн. индикатор"
+    short_main_indicator.short_description = "Код и название"
+
+    def uploaded_main_file_count(self, obj):
+        return obj.uploaded_works.count()
+
+    def teacher_info(self, obj):
+        return f"{obj.teacher.last_name} {obj.teacher.first_name} "
+
+    teacher_info.short_description = "Преподаватель"
+
+
+    uploaded_main_file_count.short_description = "Файлы (шт.)"
+
+
+
+
