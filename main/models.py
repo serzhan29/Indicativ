@@ -83,7 +83,7 @@ class AggregatedIndicator(models.Model):
 class UploadedWork(models.Model):
     """ Для подиндикаторов (подтверждение заданного плана) """
     report = models.ForeignKey(TeacherReport, on_delete=models.CASCADE, related_name="uploaded_works")
-    file = models.FileField(upload_to="uploads/")
+    file = models.FileField(upload_to="media/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -94,7 +94,7 @@ class UploadedWork(models.Model):
 class UploadedMainWork(models.Model):
     """ Для главных индикаторов """
     aggregated_report = models.ForeignKey(AggregatedIndicator, on_delete=models.CASCADE, related_name="uploaded_works")
-    file = models.FileField(upload_to="main_indicator_uploads/")
+    file = models.FileField(upload_to="media/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

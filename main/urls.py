@@ -1,7 +1,6 @@
 from django.urls import path
 from .views import  (DirectionListView, YearListView, TeacherReportView,
-                     UpdateValueView, index, TeacherReportAllDirection,
-                     UploadMainIndicatorFileView, UploadSubIndicatorFileView, get_indicator_files)
+                     UpdateValueView, index, TeacherReportAllDirection, get_indicator_files, delete_uploaded_file)
 from .views_docx import (download_teacher_report,
                          TeacherReportWordExportView, export_report, export_department_report_docx)
 from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
@@ -14,26 +13,30 @@ urlpatterns = [
     path('download_teacher_report/<int:teacher_id>/<int:direction_id>/<int:year_id>/', download_teacher_report, name='download_teacher_report'),
 
     path('report/<int:direction_id>/<int:year_id>/', TeacherReportView.as_view(), name='teacher_report'),
+    # Обновление значение
     path('update_value/', UpdateValueView.as_view(), name='update_value'),
 
     path('teacher/', teachers_by_faculty, name='teachers_by_faculty'),
 
+    # Для учителей
     path('teacher/report/', TeacherReportReadOnlyView.as_view(), name='teacher_report_readonly'),
     path('teacher-report/download/', TeacherReportWordExportView.as_view(), name='teacher_report_download'),
     path('report/department/', report_department, name='report_department'),
-    path('dean_report/', dean_report, name='dean_report'),
-
-    path('upload-main/<int:aggregated_id>/', UploadMainIndicatorFileView.as_view(), name='upload_main_file'),
-    path('upload-sub/<int:report_id>/', UploadSubIndicatorFileView.as_view(), name='upload_sub_file'),
+    path('get-indicator-files/<int:report_id>/', get_indicator_files, name='get_indicator_files'),
     path('get-files/<int:report_id>/', get_indicator_files, name='get_indicator_files'),
+    path('delete-file/<int:file_id>/', delete_uploaded_file, name='delete_file'),
+
+    path('full_teacher_report/', TeacherReportAllDirection.as_view(), name='teacher_full_report'),
+    path('full_teacher_report/<int:year_id>/', TeacherReportAllDirection.as_view(),
+         name='teacher_full_report_with_year'),
+
+    # Для Декана
+    path('dean_report/', dean_report, name='dean_report'),
 
     path('get_departments/<str:faculty_id>/', get_departments, name='get_departments'),
     path('export_report/<int:faculty_id>/', export_report, name='export_report'),
     path('report_value_department/<int:faculty_id>/', export_department_report_docx, name='export_department_report_docx'),
     path('observer_grahics/', observer_index, name='observer_index'),
-
-    path('full_teacher_report/', TeacherReportAllDirection.as_view(), name='teacher_full_report'),
-    path('full_teacher_report/<int:year_id>/', TeacherReportAllDirection.as_view(), name='teacher_full_report_with_year')
 
 ]
 

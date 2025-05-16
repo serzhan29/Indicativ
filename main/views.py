@@ -14,6 +14,8 @@ from django.views.generic import ListView, View
 from django.views.generic import TemplateView
 from django.db.models import F
 from .forms import UploadedWorkForm, UploadedMainWorkForm
+from django.core.exceptions import PermissionDenied
+import urllib.parse
 
 
 class DirectionListView(LoginRequiredMixin, ListView):
@@ -35,43 +37,73 @@ class YearListView(LoginRequiredMixin, ListView):
         return context
 
 
-class UploadSubIndicatorFileView(LoginRequiredMixin, FormView):
-    """ Для подиндикаторов """
-    form_class = UploadedWorkForm
 
-    def form_valid(self, form):
-        report_id = self.kwargs['report_id']
-        report = get_object_or_404(TeacherReport, id=report_id, teacher=self.request.user)
-        uploaded_file = form.save(commit=False)
-        uploaded_file.report = report
-        uploaded_file.save()
-        return redirect(self.request.META.get('HTTP_REFERER'))
-
-class UploadMainIndicatorFileView(LoginRequiredMixin, FormView):
-    """ Для главного индикатора """
-    form_class = UploadedMainWorkForm
-
-    def form_valid(self, form):
-        aggregated_id = self.kwargs['aggregated_id']
-        aggregated_report = get_object_or_404(AggregatedIndicator, id=aggregated_id, teacher=self.request.user)
-        uploaded_file = form.save(commit=False)
-        uploaded_file.aggregated_report = aggregated_report
-        uploaded_file.save()
-        return redirect(self.request.META.get('HTTP_REFERER'))
-
-
-@login_required
 def get_indicator_files(request, report_id):
-    file_type = request.GET.get('type')
-    if file_type == 'main':
-        report = get_object_or_404(AggregatedIndicator, id=report_id, teacher=request.user)
-        files = report.files.all()
-    else:
-        report = get_object_or_404(TeacherReport, id=report_id, teacher=request.user)
-        files = report.files.all()
+    """ Получение и загрузка файлов """
 
-    file_data = [{"id": f.id, "name": f.file.name.split('/')[-1], "url": f.file.url} for f in files]
-    return JsonResponse({'files': file_data})
+    if request.method == 'POST' and request.FILES.get('file'):
+        file = request.FILES['file']
+
+        if 'indicator' in request.POST:
+            # Загрузка для подиндикатора
+            report = get_object_or_404(TeacherReport, id=report_id, teacher=request.user)
+            report.uploaded_works.create(file=file)
+            return JsonResponse({'success': True, 'message': 'Файл загружен для подиндикатора.'})
+        else:
+            # Загрузка для главного индикатора
+            aggregated = get_object_or_404(AggregatedIndicator, id=report_id, teacher=request.user)
+            aggregated.uploaded_works.create(file=file)
+            return JsonResponse({'success': True, 'message': 'Файл загружен для главного индикатора.'})
+
+    # GET-запрос — список файлов
+    files_data = []
+
+    # Подиндикаторы
+    try:
+        report = TeacherReport.objects.get(id=report_id, teacher=request.user)
+        for file in report.uploaded_works.all():
+            files_data.append({
+                'id': file.id,
+                'file_name': file.file.name,
+                'uploaded_at': file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'file_url': file.file.url,
+            })
+    except TeacherReport.DoesNotExist:
+        pass
+
+    # Главный индикатор
+    try:
+        aggregated = AggregatedIndicator.objects.get(id=report_id, teacher=request.user)
+        for file in aggregated.uploaded_works.all():
+            files_data.append({
+                'id': file.id,
+                'file_name': file.file.name,
+                'uploaded_at': file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'file_url': file.file.url,
+            })
+    except AggregatedIndicator.DoesNotExist:
+        pass
+
+    return JsonResponse({'files': files_data})
+
+
+
+@require_POST
+def delete_uploaded_file(request, file_id):
+    # сначала пытаемся в UploadedWork
+    obj = UploadedWork.objects.filter(id=file_id, report__teacher=request.user).first()
+    if not obj:
+        # иначе в UploadedMainWork
+        obj = UploadedMainWork.objects.filter(id=file_id, aggregated_report__teacher=request.user).first()
+    if not obj:
+        return JsonResponse({'success': False, 'message': 'Файл не найден.'}, status=404)
+
+    # удаляем сам файл и запись
+    obj.file.delete(save=False)
+    obj.delete()
+    return JsonResponse({'success': True, 'message': 'Файл удалён.'})
+
+
 
 class TeacherReportView(LoginRequiredMixin, TemplateView):
     """Генерация отчетов для учителя и их агрегация"""
@@ -82,6 +114,13 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         teacher = self.request.user
         direction = get_object_or_404(Direction, id=self.kwargs['direction_id'])
         year = get_object_or_404(Year, id=self.kwargs['year_id'])
+
+        # Получаем год либо из URL (kwargs), либо из GET-параметра
+        year_id = self.request.GET.get('year_id') or self.kwargs.get('year_id')
+        if year_id:
+            year = get_object_or_404(Year, id=year_id)
+        else:
+            year = Year.objects.last()
 
         main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
         aggregated_data = []
@@ -135,6 +174,7 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
             'teacher': teacher,
             'direction': direction,
             'year': year,
+            'all_years': Year.objects.all(),
             'aggregated_data': aggregated_data,
             'directions': Direction.objects.all(),
         })

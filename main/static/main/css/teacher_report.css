@@ -1,94 +1,125 @@
-    /* Основной контейнер */
+:root {
+    /* Градиент фона для блока направлений (синий) */
+    --color-direction-bg-start: #007bff; /* Начальный цвет градиента */
+    --color-direction-bg-end: #66d9ff;   /* Конечный цвет градиента */
+
+    /* Градиент фона для блока годов (зелёный) */
+    --color-year-bg-start: #28a745;      /* Начальный цвет градиента */
+    --color-year-bg-end: #66d97d;        /* Конечный цвет градиента */
+
+    /* Градиент фона для кнопки загрузки (зелёный) */
+    --color-btn-bg-start: #00b894;       /* Начальный цвет кнопки */
+    --color-btn-bg-end: #00ce7c;         /* Конечный цвет кнопки */
+
+    /* Градиент фона кнопки при наведении */
+    --color-btn-hover-bg-start: #00ce7c; /* Начальный цвет при hover */
+    --color-btn-hover-bg-end: #00b894;   /* Конечный цвет при hover */
+
+    /* Градиент фона кнопки при нажатии */
+    --color-btn-active-bg-start: #00a86b; /* Начальный цвет при active */
+    --color-btn-active-bg-end: #00c473;   /* Конечный цвет при active */
+}
+
+
+/* Основной контейнер */
+.page-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Блок списка направлений */
+.switch-direction-container {
+    position: sticky; /* Чтобы блок был "липким" */
+    top: 20px; /* Отступ сверху */
+    background: linear-gradient(135deg, var(--color-direction-bg-start), var(--color-direction-bg-end));
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+    min-width: 250px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    height: fit-content;
+    z-index: 2; /* Чтобы блок направлений был сверху */
+}
+
+/* Новый блок переключения годов */
+.switch-direction-container + .switch-direction-container {
+    top: 500px; /* Отступ сверху для блока года, чтобы он не перекрывал блок направлений */
+    background: linear-gradient(135deg, var(--color-year-bg-start), var(--color-year-bg-end)); /* Другой фон для блока года */
+    z-index: 1; /* Блок годов будет ниже блоков направлений */
+}
+
+.switch-direction-container h4 {
+    margin-bottom: 15px;
+    font-size: 20px;
+    border-bottom: 2px solid white;
+    padding-bottom: 5px;
+}
+
+.switch-direction-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.switch-direction-container li {
+    margin-bottom: 10px;
+}
+
+.switch-direction-container a {
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+
+.switch-direction-container a:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-download {
+    display: inline-block;
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(90deg, var(--color-btn-bg-start), var(--color-btn-bg-end));
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.3s, transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 206, 124, 0.4);
+}
+
+/* При наведении */
+.btn-download:hover {
+    background: linear-gradient(90deg, var(--color-btn-hover-bg-start), var(--color-btn-hover-bg-end));
+    transform: scale(1.05);
+}
+
+/* При нажатии */
+.btn-download:active {
+    transform: scale(0.98);
+    background: linear-gradient(90deg, var(--color-btn-active-bg-start), var(--color-btn-active-bg-end));
+}
+
+/* Блок отчета (уже был) */
+.report-container {
+    flex: 1;
+    background: linear-gradient(135deg, var(--color-direction-bg-start), var(--color-direction-bg-end));
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
     .page-container {
-        display: flex;
-        gap: 20px;
-        margin-top: 20px;
+        flex-direction: column;
     }
-
-    /* Блок списка направлений */
-    .switch-direction-container {
-        position: sticky; /* Чтобы блок был "липким" */
-        top: 20px; /* Отступ сверху */
-        background: linear-gradient(135deg, #007bff, #66d9ff);
-        padding: 20px;
-        border-radius: 12px;
-        color: white;
-        min-width: 250px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        height: fit-content;
-    }
-
-    .switch-direction-container h4 {
-        margin-bottom: 15px;
-        font-size: 20px;
-        border-bottom: 2px solid white;
-        padding-bottom: 5px;
-    }
-
-    .switch-direction-container ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .switch-direction-container li {
-        margin-bottom: 10px;
-    }
-
-    .switch-direction-container a {
-        color: white;
-        font-weight: bold;
-        text-decoration: none;
-        display: block;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background-color 0.3s;
-    }
-
-    .switch-direction-container a:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-download {
-        display: inline-block;
-        margin-top: 20px;
-        width: 100%;
-        padding: 12px 20px;
-        font-size: 16px;
-        font-weight: 600;
-        color: white;
-        background: linear-gradient(90deg, #00b894, #00ce7c);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        text-align: center;
-        transition: background 0.3s, transform 0.2s;
-        box-shadow: 0 4px 6px rgba(0, 206, 124, 0.4);
-    }
-
-    /* При наведении */
-    .btn-download:hover {
-        background: linear-gradient(90deg, #00ce7c, #00b894);
-        transform: scale(1.05);
-    }
-
-    /* При нажатии */
-    .btn-download:active {
-        transform: scale(0.98);
-        background: linear-gradient(90deg, #00a86b, #00c473);
-    }
-
-    /* Блок отчета (уже был) */
-    .report-container {
-        flex: 1;
-        background: linear-gradient(135deg, #007bff, #66d9ff);
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    @media (max-width: 768px) {
-        .page-container {
-            flex-direction: column;
-        }
-    }
+}
