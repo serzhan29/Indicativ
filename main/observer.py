@@ -97,7 +97,11 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
                 'main_indicators': []
             }
 
-            main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
+            def code_key(code):
+                return [int(part) for part in code.split('.') if part.isdigit()]
+
+            main_indicators = list(MainIndicator.objects.filter(direction=direction, years=year))
+            main_indicators.sort(key=lambda x: code_key(x.code))
 
             for main_indicator in main_indicators:
                 indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
@@ -311,10 +315,12 @@ def dean_report(request):
             'main_indicators': []
         }
 
-        main_indicators = MainIndicator.objects.filter(
-            direction=direction,
-            years=selected_year
-        ).prefetch_related("indicators")
+        # Заменяем сортировку на собственную функцию
+        def code_key(code):
+            return [int(part) for part in code.split('.') if part.isdigit()]
+
+        main_indicators = list(MainIndicator.objects.filter(direction=direction, years=selected_year))
+        main_indicators.sort(key=lambda x: code_key(x.code))
 
         for main in main_indicators:
             indicator_data = {

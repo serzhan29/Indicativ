@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import  (DirectionListView, YearListView, TeacherReportView,
-                     UpdateValueView, index, TeacherReportAllDirection, get_indicator_files, delete_uploaded_file)
+                     UpdateValueView, index, TeacherReportAllDirection, get_indicator_files, delete_uploaded_file, update_deadline)
 from .views_docx import (download_teacher_report,
                          TeacherReportWordExportView, export_report, export_department_report_docx)
 from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
@@ -25,6 +25,8 @@ urlpatterns = [
     path('get-indicator-files/<int:report_id>/', get_indicator_files, name='get_indicator_files'),
     path('get-files/<int:report_id>/', get_indicator_files, name='get_indicator_files'),
     path('delete-file/<int:file_id>/', delete_uploaded_file, name='delete_file'),
+    path('update-deadline/', update_deadline, name='update_deadline'),
+
 
     path('full_teacher_report/', TeacherReportAllDirection.as_view(), name='teacher_full_report'),
     path('full_teacher_report/<int:year_id>/', TeacherReportAllDirection.as_view(),

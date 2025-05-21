@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from calendar import month_name
+
 
 class Year(models.Model):
     """Модель для хранения годов"""
@@ -22,6 +24,11 @@ class UnitChoices(models.TextChoices):
     Quantity = "Саны", "Саны"
     Department = "Кафедрада оқылатын пәндердің үлесі ( % )", "Кафедрада оқылатын пәндердің үлесі ( % )"
     Percent = "%", "%"
+    level = "деңгейі" , "деңгейі"
+    quant = "саны (қолданыстағыларға қосымша)", "саны (қолданыстағыларға қосымша)"
+    OPK = "ОПҚ санынан %", "ОПҚ санынан %"
+    total = "Жалпы санынан %" , "Жалпы санынан %"
+
 
 
 class MainIndicator(models.Model):
@@ -51,18 +58,44 @@ class Indicator(models.Model):
         return f" {self.code} {self.name} - ({years_list} - {self.unit})"
 
 
+class SubSubIndicator(models.Model):
+    indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE)
+    code = models.CharField(max_length=15, default="", verbose_name="Код: ")
+    years = models.ManyToManyField(Year, verbose_name="Годы действия")
+    name = models.CharField(max_length=255, verbose_name="Название подподиндикатора: ")
+    unit = models.CharField(max_length=255, verbose_name="Ед. изм. :" , choices=UnitChoices.choices, default=UnitChoices.Quantity)
+
+    def __str__(self):
+        return f"{self.code} — {self.name}"
+
+
 class TeacherReport(models.Model):
     """Учитель вносит данные по индикатору"""
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Учитель")
     indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, verbose_name="Индикатор")
     year = models.ForeignKey(Year, on_delete=models.CASCADE, verbose_name="Год")
     value = models.IntegerField(default=0, verbose_name="Подиндикатор")
+    deadline_month = models.IntegerField(
+        choices=[(i, month_name[i]) for i in range(1, 13)],
+        null=True, blank=True,
+        verbose_name="Месяц срока выполнения"
+    )
+    deadline_year = models.IntegerField(
+        null=True, blank=True,
+        verbose_name="Год срока выполнения"
+    )
+
 
     class Meta:
-        unique_together = ('teacher', 'indicator', 'year')  # исправлено
+        unique_together = ('teacher', 'indicator', 'year')
 
     def __str__(self):
-        return f"{self.teacher} - {self.indicator.code} {self.indicator.name} | год - {self.year.year} |"  # исправлено
+        return f"{self.teacher} - {self.indicator.code} {self.indicator.name} | год - {self.year.year} |"
+
+    def update_total_value(self):
+        total = self.sub_indicator_values.aggregate(total=models.Sum('value'))['total'] or 0
+        self.value = total
+        self.save()
 
 
 class AggregatedIndicator(models.Model):
@@ -72,6 +105,16 @@ class AggregatedIndicator(models.Model):
     year = models.ForeignKey(Year, on_delete=models.CASCADE, verbose_name="Год")
     total_value = models.IntegerField(default=0, verbose_name="Сумма подиндикаторов")
     additional_value = models.IntegerField(default=0, verbose_name="Дополнительное значение")  # Можно использовать для других расчетов
+    deadline_month = models.IntegerField(
+        choices=[(i, month_name[i]) for i in range(1, 13)],
+        null=True, blank=True,
+        verbose_name="Месяц срока выполнения"
+    )
+    deadline_year = models.IntegerField(
+        null=True, blank=True,
+        verbose_name="Год срока выполнения"
+    )
+
 
     class Meta:
         unique_together = ('teacher', 'main_indicator', 'year')  # исправлено
@@ -99,3 +142,39 @@ class UploadedMainWork(models.Model):
 
     def __str__(self):
         return f"{self.aggregated_report.teacher} | {self.aggregated_report.main_indicator.name} | {self.aggregated_report.year.year}"
+
+
+class SubSubIndicatorValue(models.Model):
+    """Значения подподиндикаторов в отчёте учителя"""
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Учитель")
+    report = models.ForeignKey(TeacherReport, on_delete=models.CASCADE, related_name="sub_indicator_values")
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, verbose_name="Год")
+    indicator = models.ForeignKey(SubSubIndicator, on_delete=models.CASCADE, verbose_name="Индикатор")
+    value = models.IntegerField(default=0, verbose_name="Значение")
+    deadline_month = models.IntegerField(
+        choices=[(i, month_name[i]) for i in range(1, 13)],
+        null=True, blank=True,
+        verbose_name="Месяц срока выполнения"
+    )
+    deadline_year = models.IntegerField(
+        null=True, blank=True,
+        verbose_name="Год срока выполнения"
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.value})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.report.update_total_value()  # обновить сумму в TeacherReport
+
+
+class SubUploadedWork(models.Model):
+    """ Для подиндикаторов (подтверждение заданного плана) """
+    report = models.ForeignKey(SubSubIndicatorValue, on_delete=models.CASCADE, related_name="uploaded_works")
+    file = models.FileField(upload_to="media/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return f"{self.report.teacher} | {self.report.indicator.name} | {self.report.year.year}"

@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Year, Direction, MainIndicator, Indicator, TeacherReport, AggregatedIndicator, UploadedWork, UploadedMainWork
+from .models import (Year, Direction, MainIndicator, Indicator, TeacherReport,
+                     AggregatedIndicator, UploadedWork, UploadedMainWork, SubUploadedWork,
+                     SubSubIndicator, SubSubIndicatorValue)
 from user.models import User, Department, Faculty
 
 
@@ -239,6 +241,51 @@ class AggregatedIndicatorAdmin(admin.ModelAdmin):
 
     uploaded_main_file_count.short_description = "Файлы (шт.)"
 
+class SubUploadedWorkInline(admin.TabularInline):
+    model = SubUploadedWork
+    extra = 0
+    readonly_fields = ("uploaded_at",)
+
+
+@admin.register(SubSubIndicator)
+class SubSubIndicatorAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "indicator", "unit", "years_display")
+    list_filter = ("indicator", "unit", "years")
+    search_fields = ("name", "code", "indicator__name")
+
+    def years_display(self, obj):
+        return ", ".join(str(year.year) for year in obj.years.all())
+
+    years_display.short_description = "Годы действия"
+
+
+@admin.register(SubSubIndicatorValue)
+class SubSubIndicatorValueAdmin(admin.ModelAdmin):
+    list_display = (
+        "teacher_info",
+        "indicator",
+        "value",
+        "year",
+        "deadline_month",
+        "deadline_year",
+        "uploaded_files_count",
+    )
+    list_filter = ("year", "deadline_year", "deadline_month", "indicator")
+    search_fields = ("teacher__username", "teacher__last_name", "indicator__name")
+    inlines = [SubUploadedWorkInline]
+
+    def teacher_info(self, obj):
+        profile = getattr(obj.teacher, "profile", None)
+        if profile and profile.department and profile.department.faculty:
+            return f"{obj.teacher.get_full_name()} ({profile.department.faculty.name} | {profile.department.name})"
+        return obj.teacher.get_full_name()
+
+    teacher_info.short_description = "Преподаватель"
+
+    def uploaded_files_count(self, obj):
+        return obj.uploaded_works.count()
+
+    uploaded_files_count.short_description = "Файлов"
 
 
 
