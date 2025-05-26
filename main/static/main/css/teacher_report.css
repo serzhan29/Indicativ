@@ -1,39 +1,39 @@
 :root {
-    /* Градиент фона для блока направлений (синий) */
-    --color-direction-bg-start: #007bff; /* Начальный цвет градиента */
-    --color-direction-bg-end: #66d9ff;   /* Конечный цвет градиента */
+    /* Градиент фона для блока направлений (сине-голубой) */
+    --color-direction-bg-start: #0066cc;
+    --color-direction-bg-end: #33ccff;
 
-    /* Градиент фона для блока годов (зелёный) */
-    --color-year-bg-start: #28a745;      /* Начальный цвет градиента */
-    --color-year-bg-end: #66d97d;        /* Конечный цвет градиента */
+    /* Градиент фона для блока годов (мятно-зелёный) */
+    --color-year-bg-start: #2ecc71;
+    --color-year-bg-end: #27ae60;
 
-    /* Градиент фона для кнопки загрузки (зелёный) */
-    --color-btn-bg-start: #00b894;       /* Начальный цвет кнопки */
-    --color-btn-bg-end: #00ce7c;         /* Конечный цвет кнопки */
+    /* Градиент фона для кнопки загрузки (бирюзово-синий) */
+    --color-btn-bg-start: #00bcd4;
+    --color-btn-bg-end: #009688;
 
     /* Градиент фона кнопки при наведении */
-    --color-btn-hover-bg-start: #00ce7c; /* Начальный цвет при hover */
-    --color-btn-hover-bg-end: #00b894;   /* Конечный цвет при hover */
+    --color-btn-hover-bg-start: #009688;
+    --color-btn-hover-bg-end: #00bcd4;
 
     /* Градиент фона кнопки при нажатии */
-    --color-btn-active-bg-start: #00a86b; /* Начальный цвет при active */
-    --color-btn-active-bg-end: #00c473;   /* Конечный цвет при active */
+    --color-btn-active-bg-start: #00796b;
+    --color-btn-active-bg-end: #00897b;
 }
 
 .highlight-link {
-  display: inline-block;
-  background-color:  #007bff; /* Зеленый Bootstrap */
-  color: white;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-weight: bold;
-  text-decoration: none;
-  transition: background-color 0.3s ease;
+    display: inline-block;
+    background-color: #4a00e0;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
 }
 
 .highlight-link:hover {
-  background-color: #146c43;
-  text-decoration: none;
+    background-color: #3b0b98;
+    text-decoration: none;
 }
 
 /* Основной контейнер */
@@ -45,23 +45,23 @@
 
 /* Блок списка направлений */
 .switch-direction-container {
-    position: sticky; /* Чтобы блок был "липким" */
-    top: 20px; /* Отступ сверху */
+    position: sticky;
+    top: 20px;
     background: linear-gradient(135deg, var(--color-direction-bg-start), var(--color-direction-bg-end));
     padding: 20px;
     border-radius: 12px;
     color: white;
     min-width: 250px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     height: fit-content;
-    z-index: 2; /* Чтобы блок направлений был сверху */
+    z-index: 2;
 }
 
-/* Новый блок переключения годов */
+/* Блок годов */
 .switch-direction-container + .switch-direction-container {
-    top: 500px; /* Отступ сверху для блока года, чтобы он не перекрывал блок направлений */
-    background: linear-gradient(135deg, var(--color-year-bg-start), var(--color-year-bg-end)); /* Другой фон для блока года */
-    z-index: 1; /* Блок годов будет ниже блоков направлений */
+    top: 500px;
+    background: linear-gradient(135deg, var(--color-year-bg-start), var(--color-year-bg-end));
+    z-index: 1;
 }
 
 .switch-direction-container h4 {
@@ -109,28 +109,26 @@
     cursor: pointer;
     text-align: center;
     transition: background 0.3s, transform 0.2s;
-    box-shadow: 0 4px 6px rgba(0, 206, 124, 0.4);
+    box-shadow: 0 4px 6px rgba(72, 0, 183, 0.4);
 }
 
-/* При наведении */
 .btn-download:hover {
     background: linear-gradient(90deg, var(--color-btn-hover-bg-start), var(--color-btn-hover-bg-end));
     transform: scale(1.05);
 }
 
-/* При нажатии */
 .btn-download:active {
     transform: scale(0.98);
     background: linear-gradient(90deg, var(--color-btn-active-bg-start), var(--color-btn-active-bg-end));
 }
 
-/* Блок отчета (уже был) */
+/* Блок отчета */
 .report-container {
     flex: 1;
     background: linear-gradient(135deg, var(--color-direction-bg-start), var(--color-direction-bg-end));
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 @media (max-width: 768px) {

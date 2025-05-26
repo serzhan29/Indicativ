@@ -10,14 +10,13 @@
 <div class="container mt-4">
     <h2 class="text-center mb-4 text-primary">"{{ direction.name }}" бағыт үшін жылды таңдаңыз</h2>
 
-    <div class="row justify-content-center">
+    <div class="row justify-content-center g-4">
         {% for year in years|dictsort:"year" %}
-        <div class="col-md-3 col-sm-6 mb-3">
-            <a href="{% url 'teacher_report' direction_id=direction.id year_id=year.id %}" class="text-decoration-none">
-
-                <div class="card shadow-sm border-0 text-center py-3 transition">
+        <div class="col-lg-3 col-md-4 col-sm-6 d-flex align-items-stretch">
+            <a href="{% url 'teacher_report' direction_id=direction.id year_id=year.id %}" class="text-decoration-none w-100">
+                <div class="card shadow-sm border-0 text-center py-4 hover-scale h-100 d-flex flex-column justify-content-center">
                     <div class="card-body">
-                        <h5 class="card-title text-dark fw-bold">{{ year.year }}</h5>
+                        <h5 class="card-title text-dark fw-bold">{{ year.year }} - {{ year.year|add:"1" }}</h5>
                     </div>
                 </div>
             </a>
@@ -27,13 +26,24 @@
 </div>
 
 <style>
-.transition {
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s;
+.hover-scale {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
 }
-.transition:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+
+.hover-scale:hover {
+    transform: translateY(-6px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Убедимся, что ссылки занимают всю ширину карточки */
+a.w-100 {
+    display: block;
+}
+
+/* Немного увеличим padding для большей «воздушности» */
+.card.py-4 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
 }
 </style>
-
 {% endblock %}

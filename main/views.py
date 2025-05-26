@@ -139,6 +139,7 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         direction = get_object_or_404(Direction, id=self.kwargs['direction_id'])
         year = get_object_or_404(Year, id=self.kwargs['year_id'])
 
+
         # Получаем год либо из URL (kwargs), либо из GET-параметра
         year_id = self.request.GET.get('year_id') or self.kwargs.get('year_id')
         if year_id:

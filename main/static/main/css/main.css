@@ -1,19 +1,19 @@
 :root {
-    --font-color: #fff;
-    --bg-gradient-start: #1e3c72;
-    --bg-gradient-end: #2a5298;
-    --heading-gradient-start: #ff9a9e;
-    --heading-gradient-end: #fad0c4;
-    --table-bg: rgba(255, 255, 255, 0.15);
-    --table-bg-blur: rgba(255, 255, 255, 0.2);
-    --table-bg-strong: rgba(255, 255, 255, 0.25);
-    --border-color: white;
+    --font-color: #f9f9f9;
+    --bg-gradient-start: #0f2027;
+    --bg-gradient-end: #2c5364;
+    --heading-gradient-start: #ffecd2;
+    --heading-gradient-end: #fcb69f;
+    --table-bg: rgba(255, 255, 255, 0.08);
+    --table-bg-blur: rgba(255, 255, 255, 0.12);
+    --table-bg-strong: rgba(255, 255, 255, 0.18);
+    --border-color: rgba(255, 255, 255, 0.25);
     --editable-bg: rgba(255, 255, 255, 0.1);
     --editable-border: rgba(255, 255, 255, 0.3);
     --editable-focus-bg: rgba(255, 255, 255, 0.2);
-    --editable-focus-border: #ff9a9e;
-    --not-editable-color: #ccc;
-    --total-value-color: #ffcc67;
+    --editable-focus-border: #fcb69f;
+    --not-editable-color: #888;
+    --total-value-color: #ffe066;
 }
 
 body {
@@ -33,32 +33,33 @@ h2, h3 {
 
 h2 {
     font-size: 2rem;
-    background: -webkit-linear-gradient(45deg, var(--heading-gradient-start), var(--heading-gradient-end));
+    background: linear-gradient(45deg, var(--heading-gradient-start), var(--heading-gradient-end));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 h3 {
     font-size: 1.5rem;
-    opacity: 0.8;
+    opacity: 0.9;
+    color: #f5f5f5;
 }
 
 table {
     width: 95%;
-    max-width: none;
     margin: 30px auto;
     border-collapse: collapse;
     background: var(--table-bg);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
 
 th, td {
-    padding: 15px;
+    padding: 16px;
     text-align: left;
     border-right: 2px solid var(--border-color);
+    font-size: 0.95rem;
 }
 
 th:last-child, td:last-child {
@@ -70,11 +71,12 @@ th {
     text-transform: uppercase;
     font-weight: bold;
     text-align: center;
+    letter-spacing: 1px;
 }
 
 .main-indicator {
     font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     background: var(--table-bg-strong);
     color: var(--font-color);
     text-transform: uppercase;
@@ -85,7 +87,7 @@ th {
     padding-left: 30px;
     font-style: italic;
     background: var(--table-bg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .editable {
@@ -93,7 +95,7 @@ th {
     color: var(--font-color);
     border: 1px solid var(--editable-border);
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: all 0.3s ease;
     text-align: center;
 }
@@ -102,6 +104,7 @@ th {
     outline: none;
     border-color: var(--editable-focus-border);
     background: var(--editable-focus-bg);
+    box-shadow: 0 0 5px var(--editable-focus-border);
 }
 
 .not-editable {

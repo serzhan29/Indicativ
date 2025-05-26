@@ -15,7 +15,7 @@
             {% for y in years %}
                 <li>
                     <a href="?year={{ y.id }}" class="{% if y.id == year.id %}highlight-link{% endif %}">
-                        {{ y.year }}
+                        {{ y.year }} -- {{ y.year|add:"1"  }}
                     </a>
                 </li>
             {% endfor %}
@@ -100,19 +100,151 @@
 </div>
 
 <!-- Модальное окно для списка преподавателей -->
-<div id="teacherModal" class="modal" onclick="closeModal(event)">
-    <h4 class="modal-title">Преподаватели</h4>
-    <table id="teacherList" class="modal-table">
-        <thead>
-            <tr>
-                <th class="modal-header">ФИО</th>
-                <th class="modal-header">Значение</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
+<div id="teacherModal" class="teacher-modal" onclick="closeModal(event)">
+  <div class="teacher-modal-content" onclick="event.stopPropagation()">
+    <h4 class="teacher-modal-title">Преподаватели</h4>
+    <table id="teacherList" class="teacher-modal-table">
+      <thead>
+        <tr>
+          <th class="teacher-modal-header">ФИО</th>
+          <th class="teacher-modal-header" style="text-align:right;">Мағынасы</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
     </table>
-    <button class="modal-close" onclick="document.getElementById('teacherModal').style.display='none'">Закрыть</button>
+    <button class="teacher-modal-close" onclick="document.getElementById('teacherModal').style.display='none'">Жабу</button>
+  </div>
 </div>
+<style>
+/* Затемнённый фон */
+.teacher-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  overflow-y: auto; /* только у модального фона */
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+/* Контейнер самого окна */
+.teacher-modal-content {
+  background-color: #fff;
+  max-width: 700px;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 30px 25px 25px 25px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  animation: teacherModalFadeIn 0.3s ease forwards;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  overflow: visible; /* чтобы не было внутреннего скролла */
+}
+
+/* Анимация появления */
+@keyframes teacherModalFadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.teacher-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+  letter-spacing: 0.02em;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Таблица с прокруткой, если много данных */
+.teacher-modal-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 8px #ddd;
+  display: table; /* убираем display:block, чтобы таблица была обычной */
+  max-height: none; /* убираем ограничение */
+  overflow: visible; /* убираем прокрутку */
+}
+
+.teacher-modal-table thead tr {
+  background-color: #007bff;
+  color: white;
+  font-weight: 700;
+  border-radius: 8px;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.teacher-modal-table tbody {
+  display: block;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.teacher-modal-table tbody tr {
+  background-color: #f9faff;
+  transition: background-color 0.2s ease;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  cursor: default;
+}
+
+.teacher-modal-table tbody tr:hover {
+  background-color: #e3f0ff;
+}
+
+.teacher-modal-header {
+  padding: 10px 15px;
+  text-align: left;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.teacher-modal-table td {
+  padding: 12px 15px;
+  font-size: 16px;
+  color: #444;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.teacher-modal-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: #007bff;
+}
+
+/* Кнопка закрытия */
+.teacher-modal-close {
+  align-self: center;
+  padding: 12px 40px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  user-select: none;
+}
+
+.teacher-modal-close:hover {
+  background-color: #0056b3;
+}
+</style>
+
 <!-- Скрипт для модального окна -->
 <script>
 function showTeachersModal(teachers) {
@@ -145,138 +277,4 @@ function closeModal(event) {
     }
 }
 </script>
-
-<!-- Стиль для улучшенного дизайна -->
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f7fc;
-        color: #333;
-        margin: 0;
-        padding: 0;
-    }
-
-    .header-title {
-        text-align: center;
-        font-size: 24px;
-        color: #444;
-        margin-top: 30px;
-    }
-
-    .filter-form {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-    }
-
-    .filter-label {
-        margin-right: 10px;
-        font-size: 16px;
-        color: #555;
-    }
-
-    .filter-select {
-        padding: 8px;
-        font-size: 16px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #fff;
-    }
-
-    .direction-section {
-        margin: 20px;
-    }
-
-    .direction-title {
-        font-size: 20px;
-        color: #333;
-        margin-bottom: 10px;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 30px;
-        background-color: #fff;
-        border: 1px solid #ccc;
-    }
-
-    .data-table th, .data-table td {
-        padding: 10px;
-        text-align: left;
-    }
-
-    .data-table th {
-        background-color: #f1f1f1;
-        font-weight: bold;
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .teachers-button {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        cursor: pointer;
-        font-size: 16px;
-        border-radius: 4px;
-    }
-
-    .teachers-button:hover {
-        background-color: #0056b3;
-    }
-
-    /* Модальное окно */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 20%;
-        left: 50%;
-        transform: translate(-50%, -20%);
-        background-color: white;
-        padding: 20px;
-        border: 1px solid #aaa;
-        z-index: 1000;
-        width: 600px;
-        height: 500px;
-        border-radius: 8px;
-    }
-
-    .modal-title {
-        font-size: 20px;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-
-    .modal-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .modal-header {
-        text-align: left;
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 5px;
-    }
-
-    .modal-close {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        font-size: 16px;
-        cursor: pointer;
-        border-radius: 4px;
-        margin-top: 10px;
-    }
-
-    .modal-close:hover {
-        background-color: #0056b3;
-    }
-</style>
 {% endblock %}

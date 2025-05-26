@@ -3,7 +3,7 @@
 {% block breadcrumbs %}
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{{ direction.name }}</a></li>
   <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">Барлық жылдар</a></li>
-  <li class="breadcrumb-item active" aria-current="page">{{ year.year }}</li>
+  <li class="breadcrumb-item active" aria-current="page">{{ year.year }} - {{ year.year|add:"1" }}</li>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
 <div class="page-container" style="display: flex; gap: 20px;">
     <!-- Фиксированный блок со списком направлений -->
     <div class="switch-direction-container">
-        <h4>Переключить направление:</h4>
+        <h4>Бағытты ауыстыру:</h4>
         <ul>
           {% for direction_item in directions %}
             {% if direction_item.id != direction.id %}
@@ -29,7 +29,7 @@
         <ul>
           <li>
             <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}" class="highlight-link">
-              🧾 БАРЛЫҚ БАҒЫТТАР - {{ year.year }}
+              🧾 БАРЛЫҚ БАҒЫТТАР ({{ year.year }}-{{ year.year|add:"1" }})
             </a>
           </li>
         </ul>
@@ -43,7 +43,7 @@
             {% if year_item.id != year.id %}
               <li>
                 <a href="{% url 'teacher_full_report_with_year' year_id=year_item.id %}" class="text-decoration-none" style="color: white">
-                  {{ year_item.year }}
+                  {{ year_item.year }}-{{ year_item.year|add:"1" }}
                 </a>
               </li>
             {% endif %}
@@ -57,7 +57,7 @@
         <div class="report-header">
             <div>
                 <h2>{{ direction }}</h2>
-                <h3>Жыл: {{ year }}</h3>
+                <h3>Жыл: {{ year.year }} - {{ year.year|add:"1" }}</h3>
             </div>
         </div>
 
@@ -69,7 +69,7 @@
                     <th>Өлшеу бірлігі</th>
                     <th>Көрсеткіш саны</th>
                     <th>Файлдар</th>
-                    <th>Месяц и Год</th>
+                    <th>Ай / Жыл</th>
                 </tr>
             </thead>
             <tbody>
@@ -241,5 +241,40 @@
 <script src="{% static 'main/js/update_value.js' %}"></script>
 <script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
 <script src="{% static 'main/js/second_modal.js' %}"></script>
+<script>
+        document.querySelectorAll('.open-deadline-modal').forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('deadlineModal'));
+            document.getElementById('deadline-item-id').value = button.dataset.id;
+            document.getElementById('deadline-item-type').value = button.dataset.type;
+            modal.show();
+        });
+    });
 
+    document.getElementById('deadlineForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const itemId = this.item_id.value;
+        const itemType = this.item_type.value;
+        const month = this.month.value;
+        const year = this.year.value;
+
+        fetch('{% url "update_deadline" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: itemId, type: itemType, month: month, year: year })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();  // Обновим страницу
+            } else {
+                alert('Ошибка при сохранении даты.');
+            }
+        });
+    });
+</script>
 {% endblock %}

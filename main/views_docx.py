@@ -16,7 +16,25 @@ from docx.enum.table import WD_ALIGN_VERTICAL
 from django.db import models
 from datetime import datetime
 from django.utils.timezone import now
+from calendar import month_name
 
+
+def get_kz_month_name(month_number):
+    kz_month_names = {
+        1: 'Қаңтар',
+        2: 'Ақпан',
+        3: 'Наурыз',
+        4: 'Сәуір',
+        5: 'Мамыр',
+        6: 'Маусым',
+        7: 'Шілде',
+        8: 'Тамыз',
+        9: 'Қыркүйек',
+        10: 'Қазан',
+        11: 'Қараша',
+        12: 'Желтоқсан',
+    }
+    return kz_month_names.get(month_number, "")
 
 def create_first_page(doc, faculty_name, year):
     """Функция для создания первой страницы отчета"""
@@ -132,12 +150,14 @@ def set_cell_font(cell, bold=False, align_center=False):
 
 def add_footer(section):
     """
-    Время нижный колонтинул
+    Время в нижнем колонтитуле
     """
     footer = section.footer
     paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    paragraph.text = f"Жүктеу күні мен уақыты: {now().strftime('%d-%m-%Y %H:%M:%S')}"
+
+    current_time = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+    paragraph.text = f"Жүктеу күні мен уақыты: {current_time}"
 
 def generate_docx_response(doc, teacher, year):
     """
@@ -174,6 +194,7 @@ def configure_page(doc):
     section.top_margin = Inches(1)
     section.bottom_margin = Inches(1)
 
+
 @login_required
 def download_teacher_report(request, teacher_id, direction_id, year_id):
     """Генерация отчета в Word с правильным форматированием"""
@@ -183,7 +204,10 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     next_year = year.year + 1  # Следующий учебный год
     faculty_name = teacher.profile.faculty.name if teacher.profile.faculty else "Көрсетілмеген"
 
-    aggregated_data = AggregatedIndicator.objects.filter( teacher=teacher, year=year, main_indicator__direction=direction)
+    aggregated_data = AggregatedIndicator.objects.filter(
+        teacher=teacher, year=year, main_indicator__direction=direction
+    )
+
     doc = Document()
     # --- Первая страница ---
     create_first_page(doc, faculty_name, year.year)
@@ -192,7 +216,7 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
         doc.add_paragraph("")
 
     doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(f"{year.year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -203,17 +227,23 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     # Время
     section = doc.sections[-1]
     add_footer(section)
+
     # --- Таблица ---
-    table = doc.add_table(rows=1, cols=4)
+    table = doc.add_table(rows=1, cols=6)
     table.style = 'Table Grid'
+    table.autofit = False  # отключаем автоширину
+
     # Установка ширины столбцов
-    column_widths = [Cm(1), Cm(24), Cm(1), Cm(1)]
+    column_widths = [Cm(1.5), Cm(15), Cm(2), Cm(2), Cm(2.5), Cm(2)]
+    for i, width in enumerate(column_widths):
+        table.columns[i].width = width
+        table.rows[0].cells[i].width = width
+
     # Заголовки
     hdr_cells = table.rows[0].cells
-    headers = ["Код", "Индикатор атауы", "Өлшем бірлігі", "Сумма"]
+    headers = ["Код", "Индикатор атауы", "Өлшем бірлігі", "Сумма", "Дедлайн (ай/жыл)", "Құжат"]
     for idx, text in enumerate(headers):
         hdr_cells[idx].text = text
-        # Установка ширины ячеек
         hdr_cells[idx].width = column_widths[idx]
         hdr_cells[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = hdr_cells[idx].paragraphs[0].runs[0]
@@ -223,36 +253,55 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
 
     # Данные
     for data in aggregated_data:
+        # Дедлайн для агрегированных данных
+        deadline_main = "-"
+        if data.deadline_month and data.deadline_year:
+            month_name = get_kz_month_name(data.deadline_month)
+            deadline_main = f"{month_name} / {data.deadline_year}"
+
+        # Проверяем наличие загруженных документов
+        has_docs = "✓" if hasattr(data, 'uploaded_works') and data.uploaded_works.exists() else "-"
+
         row = table.add_row().cells
         row_data = [
             data.main_indicator.code or "-",
             data.main_indicator.name,
             data.main_indicator.unit,
             str(data.total_value),
+            deadline_main,
+            has_docs,
         ]
         for idx, value in enumerate(row_data):
             row[idx].text = value
-            row[idx].width = column_widths[idx]  # Устанавливаем ширину для каждой ячейки
+            row[idx].width = column_widths[idx]
             run = row[idx].paragraphs[0].runs[0]
             run.font.name = 'Times New Roman'
             run.font.size = Pt(14)
             row[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
+            run.bold = True
 
-        # Подиндикаторы
+            # Подиндикаторы
         sub_indicators = Indicator.objects.filter(main_indicator=data.main_indicator, years=year)
         for ind in sub_indicators:
+            # Получаем отчет по подиндикатору
+            report = TeacherReport.objects.filter(teacher=teacher, indicator=ind, year=year).first()
+
+            # Дедлайн для подиндикатора
+            deadline_sub = "-"
+            if report and report.deadline_month and report.deadline_year:
+                month_name = get_kz_month_name(data.deadline_month)
+                deadline_sub = f"{month_name} / {report.deadline_year}"
+
+            has_docs_sub = "✓" if report and report.uploaded_works.exists() else "-"
+
             sub_row = table.add_row().cells
             sub_row_data = [
                 ind.code or "-",
                 ind.name,
                 ind.unit,
-                str(
-                    TeacherReport.objects.filter(
-                        teacher=teacher,
-                        indicator=ind,
-                        year=year
-                    ).first().value or 0
-                ),
+                str(report.value) if report else "0",
+                deadline_sub,
+                has_docs_sub,
             ]
             for idx, value in enumerate(sub_row_data):
                 sub_row[idx].text = value
@@ -260,14 +309,15 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
                 run = sub_row[idx].paragraphs[0].runs[0]
                 run.font.name = 'Times New Roman'
                 run.font.size = Pt(14)
-                sub_row[idx].paragraphs[
-                    0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
+                sub_row[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT if idx == 1 else WD_ALIGN_PARAGRAPH.CENTER
 
-    # Файлды қайтару
+    # Возвращаем файл
     return generate_docx_response(doc, teacher, year)
 
 
+
 class TeacherReportWordExportView(View):
+    """ Для всех направлений """
     def get(self, request, *args, **kwargs):
         year_id = request.GET.get('year')
         teacher_id = request.GET.get('teacher')
@@ -278,32 +328,25 @@ class TeacherReportWordExportView(View):
         year = get_object_or_404(Year, id=year_id)
         teacher = get_object_or_404(User, id=teacher_id) if teacher_id else request.user
         directions = Direction.objects.all().order_by('id')
-
         next_year = year.year + 1
 
-        # Получаем факультет из профиля
         faculty_name = (teacher.profile.faculty.name if hasattr(teacher, 'profile') and teacher.profile.faculty else "Факультет")
 
         doc = Document()
-        # --- Настройка страницы ---
         configure_page(doc)
-        # --- Первая страница ---
         create_first_page(doc, faculty_name, year.year)
-        # Время
         section = doc.sections[-1]
         add_footer(section)
 
         for direction in directions:
-
             for _ in range(6):
                 doc.add_paragraph("")
 
             doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
-            doc.add_paragraph(f"{year.year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+            doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
             doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
             doc.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            # Кесте беті
             doc.add_page_break()
             main_indicators = MainIndicator.objects.filter(direction=direction, years=year)
 
@@ -311,82 +354,88 @@ class TeacherReportWordExportView(View):
                 doc.add_paragraph("Индикаторлар бойынша деректер жоқ.")
                 continue
 
-            # Создание таблицы с правильным порядком столбцов
-            table = doc.add_table(rows=1, cols=4)
+            # Создание таблицы с фиксированной шириной столбцов
+            table = doc.add_table(rows=1, cols=6)
             table.style = 'Table Grid'
+            table.autofit = False  # отключаем автоширину
+
+            # Устанавливаем ширины колонок
+            column_widths = [Cm(1.5), Cm(15), Cm(2), Cm(2), Cm(2.5), Cm(2)]
+            for i, width in enumerate(column_widths):
+                table.columns[i].width = width
+                table.rows[0].cells[i].width = width
+
+            # Заголовки
             hdr_cells = table.rows[0].cells
-            hdr_cells[0].text = 'Код'
-            hdr_cells[1].text = 'Индикатор'
-            hdr_cells[2].text = 'Өлшем бірлігі'
-            hdr_cells[3].text = 'Мәні'
-            set_cell_font(hdr_cells[0], bold=True, align_center=True)
-            set_cell_font(hdr_cells[1], bold=True)
-            set_cell_font(hdr_cells[2], bold=True, align_center=True)
-            set_cell_font(hdr_cells[3], bold=True, align_center=True)
+            headers = ['Код', 'Индикатор атауы', 'Өлшем бірлігі', 'Мәні', 'Дедлайн (ай/жыл)', 'Құжат']
 
-            # Устанавливаем ширину столбцов
-            for col in table.columns:
-                if col.cells[0].text == 'Код':
-                    col.width = Cm(2)  # Код индикатора
-                elif col.cells[0].text == 'Индикатор':
-                    col.width = Cm(14)  # Название индикатора — широкий столбец
-                elif col.cells[0].text == 'Өлшем бірлігі':
-                    col.width = Cm(2)  # Единица измерения
-                else:
-                    col.width = Cm(2)  # Значение
+            for i, header_text in enumerate(headers):
+                hdr_cells[i].text = header_text
+                set_cell_font(hdr_cells[i], bold=True, align_center=True)
 
-
-            # Центрируем заголовки столбцов
-            for cell in hdr_cells:
-                set_cell_font(cell, bold=True, align_center=True)
 
             for main_indicator in main_indicators:
                 aggregated_data = AggregatedIndicator.objects.filter(
                     teacher=teacher, main_indicator=main_indicator, year=year
                 ).first()
 
-                # Если агрегированные данные есть, используем их
-                if aggregated_data:
-                    total_value = aggregated_data.total_value
-                else:
-                    total_value = 0  # Если данных нет, ставим 0
+                total_value = aggregated_data.total_value if aggregated_data else 0
+                total_value = "0" if total_value == 0 else str(total_value)
 
-                # Если сумма равна 0, то показываем "Жоқ"
-                if total_value == 0:
-                    total_value = "0"
+                deadline_main = f"{get_kz_month_name(aggregated_data.deadline_month)} / {aggregated_data.deadline_year}" if aggregated_data and aggregated_data.deadline_month and aggregated_data.deadline_year else "-"
+                confirm_symbol = "✓" if aggregated_data and aggregated_data.uploaded_works.exists() else "-"
+
 
                 row = table.add_row().cells
-                row[0].text = main_indicator.code  # Отображаем код индикатора
-                row[1].text = main_indicator.name
-                row[2].text = main_indicator.unit  # Отображаем единицу измерения
-                row[3].text = str(total_value)  # Отображаем значение
-                set_cell_font(row[0], bold=True, align_center=True)
-                set_cell_font(row[1], bold=True)
-                set_cell_font(row[2], bold=True, align_center=True)
-                set_cell_font(row[3], bold=True, align_center=True)
+                values = [
+                    main_indicator.code,
+                    main_indicator.name,
+                    main_indicator.unit,
+                    str(total_value),
+                    deadline_main,
+                    confirm_symbol,
+                ]
 
-                # Обрабатываем подиндикаторы для главного индикатора
+                align_centers = [True, False, True, True, True, True]
+
+                for i, (value, align_center) in enumerate(zip(values, align_centers)):
+                    row[i].text = value
+                    row[i].width = column_widths[i]
+                    set_cell_font(row[i], bold=True, align_center=align_center)
+
                 indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
 
                 for indicator in indicators:
-                    value = TeacherReport.objects.filter(
+                    report = TeacherReport.objects.filter(
                         teacher=teacher, indicator=indicator, year=year
-                    ).aggregate(Sum('value'))['value__sum'] or 0
+                    ).first()
+
+                    value = report.value if report else 0
+                    deadline_sub = f"{get_kz_month_name(report.deadline_month)} / {report.deadline_year}" if report and report.deadline_month and report.deadline_year else "-"
+                    confirm_symbol = "✓" if report and report.uploaded_works.exists() else "-"
 
                     ind_row = table.add_row().cells
-                    ind_row[0].text = f'{indicator.code}'  # Отображаем код индикатора
-                    ind_row[1].text = indicator.name
-                    ind_row[2].text = indicator.unit  # Отображаем единицу измерения
-                    ind_row[3].text = str(value)  # Отображаем значение
-                    set_cell_font(ind_row[0], align_center=True)
-                    set_cell_font(ind_row[1])
-                    set_cell_font(ind_row[2], align_center=True)
-                    set_cell_font(ind_row[3], align_center=True)
+                    values = [
+                        f'{indicator.code}',
+                        indicator.name,
+                        indicator.unit,
+                        str(value),
+                        deadline_sub,
+                        confirm_symbol,
+                    ]
+
+                    align_centers = [True, False, True, True, True, True]
+
+                    for i, (value, align_center) in enumerate(zip(values, align_centers)):
+                        ind_row[i].text = value
+                        ind_row[i].width = column_widths[i]
+                        set_cell_font(ind_row[i], align_center=align_center)
+
             if direction != directions.last():
                 doc.add_page_break()
 
-        # Файлды қайтару
         return generate_docx_response(doc, teacher, year)
+
 
 # -----====== Dean ======--------
 def generate_dean(document, filename_base):

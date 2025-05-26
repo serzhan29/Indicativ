@@ -10,12 +10,12 @@ urlpatterns = [
     path('', DirectionListView.as_view(), name='direction_list'),
     path('main', index, name='index'),
     path('directions/<int:direction_id>/years/', YearListView.as_view(), name='choose_year'),
+
     path('download_teacher_report/<int:teacher_id>/<int:direction_id>/<int:year_id>/', download_teacher_report, name='download_teacher_report'),
 
     path('report/<int:direction_id>/<int:year_id>/', TeacherReportView.as_view(), name='teacher_report'),
     # Обновление значение
     path('update_value/', UpdateValueView.as_view(), name='update_value'),
-
     path('teacher/', teachers_by_faculty, name='teachers_by_faculty'),
 
     # Для учителей
