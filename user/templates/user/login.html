@@ -2,35 +2,52 @@
 
 {% block content %}
   <div class="login-container">
-    <h2>Кіру</h2>
-    <form method="post" class="login-form">
-      {% csrf_token %}
+  <h2>Кіру</h2>
+  <form method="post" class="login-form">
+    {% csrf_token %}
 
-      <div class="form-group">
-        <label for="username">Пайдаланушы аты</label>
-        {{ form.username }}
-      </div>
+    <div class="form-group">
+      <label for="login">Пайдаланушы аты немесе Email</label>
+      {{ form.login }}
+    </div>
 
-      <div class="form-group">
-        <label for="password">Құпия сөз</label>
-        {{ form.password }}
-      </div>
+    <div class="form-group">
+      <label for="password">Құпия сөз</label>
+      {{ form.password }}
+    </div>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
 
-      <div class="form-group">
-        <button type="submit" class="btn btn-primary">Кіру</button>
-      </div>
-    </form>
+    <div class="form-group">
+      <button type="submit" class="btn btn-primary">Кіру</button>
+    </div>
+  </form>
 
-    <p>Тіркелгіңіз жоқ па? <a href="{% url 'register' %}">Тіркелу</a></p>
-  </div>
+  <p>Тіркелгіңіз жоқ па? <a href="{% url 'register' %}">Тіркелу</a></p>
+</div>
 
-  <style>
+
+<style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f7f6;
       margin: 0;
       padding: 0;
     }
+
+    .alert {
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #f5c2c7;
+      border-radius: 5px;
+      background-color: #f8d7da;
+      color: #842029;
+      font-size: 14px;
+    }
+
 
     .login-container {
       width: 100%;
@@ -96,4 +113,16 @@
       text-decoration: underline;
     }
   </style>
+<script>
+  // Удалить сообщение через 5 секунд
+  setTimeout(function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      alert.style.transition = 'opacity 0.5s ease';
+      alert.style.opacity = '0';
+      setTimeout(() => alert.remove(), 500); // полностью убрать из DOM
+    });
+  }, 5000); // 5000 мс = 5 секунд
+</script>
+
 {% endblock %}

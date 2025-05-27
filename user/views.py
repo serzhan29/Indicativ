@@ -1,8 +1,9 @@
 from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, LoginForm
 from .models import Profile
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
 
 def register(request):
@@ -23,19 +24,18 @@ def register(request):
         form = CustomUserCreationForm()
     return render(request, "user/register.html", {"form": form})
 
+
 def login_view(request):
     if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)
+        form = LoginForm(request=request, data=request.POST)
         if form.is_valid():
-            # Аутентификация пользователя
-            user = form.get_user()
-            login(request, user)
-
-            # Перенаправление на страницу, с которой пользователь пришел
+            login(request, form.get_user())
             next_url = request.GET.get('next', '/')
             return redirect(next_url)
+        else:
+            messages.error(request, "Қате: пайдаланушы аты немесе құпия сөз дұрыс емес.")  # ❗ Ошибка
     else:
-        form = AuthenticationForm()
+        form = LoginForm()
 
     return render(request, "user/login.html", {"form": form})
 
