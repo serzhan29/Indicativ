@@ -2,7 +2,9 @@ import json
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from .models import Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator, UploadedWork, UploadedMainWork
+from .models import (Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator,
+                     UploadedWork, UploadedMainWork)
+from user.models import Department, Faculty, Profile
 from django.db.models import Sum
 from django.views.generic.edit import FormView
 from django.utils.decorators import method_decorator
@@ -12,11 +14,9 @@ from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
 from django.views.generic import TemplateView
-from django.db.models import F
-from .forms import UploadedWorkForm, UploadedMainWorkForm
-from django.core.exceptions import PermissionDenied
-import urllib.parse
-from calendar import month_name
+from django.db import models
+from django.db.models import Q
+from django.contrib.auth import get_user_model
 
 
 class DirectionListView(LoginRequiredMixin, ListView):
@@ -38,52 +38,104 @@ class YearListView(LoginRequiredMixin, ListView):
         return context
 
 
+@login_required
+def get_all_users(request):
+    try:
+        current_profile = request.user.profile
+    except Profile.DoesNotExist:
+        return JsonResponse({'users': []})  # если профиль не найден
 
+    if not current_profile.department:
+        return JsonResponse({'users': []})  # если не указана кафедра
+
+    # Получаем всех пользователей, кроме себя, с той же кафедры и ролью "teacher"
+    same_department_profiles = Profile.objects.filter(
+        department=current_profile.department,
+        role='teacher'
+    ).exclude(user=request.user)
+
+    users_data = [
+        {'id': p.user.id, 'name': p.user.get_full_name()}
+        for p in same_department_profiles
+    ]
+
+    return JsonResponse({'users': users_data})
+
+
+@login_required
 def get_indicator_files(request, report_id):
-    """ Получение и загрузка файлов """
+    """
+    Загрузка и отображение файлов по подиндикаторам и главным индикаторам
+    Делаем фильтр строго по report_id, но берём все записи, где пользователь —
+    либо автор отчёта, либо входит в co_authors.
+    """
 
+    user = request.user
+
+    # POST: сохраняем файл
     if request.method == 'POST' and request.FILES.get('file'):
-        file = request.FILES['file']
+        uploaded_file = request.FILES['file']
+        co_author_ids = request.POST.getlist('co_authors')
+
+        # Всегда включаем автора
+        author_id = str(user.id)
+        if author_id not in co_author_ids:
+            co_author_ids.append(author_id)
 
         if 'indicator' in request.POST:
-            # Загрузка для подиндикатора
-            report = get_object_or_404(TeacherReport, id=report_id, teacher=request.user)
-            report.uploaded_works.create(file=file)
-            return JsonResponse({'success': True, 'message': 'Файл загружен для подиндикатора.'})
+            report = get_object_or_404(TeacherReport, id=report_id, teacher=user)
+            new_file = report.uploaded_works.create(file=uploaded_file)
         else:
-            # Загрузка для главного индикатора
-            aggregated = get_object_or_404(AggregatedIndicator, id=report_id, teacher=request.user)
-            aggregated.uploaded_works.create(file=file)
-            return JsonResponse({'success': True, 'message': 'Файл загружен для главного индикатора.'})
+            report = get_object_or_404(AggregatedIndicator, id=report_id, teacher=user)
+            new_file = report.uploaded_works.create(file=uploaded_file)
 
-    # GET-запрос — список файлов
+        new_file.co_authors.set(co_author_ids)
+        return JsonResponse({'success': True, 'message': 'Файл успешно загружен.'})
+
     files_data = []
 
-    # Подиндикаторы
-    try:
-        report = TeacherReport.objects.get(id=report_id, teacher=request.user)
-        for file in report.uploaded_works.all():
-            files_data.append({
-                'id': file.id,
-                'file_name': file.file.name,
-                'uploaded_at': file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
-                'file_url': file.file.url,
-            })
-    except TeacherReport.DoesNotExist:
-        pass
+    # 1) Подиндикаторы — строго для этого report_id
+    sub_qs = UploadedWork.objects.filter(
+        Q(report__id=report_id) &
+        (Q(report__teacher=user) | Q(co_authors=user))
+    ).distinct()
 
-    # Главный индикатор
-    try:
-        aggregated = AggregatedIndicator.objects.get(id=report_id, teacher=request.user)
-        for file in aggregated.uploaded_works.all():
-            files_data.append({
-                'id': file.id,
-                'file_name': file.file.name,
-                'uploaded_at': file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
-                'file_url': file.file.url,
-            })
-    except AggregatedIndicator.DoesNotExist:
-        pass
+    for f in sub_qs:
+        # Список соавторов + автор
+        co_list = list(f.co_authors.all())
+        if f.report.teacher not in co_list:
+            co_list.insert(0, f.report.teacher)
+
+        files_data.append({
+            'id': f.id,
+            'file_name': f.file.name.split('/')[-1],
+            'uploaded_at': f.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'file_url': f.file.url,
+            'co_authors': [u.get_full_name() for u in co_list],
+            'owner': f.report.teacher.get_full_name(),
+            'is_owner': f.report.teacher == user
+        })
+
+    # 2) Главные индикаторы — строго для этого aggregated_report__id
+    main_qs = UploadedMainWork.objects.filter(
+        Q(aggregated_report__id=report_id) &
+        (Q(aggregated_report__teacher=user) | Q(co_authors=user))
+    ).distinct()
+
+    for f in main_qs:
+        co_list = list(f.co_authors.all())
+        if f.aggregated_report.teacher not in co_list:
+            co_list.insert(0, f.aggregated_report.teacher)
+
+        files_data.append({
+            'id': f.id,
+            'file_name': f.file.name.split('/')[-1],
+            'uploaded_at': f.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'file_url': f.file.url,
+            'co_authors': [u.get_full_name() for u in co_list],
+            'owner': f.aggregated_report.teacher.get_full_name(),
+            'is_owner': f.aggregated_report.teacher == user
+        })
 
     return JsonResponse({'files': files_data})
 
@@ -155,9 +207,6 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         main_indicators.sort(key=lambda x: code_key(x.code))
         aggregated_data = []
 
-        # Для удобства — подготовим словарь для отображения названий месяцев
-        months_dict = {i: month_name[i] for i in range(1, 13)}
-        months_dict = {i: month_name[i] for i in range(1, 13)}
         months_kz = {
             1: 'Қаңтар',
             2: 'Ақпан',

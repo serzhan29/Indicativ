@@ -39,6 +39,8 @@ class MainIndicator(models.Model):
     years = models.ManyToManyField(Year, verbose_name="Годы действия")
     unit = models.CharField(max_length=255, verbose_name="Единица измерения", choices=UnitChoices.choices,
                             default=UnitChoices.Quantity)
+    points = models.IntegerField(verbose_name="Количество баллов", default=0)
+
 
     def __str__(self):
         return f"{self.code} {self.name} - {self.direction.name}"
@@ -52,6 +54,8 @@ class Indicator(models.Model):
     name = models.CharField(max_length=255, verbose_name="Название индикатора")
     unit = models.CharField(max_length=255, verbose_name="Единица измерения", choices=UnitChoices.choices,
                             default=UnitChoices.Quantity)
+    points = models.IntegerField(verbose_name="Количество баллов", default=0)
+
 
     def __str__(self):
         years_list = ", ".join(str(year.year) for year in self.years.all())  # Получаем все года
@@ -128,6 +132,7 @@ class UploadedWork(models.Model):
     report = models.ForeignKey(TeacherReport, on_delete=models.CASCADE, related_name="uploaded_works")
     file = models.FileField(upload_to="media/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    co_authors = models.ManyToManyField(User, blank=True, related_name="coauthored_uploaded_works")
 
 
     def __str__(self):
@@ -139,6 +144,8 @@ class UploadedMainWork(models.Model):
     aggregated_report = models.ForeignKey(AggregatedIndicator, on_delete=models.CASCADE, related_name="uploaded_works")
     file = models.FileField(upload_to="media/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    co_authors = models.ManyToManyField(User, blank=True, related_name="coauthored_uploaded_main_works")
+
 
     def __str__(self):
         return f"{self.aggregated_report.teacher} | {self.aggregated_report.main_indicator.name} | {self.aggregated_report.year.year}"

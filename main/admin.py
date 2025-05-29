@@ -112,14 +112,43 @@ class UploadedWorkInline(admin.TabularInline):
     model = UploadedWork
     extra = 0
     readonly_fields = ("uploaded_at",)
-    fields = ("file", "uploaded_at")
+    fields = ("file", "uploaded_at", "co_authors")
+    filter_horizontal = ("co_authors",)
+
+    # Фильтрация соавторов по кафедре пользователя
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "co_authors":
+            user = request.user
+            if hasattr(user, "profile") and user.profile.department:
+                department = user.profile.department
+                kwargs["queryset"] = User.objects.filter(
+                    profile__department=department
+                ).order_by("last_name", "first_name")
+            else:
+                kwargs["queryset"] = User.objects.none()
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
 
 
 class UploadedMainWorkInline(admin.TabularInline):
     model = UploadedMainWork
     extra = 0
     readonly_fields = ("uploaded_at",)
-    fields = ("file", "uploaded_at")
+    fields = ("file", "uploaded_at", "co_authors")
+    filter_horizontal = ("co_authors",)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "co_authors":
+            user = request.user
+            if hasattr(user, "profile") and user.profile.department:
+                department = user.profile.department
+                kwargs["queryset"] = User.objects.filter(
+                    profile__department=department
+                ).order_by("last_name", "first_name")
+            else:
+                kwargs["queryset"] = User.objects.none()
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
 
 
 @admin.register(TeacherReport)
@@ -288,4 +317,4 @@ class SubSubIndicatorValueAdmin(admin.ModelAdmin):
     uploaded_files_count.short_description = "Файлов"
 
 
-
+admin.site.register(UploadedMainWork)
