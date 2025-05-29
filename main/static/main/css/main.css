@@ -45,7 +45,7 @@ h3 {
 }
 
 table {
-    width: 95%;
+    width: 100%;
     margin: 30px auto;
     border-collapse: collapse;
     background: var(--table-bg);

@@ -76,7 +76,7 @@
                     <th>Индикатор атауы</th>
                     <th>Өлшеу бірлігі</th>
                     <th>Көрсеткіш саны</th>
-                    <th>Файлдар</th>
+                    <th>Файл</th>
                     <th>Ай / Жыл</th>
                 </tr>
             </thead>
@@ -85,7 +85,12 @@
                 <tr class="main-indicator">
                     <td>{{ data.main_indicator.code }}</td>
                     <td>{{ data.main_indicator.name }}</td>
-                    <td>{{ data.main_indicator.unit }}</td>
+                    <td class="text-center align-middle">
+                        <div class="d-flex flex-column align-items-center">
+                            <span>{{ data.main_indicator.unit }}</span>
+                            <span style="font-weight: bold; font-size: 1em;">{{ data.main_indicator.points }}</span>
+                        </div>
+                    </td>
                     <td>
                         {% if data.teacher_reports %}
                             <span class="total-value" data-default-value="{{ data.additional_value }}" style="color: #003366">{{ data.total_value }}</span>
@@ -96,9 +101,7 @@
                                 data-type="additional"
                                 data-id="{{ data.id }}"
                                 {% if not year.editable %} disabled {% endif %}
-                                min="0"
-                                max="100"
-                                step="1"
+                                min="0" max="100" step="1"
                                 value="{{ data.additional_value }}"
                             >
                         {% endif %}
@@ -112,12 +115,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        <span class="deadline-display">{{ data.deadline_display }}</span>
+                        {% if not data.teacher_reports %}
                             {% if year.editable %}
-                                <button class="btn btn-sm btn-outline-primary open-deadline-modal" data-id="{{ data.id }}" data-type="main">
-                                📅 Орнату
+                                <button class="btn btn-sm btn-outline-primary open-deadline-modal d-flex flex-column align-items-center mx-auto"
+                                        data-id="{{ data.id }}"
+                                        data-type="main"
+                                        style="color: white; line-height: 1.2;">
+                                    <span style="font-size: 1.2em;">📅</span>
+                                    <span>{{ data.deadline_display }}</span>
                                 </button>
                             {% endif %}
+                        {% endif %}
                     </td>
                 </tr>
                 {% if data.teacher_reports %}
@@ -125,36 +133,37 @@
                     <tr class="sub-indicator">
                         <td>{{ report.indicator.code }}</td>
                         <td>{{ report.indicator.name }}</td>
-                        <td>{{ report.indicator.unit }}</td>
-                        <td>
+                        <td class="text-center align-middle">
+                            <span>{{ report.indicator.unit }}</span>
+                            <span style="font-weight: bold; font-size: 1em;">{{ report.indicator.points }}</span>
+                        </td>
+                        <td class="text-center align-middle">
                             <input
                                 type="number"
-                                class="editable {% if not year.editable %} not-editable {% endif %}"
-                                data-type="indicator"
-                                data-id="{{ report.id }}"
+                                class="editable {% if not year.editable %} not-editable {% endif %} d-block mx-auto text-center"
+                                data-type="indicator" data-id="{{ report.id }}"
                                 {% if not year.editable %} disabled {% endif %}
-                                min="0"
-                                max="100"
-                                step="1"
-                                value="{{ report.value }}"
-                            >
+                                min="0" max="100" step="1"
+                                value="{{ report.value }}">
                         </td>
                         <td>
                             <button
                                 class="open-file-modal btn sub-indicator"
                                 data-id="{{ report.id }}"
                                 data-name="{{ report.indicator.name }}"
-                                data-type="sub"
-                            >
+                                data-type="sub">
                                 Файлдар ({{ report.uploaded_files.count }})
                             </button>
                         </td>
                         <td>
-                            <span class="deadline-display">{{ report.deadline_display }}</span>
                             {% if year.editable %}
-                            <button class="btn btn-sm btn-outline-primary open-deadline-modal" data-id="{{ report.id }}" data-type="sub">
-                                📅 Орнату
-                            </button>
+                                <button class="btn btn-sm btn-outline-primary open-deadline-modal d-flex flex-column align-items-center mx-auto"
+                                        data-id="{{ report.id }}"
+                                        data-type="sub"
+                                        style="color: white; line-height: 1.2;">
+                                    <span class="mb-1" style="font-size: 1.2em;">📅</span>
+                                    <span>{{ report.deadline_display }}</span>
+                                </button>
                             {% endif %}
                         </td>
                     </tr>

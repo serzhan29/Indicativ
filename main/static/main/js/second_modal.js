@@ -1,3 +1,4 @@
+document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.open-deadline-modal').forEach(button => {
         button.addEventListener('click', () => {
             const modal = new bootstrap.Modal(document.getElementById('deadlineModal'));
@@ -15,10 +16,10 @@
         const month = this.month.value;
         const year = this.year.value;
 
-        fetch('{% url "update_deadline" %}', {
+        fetch(updateDeadlineUrl, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
+                'X-CSRFToken': csrfToken,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ id: itemId, type: itemType, month: month, year: year })
@@ -32,3 +33,4 @@
             }
         });
     });
+});
