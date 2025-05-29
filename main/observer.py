@@ -9,11 +9,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
 from collections import defaultdict
 from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import JsonResponse
-from django.template.loader import render_to_string
-from django.core.exceptions import PermissionDenied
-from django.http import HttpResponseForbidden
+
 
 @login_required
 def teachers_by_faculty(request):
@@ -55,7 +52,6 @@ def teachers_by_faculty(request):
         'selected_faculty_id': int(selected_faculty_id) if selected_faculty_id else None,
         'selected_department_id': int(selected_department_id) if selected_department_id else None,
     })
-
 
 
 class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
@@ -168,14 +164,6 @@ def report_department(request):
             id=user_profile.department.id) if user_profile.department else Department.objects.none()
         faculty_ids = [str(user_profile.faculty.id)] if user_profile.faculty else []
         department_ids = [str(user_profile.department.id)] if user_profile.department else []
-
-    elif user_role == 'dean':
-        # Декан видит все кафедры своего факультета
-        faculties = Faculty.objects.filter(
-            id=user_profile.faculty.id) if user_profile.faculty else Faculty.objects.none()
-        departments = Department.objects.filter(
-            faculty=user_profile.faculty) if user_profile.faculty else Department.objects.none()
-        faculty_ids = [str(user_profile.faculty.id)] if user_profile.faculty else []
 
     else:  # Для преподавателей и других
         faculties = Faculty.objects.none()
@@ -390,7 +378,6 @@ def dean_report(request):
     })
 
 
-
 # Добавляем представление для получения кафедр в зависимости от факультета
 def get_departments(request, faculty_id):
     if faculty_id == 'all':
@@ -401,8 +388,8 @@ def get_departments(request, faculty_id):
     departments_data = [{'id': department.id, 'name': department.name} for department in departments]
     return JsonResponse({'departments': departments_data})
 
-# Графики для проверяющего
 
+# Графики для проверяющего
 @login_required
 def observer_index(request):
     user = request.user
