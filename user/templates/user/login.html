@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load i18n %}
 {% block content %}
   <div class="login-container">
   <h2>Кіру</h2>
@@ -7,12 +7,12 @@
     {% csrf_token %}
 
     <div class="form-group">
-      <label for="login">Пайдаланушы аты немесе Email</label>
+      <label for="login">{% translate 'Email' %} {% translate 'Username' %}</label>
       {{ form.login }}
     </div>
 
     <div class="form-group">
-      <label for="password">Құпия сөз</label>
+      <label for="password">{% translate 'Password' %}</label>
       {{ form.password }}
     </div>
     {% if messages %}

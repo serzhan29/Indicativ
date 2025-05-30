@@ -33,12 +33,8 @@ class Profile(models.Model):
         'user.Department',
         chained_field="faculty",
         chained_model_field="faculty",
-        show_all=False,
-        auto_choose=True,
-        sort=True,
-        verbose_name="Кафедра",
-        null=True,
-        blank=True
+        show_all=False, auto_choose=True, sort=True,
+        verbose_name="Кафедра",null=True,blank=True
     )
     phone = models.CharField(max_length=20, blank=True, verbose_name="Телефон")
 

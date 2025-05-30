@@ -6,6 +6,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from django.utils.translation import gettext_lazy as _
 
 
 load_dotenv()
@@ -107,13 +108,23 @@ AUTHENTICATION_BACKENDS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
+LANGUAGES = [
+    ('en', _('English')),
+    ('kk', _('Қазақ тілі')),
+    ('ru', _('Русский')),
+    ('tr', _('Türkçe')),
+]
 
-LANGUAGE_CODE = 'en-us'
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',  # Путь, где будут храниться переводы
+]
 
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'kk-KZ'
+
+TIME_ZONE = 'Asia/Almaty'
 
 USE_I18N = True
-
+USE_L10N = True
 USE_TZ = True
 
 
@@ -137,19 +148,6 @@ LOGIN_REDIRECT_URL = '/'  # Перенаправление после успеш
 LOGOUT_REDIRECT_URL = '/'  # Перенаправление после выхода
 LOGIN_URL = '/user/login/'  # Указываем правильный путь к странице логина
 
-gettext = lambda s: s
-LANGUAGES = [
-    ('en', 'English'),
-    ('kk', 'Қазақ тілі'),
-    ('ru', 'Русский'),
-]
-
-
-LANGUAGE_CODE = 'kk'  # Устанавливаем язык по умолчанию
-
-LOCALE_PATHS = [
-    BASE_DIR / 'locale',  # Путь, где будут храниться переводы
-]
 
 SITE_ID = 1
 
