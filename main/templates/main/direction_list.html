@@ -1,60 +1,34 @@
 {% extends "base.html" %}
+{% load i18n %}
+{% load static %}
 {% block title %}Направления - Мой сайт{% endblock %}
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Бағыттар</a></li>
-  <li class="breadcrumb-item active" aria-current="page">Бағыттар</li>
+  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{% trans "Select a direction" %}</a></li>
+  <li class="breadcrumb-item active" aria-current="page">{% trans "Directions" %}</li>
 {% endblock %}
 {% block content %}
-
+<link rel="stylesheet" href="{% static 'main/css/direction_list.css' %}">
 <div class="container">
-    <h2 class="text-center my-4">Бағытты таңдаңыз</h2>
-    <div class="row justify-content-center">
+    <h2 class="text-center my-4">{% trans "Select a direction" %}</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for direction in directions %}
-        <div class="col-md-4 mb-4">  <!-- Добавил mb-4 для увеличения отступа -->
+        <div class="col-md-4 mb-4">
             <div class="card direction-card">
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ direction.name }}</h5>
-                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">Таңдау</a> <!-- Увеличил отступ -->
+                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">{% trans "Select" %}</a>
                 </div>
             </div>
         </div>
         {% endfor %}
-        <div class="col-md-4 mb-4">  <!-- Добавил mb-4 для увеличения отступа -->
+        <div class="col-md-4 mb-4">
             <div class="card direction-card">
                 <div class="card-body text-center">
-                    <h5 class="card-title">БАРЛЫҚ БАҒЫТТАР</h5>
-                    <a href="{% url 'teacher_full_report' %}" class="btn btn-primary mt-3 mb-3">Таңдау</a> <!-- Увеличил отступ -->
+                    <h5 class="card-title">{% trans "ALL DIRECTIONS" %}</h5>
+                    <a href="{% url 'teacher_full_report' %}" class="btn btn-primary mt-3 mb-3">{% trans "Select" %}</a>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
-
-<style>
-    .direction-card {
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        background: linear-gradient(135deg, #f9f9f9, #e3e3e3);
-        padding: 20px;
-    }
-
-    .direction-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    }
-
-    h2 {
-        font-weight: bold;
-        color: #333;
-    }
-
-    .btn-primary {
-        padding: 12px 24px;
-        font-size: 16px;
-        border-radius: 8px;
-    }
-</style>
-
 {% endblock %}

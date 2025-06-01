@@ -1,107 +1,137 @@
 {% load static %}
 {% load i18n %}
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Indicatorium{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link rel="icon" href="https://i.ytimg.com/vi/u5Ijp8EeVKU/maxresdefault.jpg" type="image/png">
-  <link rel="stylesheet" href="{% static 'main/css/navbar_base.css' %}">
-  <link rel="stylesheet" href="{% static 'main/css/loader.css' %}">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.7.0/css/flag-icon.min.css">
+
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+
+  <link rel="icon" href="https://i.ytimg.com/vi/u5Ijp8EeVKU/maxresdefault.jpg" type="image/png" />
+
+  <link rel="stylesheet" href="{% static 'main/css/navbar_base.css' %}" />
+  <link rel="stylesheet" href="{% static 'main/css/loader.css' %}" />
 </head>
 
 <body>
   <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container-fluid">
       <a class="navbar-brand" href="{% url 'index' %}">Indicatorium</a>
-      <a class="navbar-brand" href="{% url 'direction_list' %}">{% trans "Directions" %}</a>
-
-    {% if user.is_staff or user.profile.role == 'viewer' or user.profile.role == 'dean' %}
-      <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">{% trans "Teachers list" %}</a>
-      <a class="navbar-brand" href="{% url 'report_department' %}">{% trans "Faculty reports" %}</a>
-      <a class="navbar-brand" href="{% url 'dean_report' %}">{% trans "Dean" %}</a>
-    {% endif %}
-
-
-      <!-- Кнопка для мобильного меню -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <!-- Меню на мобильных устройствах -->
-      <div class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto">
-          {% if user.is_authenticated %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> {% trans "Logout" %}  ({{ user.username }})</a>
-            </li>
-          {% else %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> {% trans "Login" %}</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'register' %}"><i class="fas fa-user-plus"></i> {% trans "Register" %}</a>
-            </li>
-          {% endif %}
-        </ul>
-        <form class="d-flex ms-3 align-items-center">
-          <select id="lang-select" class="form-select form-select-sm">
-            <option value="kk" {% if LANGUAGE_CODE|slice:":2" == "kk" %}selected{% endif %}>Қазақ</option>
-            <option value="ru" {% if LANGUAGE_CODE|slice:":2" == "ru" %}selected{% endif %}>Русский</option>
-            <option value="en" {% if LANGUAGE_CODE|slice:":2" == "en" %}selected{% endif %}>English</option>
-            <option value="tr" {% if LANGUAGE_CODE|slice:":2" == "tr" %}selected{% endif %}>Türkçe</option>
+       <form class="d-flex ms-lg-3 align-items-center mt-0 lang-switcher" style="position: relative;">
+          <!-- Спан с эмодзи-флагом, по умолчанию — тот, что выбран сейчас (например, English) -->
+          <select
+            id="lang-select" class="form-select form-select-sm" aria-label="Select language">
+            <option value="kk" {% if LANGUAGE_CODE|slice:":2" == "kk" %}selected{% endif %}>KZ</option>
+            <option value="ru" {% if LANGUAGE_CODE|slice:":2" == "ru" %}selected{% endif %}>RU</option>
+            <option value="en" {% if LANGUAGE_CODE|slice:":2" == "en" %}selected{% endif %}>EN</option>
+            <option value="tr" {% if LANGUAGE_CODE|slice:":2" == "tr" %}selected{% endif %}>TR</option>
           </select>
         </form>
 
+      <!-- Кнопка мобильного меню -->
+      <button
+        class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
+      <!-- Меню -->
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
 
+          <!-- Все пункты меню должны быть в <li> -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'direction_list' %}">{% trans "Directions" %}</a>
+          </li>
+
+          {% if user.is_staff or user.profile.role == 'viewer' or user.profile.role == 'dean' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'teachers_by_faculty' %}">{% trans "Teachers list" %}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'report_department' %}">{% trans "Faculty reports" %}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dean_report' %}">{% trans "Dean" %}</a>
+          </li>
+          {% endif %}
+
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'logout' %}">
+              <i class="fas fa-sign-out-alt"></i> {% trans "Logout" %} ({{ user.username }})
+            </a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'login' %}">
+              <i class="fas fa-sign-in-alt"></i> {% trans "Login" %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'register' %}">
+              <i class="fas fa-user-plus"></i> {% trans "Register" %}
+            </a>
+          </li>
+          {% endif %}
+        </ul>
       </div>
     </div>
   </nav>
 
-  <!-- Блок для хлебных крошек -->
+  <!-- Хлебные крошки -->
   <nav aria-label="breadcrumb" class="bg-light py-2">
     <div class="container-fluid">
       <ol class="breadcrumb mb-0">
-        {% block breadcrumbs %}
-        {% endblock %}
+        {% block breadcrumbs %}{% endblock %}
       </ol>
     </div>
   </nav>
 
-        <div class="container-fluid mt-4 position-relative">
-            <!-- Лоадер, теперь покрывает только этот контейнер -->
-            <div id="content-preloader" class="content-preloader">
-              <div class="loader"></div>
-            </div>
-            {% block content %}
-            {% endblock %}
-        </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{% static 'main/js/base_loader.js' %}"></script>
-<script>
-  (function(){
-    const langs = ['kk','ru','en','tr'];
-    const select = document.getElementById('lang-select');
-    if (!select) return;
+  <div class="container-fluid mt-4 position-relative">
+    <!-- Лоадер -->
+    <div id="content-preloader" class="content-preloader">
+      <div class="loader"></div>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
 
-    select.addEventListener('change', () => {
-      const newLang = select.value;
-      // Разбираем текущий путь
-      const parts = window.location.pathname.split('/');
-      // Если первый сегмент — существующий код языка, удаляем его
-      if (langs.includes(parts[1])) {
-        parts.splice(1, 1);
-      }
-      // Вставляем новый код языка
-      parts.splice(1, 0, newLang);
-      // Собираем URL
-      const newPath = parts.join('/') || '/';
-      // Переходим
-      window.location.href = newPath + window.location.search;
+  <!-- Скрипты -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'main/js/base_loader.js' %}"></script>
+  <script src="{% static 'main/js/translate.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const flagIcon = document.getElementById('flag-icon');
+    const langSelect = document.getElementById('lang-select');
+
+    // Здесь — Unicode-эмодзи для флагов
+    const flags = {
+      'kk': '🇰🇿',
+      'ru': '🇷🇺',
+      'en': '🇬🇧',
+      'tr': '🇹🇷'
+    };
+
+    // Установим начальный флаг, исходя из выбранного <option>
+    const currentLang = langSelect.value;
+    if (flags[currentLang]) {
+      flagIcon.textContent = flags[currentLang];
+    }
+
+    // При смене селекта — меняем эмодзи в спане
+    langSelect.addEventListener('change', () => {
+      const selected = langSelect.value;
+      flagIcon.textContent = flags[selected] || '🌐';
+      // Здесь можно добавить логику отправки формы или перенаправления
     });
-  })();
+  });
 </script>
 
 </body>

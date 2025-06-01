@@ -21,10 +21,10 @@ body {
 
 /* === Навбар === */
 nav.navbar {
-  position: relative;           /* для z-index */
-  z-index: 2;                   /* над прелоадером */
+  position: relative; /* для z-index */
+  z-index: 2; /* над прелоадером */
   background: linear-gradient(90deg, var(--color-primary), var(--color-primary-alt));
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: background 0.3s ease;
   padding: 0.5rem 1rem;
 }
@@ -35,38 +35,101 @@ nav.navbar {
   font-weight: 600;
   color: #fff !important;
   margin-left: 1.5rem;
-  transition: color 0.3s;
+  transition: color 0.3s ease;
+  text-decoration: none;
 }
-.navbar-brand:hover {
+.navbar-brand:hover,
+.navbar-brand:focus {
   color: var(--color-accent) !important;
+  text-decoration: none;
 }
 
-/* Ссылки */
+/* Ссылки в навбаре */
 .navbar-nav .nav-link {
   font-size: 1.2rem;
   color: #fff;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   transition: all 0.3s ease;
+  text-decoration: none;
 }
-.navbar-nav .nav-link:hover {
-  background-color: rgba(255,255,255,0.1);
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+  background-color: rgba(255, 255, 255, 0.1);
   color: var(--color-accent);
   transform: scale(1.05);
+  text-decoration: none;
 }
 .navbar-nav .nav-link:active {
   color: var(--color-accent-dark);
 }
 
-/* Бургер и коллапс */
+/* Кнопка бургера */
 .navbar-toggler {
   border: none;
   background: transparent;
+  padding: 0.25rem 0.5rem;
+}
+.navbar-toggler:focus {
+  outline: none;
+  box-shadow: none;
 }
 .navbar-toggler-icon {
   background-color: #fff;
   border-radius: 0.25rem;
   padding: 0.25rem;
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  /* Bootstrap уже задаёт иконку, но этот цвет поверх нее */
+  mask-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255, 255, 255, 1%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255, 255, 255, 1%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+  background-color: #fff;
+}
+/* Контейнер формы переключателя */
+form.lang-switcher {
+  position: relative;
+  margin-top: 0 !important;
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+form.lang-switcher {
+  margin: 0; /* убрали отступ сверху */
+  display: flex;
+  align-items: center;
+}
+/* Селект внутри навбара */
+#lang-select {
+  padding-left: 2.5rem;       /* чтобы текст не накладывался на спан с флагом */
+  background-color: #007bff;   /* синий фон */
+  color: #fff;                 /* белый текст */
+  border: none;
+  border-radius: 0.25rem;
+  height: 32px;                /* по высоте как ссылки */
+  appearance: none;            /* убрать стандартную стрелку */
+  background-image: url('data:image/svg+xml;utf8,<svg fill=\'%23fff\' height=\'10\' viewBox=\'0 0 20 20\' width=\'10\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M5 7l5 5 5-5z\'/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  font-size: 0.9rem;
+}
+
+/* При наведении селекта подсветим рамку */
+#lang-select:hover,
+#lang-select:focus {
+  outline: none;
+  border: 1px solid #fff;
+}
+
+/* Спан с эмодзи-флагом */
+#flag-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 1.2rem;
 }
 
 /* Мобильное меню */
@@ -80,5 +143,3 @@ nav.navbar {
     padding: 1rem;
   }
 }
-
-

@@ -1,0 +1,86 @@
+:root {
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --card-bg-start: #f9f9f9;
+  --card-bg-end: #e3e3e3;
+  --text-color: #333;
+  --btn-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
+  --btn-gradient-hover: linear-gradient(135deg, #005bea, #00c6fb);
+}
+
+.direction-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  background: linear-gradient(135deg, var(--card-bg-start), var(--card-bg-end));
+  padding: 20px;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.card-title {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  font-size: 15px;
+  border-radius: 8px;
+  background: var(--btn-gradient);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.btn-primary:hover {
+  background: var(--btn-gradient-hover);
+}
+
+.direction-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+h2 {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 576px) {
+  .direction-card {
+    padding: 15px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    min-height: 50px;
+  }
+
+  .btn-primary {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+}
