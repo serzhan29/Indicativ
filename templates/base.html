@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,12 +15,12 @@
   <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container-fluid">
       <a class="navbar-brand" href="{% url 'index' %}">Indicatorium</a>
-      <a class="navbar-brand" href="{% url 'direction_list' %}">Бағыттар</a>
+      <a class="navbar-brand" href="{% url 'direction_list' %}">{% trans "Directions" %}</a>
 
     {% if user.is_staff or user.profile.role == 'viewer' or user.profile.role == 'dean' %}
-      <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">Мұғалімдер тізімі</a>
-      <a class="navbar-brand" href="{% url 'report_department' %}">Факультет есептері</a>
-      <a class="navbar-brand" href="{% url 'dean_report' %}">Dekan</a>
+      <a class="navbar-brand" href="{% url 'teachers_by_faculty' %}">{% trans "Teachers list" %}</a>
+      <a class="navbar-brand" href="{% url 'report_department' %}">{% trans "Faculty reports" %}</a>
+      <a class="navbar-brand" href="{% url 'dean_report' %}">{% trans "Dean" %}</a>
     {% endif %}
 
 
@@ -33,17 +34,28 @@
         <ul class="navbar-nav ms-auto">
           {% if user.is_authenticated %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Шығу ({{ user.username }})</a>
+              <a class="nav-link" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> {% trans "Logout" %}  ({{ user.username }})</a>
             </li>
           {% else %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Кіру</a>
+              <a class="nav-link" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> {% trans "Login" %}</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Тіркеу</a>
+              <a class="nav-link" href="{% url 'register' %}"><i class="fas fa-user-plus"></i> {% trans "Register" %}</a>
             </li>
           {% endif %}
         </ul>
+        <form class="d-flex ms-3 align-items-center">
+          <select id="lang-select" class="form-select form-select-sm">
+            <option value="kk" {% if LANGUAGE_CODE|slice:":2" == "kk" %}selected{% endif %}>Қазақ</option>
+            <option value="ru" {% if LANGUAGE_CODE|slice:":2" == "ru" %}selected{% endif %}>Русский</option>
+            <option value="en" {% if LANGUAGE_CODE|slice:":2" == "en" %}selected{% endif %}>English</option>
+            <option value="tr" {% if LANGUAGE_CODE|slice:":2" == "tr" %}selected{% endif %}>Türkçe</option>
+          </select>
+        </form>
+
+
+
       </div>
     </div>
   </nav>
@@ -68,4 +80,28 @@
         </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'main/js/base_loader.js' %}"></script>
+<script>
+  (function(){
+    const langs = ['kk','ru','en','tr'];
+    const select = document.getElementById('lang-select');
+    if (!select) return;
+
+    select.addEventListener('change', () => {
+      const newLang = select.value;
+      // Разбираем текущий путь
+      const parts = window.location.pathname.split('/');
+      // Если первый сегмент — существующий код языка, удаляем его
+      if (langs.includes(parts[1])) {
+        parts.splice(1, 1);
+      }
+      // Вставляем новый код языка
+      parts.splice(1, 0, newLang);
+      // Собираем URL
+      const newPath = parts.join('/') || '/';
+      // Переходим
+      window.location.href = newPath + window.location.search;
+    });
+  })();
+</script>
+
 </body>
