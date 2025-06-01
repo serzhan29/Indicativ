@@ -4,6 +4,7 @@ from .forms import CustomUserCreationForm, LoginForm
 from .models import Profile
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.utils.translation import gettext as _
 
 
 def register(request):
@@ -33,7 +34,7 @@ def login_view(request):
             next_url = request.GET.get('next', '/')
             return redirect(next_url)
         else:
-            messages.error(request, "Қате: пайдаланушы аты немесе құпия сөз дұрыс емес.")  # ❗ Ошибка
+            messages.error(request, _("Error: incorrect username or password."))
     else:
         form = LoginForm()
 
@@ -42,7 +43,5 @@ def login_view(request):
 
 
 def logout_view(request):
-    # Завершаем сеанс пользователя
     logout(request)
-    # Перенаправляем на страницу логина после выхода
-    return redirect('login')  # или '/user/login/' если хотите явно указывать путь
+    return redirect('login')

@@ -1,0 +1,140 @@
+:root {
+  --primary-bg: #f4f7f6;
+  --container-bg: #ffffff;
+  --input-border: #ddd;
+  --input-text: #333;
+  --label-text: #555;
+  --btn-bg: #007bff;
+  --btn-hover-bg: #0056b3;
+  --btn-text: #ffffff;
+  --link-color: #007bff;
+  --link-hover: underline;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--primary-bg);
+  margin: 0;
+  padding: 0;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 100px auto;
+  background-color: var(--container-bg);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--input-text);
+}
+
+.register-form .form-group {
+  margin-bottom: 15px;
+}
+
+.register-form label {
+  font-weight: bold;
+  color: var(--label-text);
+}
+
+.register-form input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--input-border);
+  font-size: 14px;
+  color: var(--input-text);
+  box-sizing: border-box;
+}
+
+.register-form button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.register-form button:hover {
+  background-color: var(--btn-hover-bg);
+}
+
+p {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: var(--link-hover);
+}
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  color: var(--label-text);
+  margin-bottom: 5px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--input-border);
+  font-size: 14px;
+  color: var(--input-text);
+  background-color: #fff;
+  box-sizing: border-box;
+  appearance: none; /* Убирает стрелку в некоторых браузерах */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' width='14' height='14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23333' d='M70 90l50-50H20z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--btn-bg);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 480px) {
+  .register-container {
+    margin: 50px 15px;
+    padding: 15px;
+    max-width: 100%;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  .register-form input,
+  .register-form button {
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  p {
+    font-size: 13px;
+  }
+}

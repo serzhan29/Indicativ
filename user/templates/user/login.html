@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 {% block content %}
+<link rel="stylesheet" href="{% static 'user/css/login.css' %}">
   <div class="login-container">
-  <h2>Кіру</h2>
+  <h2>{% trans "Login" %}</h2>
   <form method="post" class="login-form">
     {% csrf_token %}
 
     <div class="form-group">
-      <label for="login">{% translate 'Email' %} {% translate 'Username' %}</label>
+      <label for="login">{% translate 'Email' %} {% translate "Or" %} {% translate 'Username' %}</label>
       {{ form.login }}
     </div>
 
@@ -22,107 +24,12 @@
     {% endif %}
 
     <div class="form-group">
-      <button type="submit" class="btn btn-primary">Кіру</button>
+      <button type="submit" class="btn btn-primary">{% trans "Login" %}</button>
     </div>
   </form>
 
-  <p>Тіркелгіңіз жоқ па? <a href="{% url 'register' %}">Тіркелу</a></p>
+  <p>{% trans "Don't have an account?" %} <a href="{% url 'register' %}">{% trans "Register" %}</a></p>
 </div>
 
-
-<style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f7f6;
-      margin: 0;
-      padding: 0;
-    }
-
-    .alert {
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #f5c2c7;
-      border-radius: 5px;
-      background-color: #f8d7da;
-      color: #842029;
-      font-size: 14px;
-    }
-
-
-    .login-container {
-      width: 100%;
-      max-width: 400px;
-      margin: 100px auto;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
-
-    .login-form .form-group {
-      margin-bottom: 15px;
-    }
-
-    .login-form label {
-      font-weight: bold;
-      color: #555;
-    }
-
-    .login-form input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-      font-size: 14px;
-      color: #333;
-    }
-
-    .login-form button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .login-form button:hover {
-      background-color: #0056b3;
-    }
-
-    p {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-    }
-
-    a {
-      color: #007bff;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-  </style>
-<script>
-  // Удалить сообщение через 5 секунд
-  setTimeout(function() {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-      alert.style.transition = 'opacity 0.5s ease';
-      alert.style.opacity = '0';
-      setTimeout(() => alert.remove(), 500); // полностью убрать из DOM
-    });
-  }, 5000); // 5000 мс = 5 секунд
-</script>
-
+<script src="{% static 'user/js/delete_messages.js' %}"></script>
 {% endblock %}
