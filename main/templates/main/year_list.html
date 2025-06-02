@@ -1,26 +1,27 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block title %}Годы для направления "{{ direction.name }}" - Мой сайт{% endblock %}
 
 {% block breadcrumbs %}
-  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">Бағыттар</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{% trans "Directions" %}</a></li>
   <li class="breadcrumb-item active" aria-current="page">{{ direction.name }}</li>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-center mb-4 text-primary">"{{ direction.name }}" бағыт үшін жылды таңдаңыз</h2>
+    <h2 class="text-center mb-4 text-primary">{% trans "Select year" %}</h2>
 
     <div class="row justify-content-center g-4">
         {% for year in years|dictsort:"year" %}
-        <div class="col-lg-3 col-md-4 col-sm-6 d-flex align-items-stretch">
-            <a href="{% url 'teacher_report' direction_id=direction.id year_id=year.id %}" class="text-decoration-none w-100">
-                <div class="card shadow-sm border-0 text-center py-4 hover-scale h-100 d-flex flex-column justify-content-center">
-                    <div class="card-body">
-                        <h5 class="card-title text-dark fw-bold">{{ year.year }} - {{ year.year|add:"1" }}</h5>
+            <div class="col-lg-3 col-md-4 col-sm-6 d-flex align-items-stretch">
+                <a href="{% url 'teacher_report' direction_id=direction.id year_id=year.id %}" class="text-decoration-none w-100">
+                    <div class="card shadow-sm border-0 text-center py-4 hover-scale h-100 d-flex flex-column justify-content-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-dark fw-bold">{{ year.year }} - {{ year.year|add:"1" }}</h5>
+                        </div>
                     </div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
         {% endfor %}
     </div>
 </div>

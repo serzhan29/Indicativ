@@ -37,8 +37,16 @@ class CustomUserAdmin(UserAdmin):
         return queryset.select_related('profile')
 
 
+@admin.register(Faculty)
+class CustomFacultyAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+
+@admin.register(Department)
+class CustomDepartmentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+
+
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
-
-admin.site.register(Faculty)
-admin.site.register(Department)

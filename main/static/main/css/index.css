@@ -1,0 +1,332 @@
+/* === Переменные цветов === */
+:root {
+  --color-bg: #f4f7fa;
+  --color-text: #333;
+  --color-sidebar-bg: #ffffff;
+  --color-border: #ddd;
+  --color-filter-button: #4caf50;
+  --color-filter-button-hover: #45a049;
+  --color-indicator-bg: #fafafa;
+  --color-indicator-border: #ccc;
+  --color-indicator-hover-border: #97c5f7;
+  --color-main-bg: #ffffff;
+  --color-chart-card-border: #ddd;
+  --color-chart-card-shadow: rgba(0, 0, 0, 0.06);
+  --color-chart-card-shadow-hover: rgba(0, 0, 0, 0.1);
+  --color-show-more-button: #1976d2;
+  --color-show-more-button-hover: #115293;
+  --color-placeholder-text: #888;
+}
+
+/* === Общие стили === */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* === Двухколоночный контейнер === */
+.dashboard-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* === Левая боковая панель === */
+.sidebar {
+  flex: 0 0 325px;
+  background-color: var(--color-sidebar-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  box-sizing: border-box;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+/* Стили формы фильтра */
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: var(--color-text);
+}
+
+.filter-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-indicator-border);
+  font-size: 14px;
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.filter-button {
+  padding: 10px 20px;
+  background-color: var(--color-filter-button);
+  color: #fff;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filter-button:hover {
+  background-color: var(--color-filter-button-hover);
+}
+
+/* Секция выбора индикаторов */
+.indicator-section {
+  margin-bottom: 30px;
+}
+
+.indicator-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: block;
+  color: var(--color-text);
+}
+
+.indicator-search {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid var(--color-indicator-border);
+  border-radius: 6px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+.indicator-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  padding: 10px;
+  background: var(--color-indicator-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.indicator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 8px 10px;
+  border: 1px solid var(--color-indicator-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.indicator-item:hover {
+  background-color: #f0f8ff;
+  border-color: var(--color-indicator-hover-border);
+}
+
+.indicator-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
+.indicator-toggle {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* === Правая колонка: графики === */
+.main-content {
+  flex: 1;
+  background-color: var(--color-main-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  box-sizing: border-box;
+  min-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.charts-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: var(--color-text);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  background: var(--color-main-bg);
+  border: 1px solid var(--color-chart-card-border);
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 4px 12px var(--color-chart-card-shadow);
+  display: none; /* первые шесть включаются инлайново */
+  flex-direction: column;
+  height: 400px;
+  transition: box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.chart-card:hover {
+  box-shadow: 0 6px 18px var(--color-chart-card-shadow-hover);
+}
+
+.chart-info {
+  margin-bottom: 12px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.chart-unit {
+  font-size: 13px;
+  color: #777;
+}
+
+.show-more-container {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.show-more-button {
+  padding: 10px 20px;
+  background-color: var(--color-show-more-button);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.show-more-button:hover {
+  background-color: var(--color-show-more-button-hover);
+}
+
+.no-charts {
+  color: var(--color-placeholder-text);
+  font-size: 16px;
+  margin-top: 30px;
+}
+
+/* === Адаптация под планшеты и телефоны === */
+@media (max-width: 1024px) {
+  .chart-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .sidebar {
+    flex: none;
+    width: 100%;
+    max-height: none;
+    margin-bottom: 20px;
+  }
+  .main-content {
+    width: 100%;
+    min-height: auto;
+  }
+  .chart-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .filter-form {
+    gap: 8px;
+  }
+  .filter-group select,
+  .indicator-search {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  .filter-button,
+  .show-more-button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 5px;
+  }
+  .filter-group label,
+  .indicator-section-title {
+    font-size: 14px;
+  }
+  .filter-group select,
+  .indicator-search {
+    font-size: 12px;
+    padding: 5px 6px;
+  }
+  .filter-button,
+  .show-more-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .indicator-item {
+    padding: 6px 8px;
+  }
+  .indicator-name {
+    font-size: 12px;
+  }
+  .chart-info {
+    height: auto;
+    margin-bottom: 8px;
+  }
+  .chart-title {
+    font-size: 14px;
+  }
+  .chart-unit {
+    font-size: 12px;
+  }
+}

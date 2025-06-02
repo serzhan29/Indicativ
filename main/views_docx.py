@@ -55,7 +55,7 @@ def create_first_page(doc, faculty_name, year):
     for _ in range(6):
         doc.add_paragraph("")
 
-    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{faculty_name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(f"{year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph("\nКентау").alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -91,7 +91,7 @@ def init_document(selected_year, faculty):
     for _ in range(6):
         document.add_paragraph("")
 
-    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{faculty.name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph("\nТүркістан").alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -103,7 +103,7 @@ def init_document(selected_year, faculty):
 def add_direction_title(document, selected_year, faculty, direction):
     for _ in range(6):
         document.add_paragraph("")
-    document.add_paragraph(f"{faculty.name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    document.add_paragraph(f"{faculty.name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph(f"{selected_year.year} - {selected_year.year + 1} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -215,7 +215,7 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
     for _ in range(6):
         doc.add_paragraph("")
 
-    doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{faculty_name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -342,7 +342,7 @@ class TeacherReportWordExportView(View):
             for _ in range(6):
                 doc.add_paragraph("")
 
-            doc.add_paragraph(f"{faculty_name} факультетінің").alignment = WD_ALIGN_PARAGRAPH.CENTER
+            doc.add_paragraph(f"{faculty_name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
             doc.add_paragraph(f"{year.year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
             doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
             doc.add_paragraph(f"{direction.id}  {direction.name.upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER

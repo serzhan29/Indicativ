@@ -1,32 +1,54 @@
 const pre = document.getElementById('content-preloader');
 
-// Скрываем прелоадер при обычной загрузке
+function hidePreloader() {
+  if (pre) pre.style.display = 'none';
+}
+
+function showPreloader() {
+  if (pre) {
+    pre.style.display = 'flex';
+    // Через 5 секунд автоматически скрываем, если ещё показан
+    setTimeout(() => {
+      if (pre.style.display === 'flex') {
+        hidePreloader();
+      }
+    }, 5000);
+  }
+}
+
 window.addEventListener('load', () => {
-  if (pre) pre.style.display = 'none';
+  hidePreloader();
 });
 
-// Скрываем прелоадер, когда страница возвращается из bfcache
-window.addEventListener('pageshow', (event) => {
-  if (pre) pre.style.display = 'none';
+window.addEventListener('pageshow', () => {
+  hidePreloader();
 });
 
-// Показываем при переходе по внутренним ссылкам
 document.addEventListener('click', e => {
   const a = e.target.closest('a');
-  if (a && a.href && a.origin === location.origin) {
-    if (pre) pre.style.display = 'flex';
+  if (!a || !a.href) return;
+
+  if (a.origin !== location.origin) return;
+
+  const downloadableExtensions = ['.pdf', '.xls', '.xlsx', '.doc', '.docx', '.zip', '.rar'];
+  const urlPath = new URL(a.href).pathname.toLowerCase();
+
+  const isDownloadLink = a.hasAttribute('download') || downloadableExtensions.some(ext => urlPath.endsWith(ext));
+
+  if (isDownloadLink) {
+    // Не показываем прелоадер при скачивании
+    return;
   }
+
+  showPreloader();
 });
 
-// Показываем при нажатии F5
 window.addEventListener('keydown', e => {
   if (e.key === 'F5') {
-    if (pre) pre.style.display = 'flex';
+    showPreloader();
   }
 });
 
-// Показываем при любом уходе со страницы (back/forward, Ctrl+R, кнопки браузера и т.п.)
-window.addEventListener('beforeunload', (e) => {
-  if (pre) pre.style.display = 'flex';
-  // не возвращаем строку — просто показываем прелоадер
+window.addEventListener('beforeunload', () => {
+  showPreloader();
 });

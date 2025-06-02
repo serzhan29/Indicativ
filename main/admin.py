@@ -84,7 +84,8 @@ class FacultyFilter(admin.SimpleListFilter):
     parameter_name = "faculty"
 
     def lookups(self, request, model_admin):
-        return [(f.id, f.name) for f in Faculty.objects.all()]
+        # Возвращаем кортеж с id и строкой "id - name"
+        return [(f.id, f"{f.id} - {f.name}") for f in Faculty.objects.all()]
 
     def queryset(self, request, queryset):
         if self.value():
@@ -99,7 +100,7 @@ class DepartmentFilter(admin.SimpleListFilter):
     parameter_name = "department"
 
     def lookups(self, request, model_admin):
-        return [(d.id, d.name) for d in Department.objects.all()]
+        return [(d.id, f"{d.id} - {d.name}") for d in Department.objects.all()]
 
     def queryset(self, request, queryset):
         if self.value():

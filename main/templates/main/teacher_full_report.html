@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 {% block title %}Жыл: {{ year.year }} - {{ year.year|add:"1" }} - барлық бағыттар{% endblock %}
 {% block content %}
@@ -11,7 +12,7 @@
 <div style="display: flex; flex-direction: column; gap: 20px;">
     <!-- Блок переключения направлений -->
     <div class="switch-direction-container">
-        <h4>Бағытты ауыстыру:</h4>
+        <h4>{% trans "Select a direction" %}:</h4>
         <ul>
           {% for direction_item in directions %}
             {% if not current_direction or direction_item.id != current_direction.id %}
@@ -26,7 +27,7 @@
         <ul>
             <li>
             <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}" class="highlight-link">
-              🧾 БАРЛЫҚ БАҒЫТТАР  ({{ year.year }}-{{ year.year|add:"1" }})
+              🧾 {% trans "ALL DIRECTIONS" %} ({{ year.year }}-{{ year.year|add:"1" }})
             </a>
           </li>
         </ul>
@@ -35,16 +36,15 @@
             <form method="get" action="{% url 'teacher_report_download' %}">
               <input type="hidden" name="year" value="{{ year.id }}">
               <input type="hidden" name="teacher" value="{{ teacher.id }}">
-              <button type="submit" class="btn-download">Есепті жүктеу</button>
+              <button type="submit" class="btn-download">{% trans "Dowload report" %}</button>
             </form>
-
           {% endif %}
         </ul>
     </div>
 
     <!-- Новый блок переключения годов -->
     <div class="switch-direction-container" style="background: linear-gradient(135deg, #28a745, #66d97d);">
-        <h4>Жылды ауыстыру:</h4>
+        <h4>{% trans "Select year" %}:</h4>
         <ul>
           {% for year_item in all_years %}
             {% if year_item.id != year.id %}
@@ -63,7 +63,7 @@
 <div class="report-container">
     <div class="report-header">
         <div>
-            <h3>Жыл: {{ year.year }} - {{ year.year|add:"1" }}</h3>
+            <h3>{% trans "Year" %} {{ year.year }} - {{ year.year|add:"1" }}</h3>
         </div>
     </div>
 
@@ -72,12 +72,12 @@
         <table class="report-table">
             <thead>
                 <tr>
-                    <th>Код</th>
-                    <th>Индикатор атауы</th>
-                    <th>Өлшеу бірлігі</th>
-                    <th>Көрсеткіш саны</th>
-                    <th>Файл</th>
-                    <th>Ай / Жыл</th>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Indicator name" %}</th>
+                    <th>{% trans "Unit of measurement" %}</th>
+                    <th>{% trans "Number of indicators" %}</th>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Month / year" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -110,7 +110,7 @@
                         {% if not data.teacher_reports %}
                             <button
                                 class="open-file-modal btn main-indicator" data-id="{{ data.id }}" data-name="{{ aggregated_report.id }}" data-type="main">
-                                Файлдар ({{ data.uploaded_works.count }})
+                                {% trans "Files" %} ({{ data.uploaded_works.count }})
                                 </button>
                         {% endif %}
                     </td>
@@ -152,7 +152,7 @@
                                 data-id="{{ report.id }}"
                                 data-name="{{ report.indicator.name }}"
                                 data-type="sub">
-                                Файлдар ({{ report.uploaded_files.count }})
+                                {% trans "Files" %} ({{ report.uploaded_files.count }})
                             </button>
                         </td>
                         <td>
@@ -179,15 +179,15 @@
         <div class="modal-content">
             <form id="deadlineForm">
                 <div class="modal-header">
-                    <h5 class="modal-title" style="color: black;">Ай мен жылды белгілеңіз</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title" style="color: black;">{% trans "Mark the month and year" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="item_id" id="deadline-item-id">
                     <input type="hidden" name="item_type" id="deadline-item-type">
 
                     <div class="mb-3">
-                        <label for="deadline-month" class="form-label" style="color: black;">Ай</label>
+                        <label for="deadline-month" class="form-label" style="color: black;">{% trans "Month" %}</label>
                         <select class="form-select" name="month" id="deadline-month" required>
                             {% for key, value in months %}
                               <option value="{{ key }}">{{ value }}</option>
@@ -196,48 +196,61 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="deadline-year" class="form-label" style="color: black;">Жыл</label>
+                        <label for="deadline-year" class="form-label" style="color: black;">{% trans "Year" %}</label>
                         <input type="number" class="form-control" name="year" id="deadline-year" value="{{ year.year }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Сақтау</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-<!-- Само модальное окно -->
 <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form id="fileForm" enctype="multipart/form-data" method="post">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title" id="fileModalLabel">Жүктелген файлдар</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Жабу"></button>
+          <h5 class="modal-title" id="fileModalLabel">{% trans "Downloaded files" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
         </div>
         <div class="modal-body">
           <input type="file" name="file" id="fileInput" class="form-control mb-3" required>
           <input type="hidden" name="report_id" id="modalReportId">
           <div id="indicatorFieldContainer"></div>
 
+            <div class="mb-3">
+              <label for="coAuthorsSelect" class="form-label">{% trans "Etcetera" %}</label>
+              <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;">
+                <select multiple class="form-select border-0" id="coAuthorsSelect" name="co_authors" size="10" style="height: auto;">
+                  {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.get_full_name }} ({{ user.username }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <small class="form-text text-muted">{% trans "Select multiple etcetera by holding Ctrl (Cmd)." %}</small>
+            </div>
+
+
           <div class="table-responsive">
-            <table class="table table-bordered table-hover text-center align-middle">
-              <thead class="table-dark">
-                <tr>
-                  <th>Файл атауы</th>
-                  <th>Жүктеу күні</th>
-                  <th>Әрекеттер</th>
-                </tr>
-              </thead>
-              <tbody id="uploadedFilesList"></tbody>
-            </table>
-          </div>
+              <table class="table table-bordered table-hover text-center align-middle" style="table-layout: auto;">
+                <thead class="table-dark">
+                  <tr>
+                    <th>{% trans "File name" %}</th>
+                    <th>{% trans "Download date" %}</th>
+                    <th style="min-width: 200px;">{% trans "Etcetera" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                  </tr>
+                </thead>
+                <tbody id="uploadedFilesList"></tbody>
+              </table>
+            </div>
           <p id="fileCount" class="text-muted text-end me-2"></p>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Жүктеу</button>
+          <button type="submit" class="btn btn-primary">{% trans "Download" %}</button>
         </div>
       </form>
     </div>
@@ -337,39 +350,29 @@
 
 <script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
 <script>
-        document.querySelectorAll('.open-deadline-modal').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = new bootstrap.Modal(document.getElementById('deadlineModal'));
-            document.getElementById('deadline-item-id').value = button.dataset.id;
-            document.getElementById('deadline-item-type').value = button.dataset.type;
-            modal.show();
-        });
+  const updateDeadlineUrl = "{% url 'update_deadline' %}";
+  const csrfToken = "{{ csrf_token }}";
+</script>
+<script src="{% static 'main/js/second_modal.js' %}"></script>
+<script>
+  async function loadUsers() {
+    const response = await fetch('/get-all-users/');
+    const data = await response.json();
+
+    const select = document.getElementById('coAuthorsSelect');
+    select.innerHTML = ''; // Очистка перед обновлением
+
+    data.users.forEach(user => {
+      const option = document.createElement('option');
+      option.value = user.id;
+      option.textContent = user.name;
+      select.appendChild(option);
     });
+  }
 
-    document.getElementById('deadlineForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const itemId = this.item_id.value;
-        const itemType = this.item_type.value;
-        const month = this.month.value;
-        const year = this.year.value;
-
-        fetch('{% url "update_deadline" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: itemId, type: itemType, month: month, year: year })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();  // Обновим страницу
-            } else {
-                alert('Ошибка при сохранении даты.');
-            }
-        });
-    });
+  // Вызов при открытии формы/модалки:
+  document.addEventListener('DOMContentLoaded', () => {
+    loadUsers(); // или вызвать вручную перед показом модального окна
+  });
 </script>
 {% endblock %}

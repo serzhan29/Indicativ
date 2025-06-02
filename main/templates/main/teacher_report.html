@@ -1,9 +1,9 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 {% block breadcrumbs %}
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{{ direction.name }}</a></li>
-  <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">Барлық жылдар</a></li>
-  <li class="breadcrumb-item active" aria-current="page">{{ year.year }} - {{ year.year|add:"1" }}</li>
+  <li class="breadcrumb-item"><a href="{% url 'choose_year' direction_id=direction.id %}">{{ year.year }} - {{ year.year|add:"1" }}</a></li>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
 <div class="page-container" style="display: flex; gap: 20px;">
     <!-- Фиксированный блок со списком направлений -->
     <div class="switch-direction-container">
-        <h4>Бағытты ауыстыру:</h4>
+        <h4>{% trans "Select a direction" %}</h4>
         <ul>
           {% for direction_item in directions %}
             {% if direction_item.id != direction.id %}
@@ -29,15 +29,15 @@
         <ul>
           <li>
             <a href="{% url 'teacher_full_report_with_year' year_id=year.id %}" class="highlight-link">
-              🧾 БАРЛЫҚ БАҒЫТТАР ({{ year.year }}-{{ year.year|add:"1" }})
+              🧾 {% trans "ALL DIRECTIONS" %} ({{ year.year }}-{{ year.year|add:"1" }})
             </a>
           </li>
         </ul>
             <form action="{% url 'download_teacher_report' teacher_id=teacher.id direction_id=direction.id year_id=year.id %}" method="get">
-                <button type="submit" class="btn-download">Есепті жүктеу</button>
+                <button type="submit" class="btn-download">{% trans "Dowload report" %}</button>
             </form>
             <div class="switch-direction-container" style="background: linear-gradient(135deg, #28a745, #66d97d);">
-        <h4>Жылды ауыстыру:</h4>
+        <h4>{% trans "Select year" %}</h4>
         <ul>
           {% for year_item in all_years %}
             {% if year_item.id != year.id %}
@@ -57,19 +57,19 @@
         <div class="report-header">
             <div>
                 <h2>{{ direction }}</h2>
-                <h3>Жыл: {{ year.year }} - {{ year.year|add:"1" }}</h3>
+                <h3>{% trans "Year" %} {{ year.year }} - {{ year.year|add:"1" }}</h3>
             </div>
         </div>
 
         <table class="report-table">
             <thead>
                 <tr>
-                    <th>Код</th>
-                    <th>Индикатор атауы</th>
-                    <th>Өлшеу бірлігі</th>
-                    <th>Көрсеткіш саны</th>
-                    <th>Файл</th>
-                    <th>Ай / Жыл</th>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Indicator name" %}</th>
+                    <th>{% trans "Unit of measurement" %}</th>
+                    <th>{% trans "Number of indicators" %}</th>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Month / year" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -109,7 +109,7 @@
                                     data-name="{{ aggregated_report.id }}"
                                     data-type="main"
                                 >
-                                    Файлдар ({{ data.uploaded_works.count }})
+                                    {% trans "Files" %} ({{ data.uploaded_works.count }})
                                 </button>
                             {% endif %}
                         </td>
@@ -160,7 +160,7 @@
                                 data-name="{{ report.indicator.name }}"
                                 data-type="sub"
                             >
-                                Файлдар ({{ report.uploaded_files.count }})
+                                {% trans "Files" %} ({{ report.uploaded_files.count }})
                             </button>
                         </td>
                         <td>
@@ -187,15 +187,15 @@
         <div class="modal-content">
             <form id="deadlineForm">
                 <div class="modal-header">
-                    <h5 class="modal-title" style="color: black;">Ай мен жылды белгілеңіз</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title" style="color: black;">{% trans "Mark the month and year" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="item_id" id="deadline-item-id">
                     <input type="hidden" name="item_type" id="deadline-item-type">
 
                     <div class="mb-3">
-                        <label for="deadline-month" class="form-label" style="color: black;">Ай</label>
+                        <label for="deadline-month" class="form-label" style="color: black;">{% trans "Month" %}</label>
                         <select class="form-select" name="month" id="deadline-month" required>
                             {% for key, value in months %}
                               <option value="{{ key }}">{{ value }}</option>
@@ -204,12 +204,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="deadline-year" class="form-label" style="color: black;">Жыл</label>
+                        <label for="deadline-year" class="form-label" style="color: black;">{% trans "Year" %}</label>
                         <input type="number" class="form-control" name="year" id="deadline-year" value="{{ year.year }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Сақтау</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
                 </div>
             </form>
         </div>
@@ -222,8 +222,8 @@
       <form id="fileForm" enctype="multipart/form-data" method="post">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title" id="fileModalLabel">Жүктелген файлдар</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Жабу"></button>
+          <h5 class="modal-title" id="fileModalLabel">{% trans "Downloaded files" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
         </div>
         <div class="modal-body">
           <input type="file" name="file" id="fileInput" class="form-control mb-3" required>
@@ -231,7 +231,7 @@
           <div id="indicatorFieldContainer"></div>
 
             <div class="mb-3">
-              <label for="coAuthorsSelect" class="form-label">Соавторлар</label>
+              <label for="coAuthorsSelect" class="form-label">{% trans "Etcetera" %}</label>
               <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;">
                 <select multiple class="form-select border-0" id="coAuthorsSelect" name="co_authors" size="10" style="height: auto;">
                   {% for user in all_users %}
@@ -239,7 +239,7 @@
                   {% endfor %}
                 </select>
               </div>
-              <small class="form-text text-muted">Ctrl (Cmd) ұстап тұрып бірнеше соавторды таңдаңыз.</small>
+              <small class="form-text text-muted">{% trans "Select multiple etcetera by holding Ctrl (Cmd)." %}</small>
             </div>
 
 
@@ -247,10 +247,10 @@
               <table class="table table-bordered table-hover text-center align-middle" style="table-layout: auto;">
                 <thead class="table-dark">
                   <tr>
-                    <th>Файл атауы</th>
-                    <th>Жүктеу күні</th>
-                    <th style="min-width: 200px;">Соавторлар</th>
-                    <th>Әрекеттер</th>
+                    <th>{% trans "File name" %}</th>
+                    <th>{% trans "Download date" %}</th>
+                    <th style="min-width: 200px;">{% trans "Etcetera" %}</th>
+                    <th>{% trans "Actions" %}</th>
                   </tr>
                 </thead>
                 <tbody id="uploadedFilesList"></tbody>
@@ -259,7 +259,7 @@
           <p id="fileCount" class="text-muted text-end me-2"></p>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Жүктеу</button>
+          <button type="submit" class="btn btn-primary">{% trans "Download" %}</button>
         </div>
       </form>
     </div>

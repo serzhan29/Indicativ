@@ -1,4 +1,5 @@
 import json
+import calendar
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -6,17 +7,14 @@ from .models import (Direction, Year, TeacherReport, Indicator, MainIndicator, A
                      UploadedWork, UploadedMainWork)
 from user.models import Department, Faculty, Profile
 from django.db.models import Sum
-from django.views.generic.edit import FormView
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
 from django.views.generic import TemplateView
-from django.db import models
 from django.db.models import Q
-from django.contrib.auth import get_user_model
+from django.utils.translation import gettext as _
 
 
 class DirectionListView(LoginRequiredMixin, ListView):
@@ -189,15 +187,10 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         teacher = self.request.user
         direction = get_object_or_404(Direction, id=self.kwargs['direction_id'])
-        year = get_object_or_404(Year, id=self.kwargs['year_id'])
-
 
         # Получаем год либо из URL (kwargs), либо из GET-параметра
         year_id = self.request.GET.get('year_id') or self.kwargs.get('year_id')
-        if year_id:
-            year = get_object_or_404(Year, id=year_id)
-        else:
-            year = Year.objects.last()
+        year = get_object_or_404(Year, id=year_id) if year_id else Year.objects.last()
 
         # Заменяем сортировку на собственную функцию
         def code_key(code):
@@ -206,21 +199,6 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         main_indicators = list(MainIndicator.objects.filter(direction=direction, years=year))
         main_indicators.sort(key=lambda x: code_key(x.code))
         aggregated_data = []
-
-        months_kz = {
-            1: 'Қаңтар',
-            2: 'Ақпан',
-            3: 'Наурыз',
-            4: 'Сәуір',
-            5: 'Мамыр',
-            6: 'Маусым',
-            7: 'Шілде',
-            8: 'Тамыз',
-            9: 'Қыркүйек',
-            10: 'Қазан',
-            11: 'Қараша',
-            12: 'Желтоқсан',
-        }
 
         for main_indicator in main_indicators:
             indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
@@ -256,18 +234,13 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
 
             for report in teacher_reports:
                 report.uploaded_files = report.uploaded_works.all()
-                # Добавляем поле для отображения срока в формате "Месяц Год"
                 if report.deadline_month and report.deadline_year:
-                    report.deadline_display = f"{months_kz.get(report.deadline_month, '')} {report.deadline_year}"
-
-
+                    report.deadline_display = f"{_(calendar.month_name[report.deadline_month])} {report.deadline_year}"
                 else:
                     report.deadline_display = "—"
 
-            # Добавим отображаемое время и для агрегированного индикатора
             if aggregated_indicator.deadline_month and aggregated_indicator.deadline_year:
-                aggregated_deadline_display = f"{months_kz.get(aggregated_indicator.deadline_month, '')} {aggregated_indicator.deadline_year}"
-
+                aggregated_deadline_display = f"{_(calendar.month_name[aggregated_indicator.deadline_month])} {aggregated_indicator.deadline_year}"
             else:
                 aggregated_deadline_display = "—"
 
@@ -281,8 +254,8 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
                 'deadline_display': aggregated_deadline_display,
             })
 
-        context['months'] = months_kz.items()
-
+        # Список месяцев через calendar с локализацией
+        months = [(i, _(calendar.month_name[i])) for i in range(1, 13)]
 
         context.update({
             'teacher': teacher,
@@ -291,7 +264,7 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
             'all_years': Year.objects.all(),
             'aggregated_data': aggregated_data,
             'directions': Direction.objects.all(),
-            'months': months_kz.items(),
+            'months': months,
         })
         return context
 
@@ -312,22 +285,6 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
 
         directions = Direction.objects.all()
         all_aggregated_data = {}
-
-        # Названия месяцев на казахском
-        months_kz = {
-            1: 'Қаңтар',
-            2: 'Ақпан',
-            3: 'Наурыз',
-            4: 'Сәуір',
-            5: 'Мамыр',
-            6: 'Маусым',
-            7: 'Шілде',
-            8: 'Тамыз',
-            9: 'Қыркүйек',
-            10: 'Қазан',
-            11: 'Қараша',
-            12: 'Желтоқсан',
-        }
 
         if year_id:
             year = get_object_or_404(Year, id=year_id)
@@ -377,13 +334,13 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
                 for report in teacher_reports:
                     report.uploaded_files = report.uploaded_works.all()
                     if report.deadline_month and report.deadline_year:
-                        report.deadline_display = f"{months_kz.get(report.deadline_month, '')} {report.deadline_year}"
+                        report.deadline_display = f"{_(calendar.month_name[report.deadline_month])} {report.deadline_year}"
                     else:
                         report.deadline_display = "—"
 
                 # Добавим срок к aggregated_indicator
                 if aggregated_indicator.deadline_month and aggregated_indicator.deadline_year:
-                    aggregated_deadline_display = f"{months_kz.get(aggregated_indicator.deadline_month, '')} {aggregated_indicator.deadline_year}"
+                    aggregated_deadline_display = f"{_(calendar.month_name[aggregated_indicator.deadline_month])} {aggregated_indicator.deadline_year}"
                 else:
                     aggregated_deadline_display = "—"
 
@@ -398,7 +355,7 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
                 })
 
             all_aggregated_data[dir_item] = aggregated_data
-        context['months'] = months_kz.items()
+
         context.update({
             'teacher': teacher,
             'current_direction': None if not direction_id else get_object_or_404(Direction, id=direction_id),
@@ -406,12 +363,10 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
             'all_aggregated_data': all_aggregated_data,
             'directions': Direction.objects.all(),
             'all_years': Year.objects.all().order_by('-year'),
-            'months': months_kz.items(),
+            'months': [(i, _(calendar.month_name[i])) for i in range(1, 13)],
         })
 
         return context
-
-
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -470,6 +425,7 @@ class UpdateValueView(LoginRequiredMixin, View):
 
 
 # index.html
+@login_required
 def index(request):
     teacher = request.user
     years = Year.objects.order_by('year')
