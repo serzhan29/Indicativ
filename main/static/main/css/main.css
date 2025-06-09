@@ -60,6 +60,7 @@ th, td {
     text-align: left;
     border-right: 2px solid var(--border-color);
     font-size: 0.95rem;
+    vertical-align: middle !important;
 }
 
 th:last-child, td:last-child {

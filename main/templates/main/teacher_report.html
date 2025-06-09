@@ -7,6 +7,8 @@
 {% endblock %}
 
 {% block content %}
+    <!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
 <link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
 <link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
@@ -83,9 +85,9 @@
                         <span style="font-weight: bold; font-size: 1em;">{{ data.main_indicator.points }}</span>
                     </td>
 
-                    <td>
+                    <td class="text-center align-middle">
                         {% if data.teacher_reports %}
-                            <span class="total-value" data-default-value="{{ data.additional_value }}" style="color: #003366">{{ data.total_value }}</span>
+                            <span class="total-value" data-default-value="{{ data.additional_value }}" style="color: yellow">{{ data.total_value }}</span>
                         {% else %}
                             <input
                                 type="number"
@@ -140,7 +142,7 @@
                             <span style="font-weight: bold; font-size: 1em;">{{ report.indicator.points }}</span>
                         </td>
 
-                        <td>
+                        <td class="text-center align-middle">
                             <input
                                 type="number"
                                 class="editable {% if not year.editable %} not-editable {% endif %}"
@@ -266,6 +268,7 @@
   </div>
 </div>
 
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   const updateDeadlineUrl = "{% url 'update_deadline' %}";
@@ -362,7 +365,51 @@
   });
 </script>
 
-<script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
+<script src="{% static 'main/js/upload_delete_fail.js' %}">
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const fileForm = document.getElementById('fileForm');
+
+  fileForm.addEventListener('submit', async function (e) {
+    e.preventDefault();  // Отменяем стандартную отправку
+
+    const formData = new FormData(fileForm);
+    const reportId = document.getElementById('modalReportId').value;
+    formData.append('report_id', reportId); // если вдруг не передается
+
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) {
+      alert('Пожалуйста, выберите файл.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/get-files/${reportId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(data.message);  // Файл успешно загружен.
+        fileForm.reset();
+        loadFiles(reportId);  // Перезагрузка списка файлов
+      } else {
+        alert('Ошибка загрузки файла: ' + (data.message || 'Неизвестная ошибка'));
+      }
+    } catch (error) {
+      console.error('Ошибка отправки формы:', error);
+      alert('Произошла ошибка при загрузке файла.');
+    }
+  });
+});
+
+</script>
 <script>
   async function loadUsers() {
     const response = await fetch('/get-all-users/');

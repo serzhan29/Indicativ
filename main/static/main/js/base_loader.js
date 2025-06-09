@@ -12,7 +12,7 @@ function showPreloader() {
       if (pre.style.display === 'flex') {
         hidePreloader();
       }
-    }, 5000);
+    }, 3000);
   }
 }
 

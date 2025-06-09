@@ -1,96 +1,167 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 
 {% block breadcrumbs %}
   <li class="breadcrumb-item">
     <a href="{% url 'teachers_by_faculty' %}">
-      Мұғалімдер тізімі /
+      {% trans "Teachers list" %} /
       {% if teacher.id %}
-        {{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }} - {{ year.year }}
+        {{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }} ({{ year.year }} - {{ year.year|add:"1" }})
       {% endif %}
     </a>
   </li>
 {% endblock %}
 
 {% block content %}
-<div class="report-container py-5">
-  <div class="container-fluid px-4">
-    <div class="row">
-      <!-- ФИЛЬТР И НАПРАВЛЕНИЯ -->
-      <div class="col-md-2 mb-3">
-        <div class="p-3 bg-white rounded-4 shadow-sm d-flex flex-column gap-2 small-filte" style="position: sticky; top: 0; z-index: 999; height: 50vh;">
-          <h6 class="fw-semibold text-primary mb-1">Фильтр</h6>
-          <form method="get" class="d-flex flex-column gap-2">
-            <div>
-              <label class="form-label fw-semibold small">Жыл:</label>
-              <select name="year" class="form-select form-select-sm" required>
-                <option value="">Таңдаңыз</option>
-                {% for y in years %}
-                  <option value="{{ y.id }}" {% if year and y.id == year.id %}selected{% endif %}>{{ y.year }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
-            <button type="submit" class="btn btn-gradient btn-sm w-100">Қарау</button>
-          </form>
+<link rel="stylesheet" href="{% static 'main/css/main.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
 
-          {% if teacher.id and year.id %}
-            <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}" class="btn btn-outline-primary btn-sm w-100">
-              📄 Word-қа жүктеу
-            </a>
-          {% endif %}
-
-          <!-- Список направлений -->
-          <h6 class="fw-semibold text-primary mt-3" style="color:black; !important;">Бағыттар</h6>
-          <div class="direction-links">
-            {% for group in aggregated_data %}
-              <a href="#direction-{{ group.direction.id }}" class="direction-link">{{ group.direction.name }}</a>
+<div class="container-fluid">
+  <div class="row">
+    <!-- Фильтр слева -->
+    <div class="col-md-2">
+      <div class="switch-direction-container p-3 bg-white rounded shadow-sm">
+        <h6 class="fw-semibold mb-3" style="color: white">{% trans "Select year" %}:</h6>
+        <form method="get" id="year-form">
+          <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
+          <div class="list-group mb-3" role="tablist">
+            {% for y in years %}
+              <button
+                type="submit"
+                name="year"
+                value="{{ y.id }}"
+                class="list-group-item list-group-item-action text-center {% if year and y.id == year.id %}active{% endif %}">
+                {{ y.year }} – {{ y.year|add:"1" }}
+              </button>
             {% endfor %}
           </div>
-        </div>
+        </form>
+        {% if teacher.id and year.id %}
+          <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}"
+             class="btn btn-outline-primary btn-sm w-100">
+            📄 Word-қа жүктеу
+          </a>
+        {% endif %}
       </div>
+    </div>
 
-      <!-- ОСНОВНОЙ КОНТЕНТ -->
-      <div class="col-md-9">
+
+    <!-- Таблица справа -->
+    <div class="col-md-10">
+      <div class="report-container">
         {% if teacher.id %}
-          <div class="text-center mb-4">
-            <h2 class="fw-bold">{{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }}</h2>
+          <div class="report-header mb-4">
+            <h2 class="fw-bold">{{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }} - ({{ year.year }} - {{ year.year|add:"1" }})</h2>
           </div>
         {% endif %}
 
         {% if year %}
           {% for group in aggregated_data %}
-            <div id="direction-{{ group.direction.id }}" class="direction-block mb-5">
+            <div id="direction-{{ group.direction.id }}" class="mb-5">
               <h4 class="direction-title">{{ group.direction.name }}</h4>
               <div class="table-responsive">
-                <table class="table table-hover table-bordered shadow-sm rounded overflow-hidden align-middle text-center w-100">
-                  <thead class="table-header">
+                <table class="report-table">
+                  <thead class="table-light">
                     <tr>
-                      <th style="width: 10%;">Код</th>
-                      <th style="width: 50%;">Индикатор атауы</th>
-                      <th style="width: 20%;">Өлшеу бірлігі</th>
-                      <th style="width: 20%;">Көрсеткіш саны</th>
+                      <th style="width: 5%;">{% trans "Code" %}</th>
+                      <th style="width: 50%;">{% trans "Indicator name" %}</th>
+                      <th style="width: 10%;">{% trans "Unit" %}</th>
+                      <th style="width: 8%;">{% trans "Value" %}</th>
+                      <th style="width: 10%;">{% trans "Month / year" %}</th>
+                      <th style="width: 5%;">{% trans "Files" %}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for data in group.main_indicators %}
-                      <!-- Основной индикатор -->
-                      <tr class="main-indicator-row" data-bs-toggle="collapse" data-bs-target="#sub-{{ data.main_indicator.id }}" style="cursor: pointer;">
+                      <tr class="main-indicator-row">
                         <td>{{ data.main_indicator.code }}</td>
-                        <td class="fw-bold text-start">{{ data.main_indicator.name }}</td>
-                        <td>{{ data.main_indicator.unit }}</td>
-                        <td>{{ data.total_value }}</td>
+                        <td class="text-start">{{ data.main_indicator.name }}</td>
+                        <td class="text-center">{{ data.main_indicator.unit }}</td>
+                        <td class="text-center">{{ data.total_value }}</td>
+                        <td class="text-center">
+                          {% if data.main_indicator.deadline_month and data.main_indicator.deadline_year %}
+                            {{ data.main_indicator.deadline_month }}/{{ data.main_indicator.deadline_year }}
+                          {% else %}
+                            —
+                          {% endif %}
+                        </td>
+                        <td class="text-center">
+                          {% with data.uploaded_works.count as cnt %}
+                            {% if cnt > 0 %}
+                              <a href="#" data-bs-toggle="modal" data-bs-target="#mainFilesModal{{ data.main_indicator.id }}">
+                                {{ cnt }}
+                              </a>
+                              <!-- Модалка -->
+                              <div class="modal fade" id="mainFilesModal{{ data.main_indicator.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                  <div class="modal-content">
+                                    <div class="modal-header">
+                                      <h5 class="modal-title">{{ data.main_indicator.name }} — файлы</h5>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                      <ul class="list-group">
+                                        {% for file in data.uploaded_works.all %}
+                                          <li class="list-group-item d-flex justify-content-between">
+                                            <a href="{{ file.file.url }}" target="_blank">📄 {{ file.file.name|cut:"media/" }}</a>
+                                            <span class="text-muted small">{{ file.uploaded_at|date:"d.m.Y H:i" }}</span>
+                                          </li>
+                                        {% endfor %}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            {% else %}
+                              —
+                            {% endif %}
+                          {% endwith %}
+                        </td>
                       </tr>
-                      <!-- Подиндикаторы (по умолчанию открыты) -->
                       <tbody id="sub-{{ data.main_indicator.id }}" class="collapse show">
                         {% for report in data.teacher_reports %}
                           <tr class="sub-indicator-row">
-                            <td> {{ report.indicator.code }} </td>
-                            <td class="text-start ps-4">
-                              <span class="sub-indent">↳</span> {{ report.indicator.name }}
+                            <td>{{ report.indicator.code }}</td>
+                            <td class="text-start ps-4">↳ {{ report.indicator.name }}</td>
+                            <td class="text-center">{{ report.indicator.unit }}</td>
+                            <td class="text-center">{{ report.value }}</td>
+                            <td class="text-center">
+                              {% if report.deadline_month and report.deadline_year %}
+                                {{ report.deadline_month }}/{{ report.deadline_year }}
+                              {% else %}
+                                —
+                              {% endif %}
                             </td>
-                            <td>{{ report.indicator.unit }}</td>
-                            <td>{{ report.value }}</td>
+                            <td class="text-center">
+                              {% with report.uploaded_works.count as cnt2 %}
+                                {% if cnt2 > 0 %}
+                                  <a href="#" data-bs-toggle="modal" data-bs-target="#subFilesModal{{ report.id }}">{{ cnt2 }}</a>
+                                  <div class="modal fade" id="subFilesModal{{ report.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                      <div class="modal-content">
+                                        <div class="modal-header">
+                                          <h5 class="modal-title">{{ report.indicator.name }} — файлы</h5>
+                                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                          <ul class="list-group">
+                                            {% for file in report.uploaded_works.all %}
+                                              <li class="list-group-item d-flex justify-content-between">
+                                                <a href="{{ file.file.url }}" target="_blank">📄 {{ file.file.name|cut:"media/" }}</a>
+                                                <span class="text-muted small">{{ file.uploaded_at|date:"d.m.Y H:i" }}</span>
+                                              </li>
+                                            {% endfor %}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                {% else %}
+                                  —
+                                {% endif %}
+                              {% endwith %}
+                            </td>
                           </tr>
                         {% endfor %}
                       </tbody>
@@ -106,142 +177,5 @@
   </div>
 </div>
 
-<style>
-  .report-container {
-    background: linear-gradient(to right, #eef9ff, #ffffff);
-  }
-
-  .btn-gradient {
-    background: linear-gradient(135deg, #0096ff, #00cfff);
-    border: none;
-    color: white;
-    font-weight: 600;
-    padding: 10px;
-    border-radius: 10px;
-    transition: 0.3s ease;
-  }
-
-  .btn-gradient:hover {
-    background: linear-gradient(135deg, #007be6, #00b0dd);
-    transform: translateY(-1px);
-  }
-
-  .direction-title {
-    font-size: 1.5rem;
-    color: #007be6;
-    border-left: 5px solid #00bfff;
-    padding-left: 12px;
-    margin-bottom: 1.2rem;
-  }
-
-  .table-header {
-    background: linear-gradient(to right, #007be6, #00cfff);
-  }
-
-  .table-header th {
-    color: white;
-    font-weight: 600;
-  }
-
-  .main-indicator-row td {
-    background-color: #d7f0ff;
-    font-weight: bold;
-    color: #003366;
-    padding: 12px 10px;
-  }
-
-  .sub-indicator-row td {
-    background-color: #f5fafd;
-    font-style: italic;
-    padding-left: 2rem !important; /* Увеличим отступ слева */
-  }
-
-  .sub-indent {
-    color: #00aaff;
-    font-weight: bold;
-    margin-right: 6px;
-  }
-
-  .small-filter {
-    font-size: 0.9rem;
-  }
-
-  /* Стили для направлений */
-  .direction-links {
-    margin-top: 1rem;
-  }
-
-  .direction-link {
-    display: block;
-    margin-bottom: 5px;
-    color: #007be6;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .direction-link:hover {
-    text-decoration: underline;
-  }
-
-  /* Стиль для таблиц и строк */
-  .main-indicator-row {
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-
-  .main-indicator-row:hover {
-    background-color: #c9e7ff;
-  }
-
-  .sub-indicator-row {
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-
-  .sub-indicator-row:hover {
-    background-color: #e5f7ff;
-  }
-
-  /* Анимации для подиндикаторов */
-  .sub-indicator-row td {
-    transition: padding-left 0.3s ease, font-style 0.3s ease;
-  }
-
-  @media (max-width: 768px) {
-    .direction-title {
-      font-size: 1.3rem;
-    }
-
-    table {
-      font-size: 14px;
-    }
-
-    h2, h3 {
-      font-size: 1.5rem;
-    }
-
-    .sub-indicator-row td {
-      padding-left: 20px !important;
-    }
-  }
-</style>
-
-<!-- Bootstrap collapse support -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const rows = document.querySelectorAll(".main-indicator-row");
-    rows.forEach(row => {
-      row.addEventListener("click", function () {
-        const target = row.getAttribute("data-bs-target");
-        const el = document.querySelector(target);
-        if (el.classList.contains("show")) {
-          el.classList.remove("show");
-        } else {
-          el.classList.add("show");
-        }
-      });
-    });
-  });
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

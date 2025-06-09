@@ -57,34 +57,41 @@ def teachers_by_faculty(request):
 class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
     template_name = 'main/view/teacher_reports_list.html'
 
-    def get(self, request, *args, **kwargs):
-        year_id = request.GET.get('year')
-        teacher_id = request.GET.get('teacher')
-
-        if not year_id:
-            return super().get(request, *args, **kwargs)
-
-        self.year = get_object_or_404(Year, id=year_id)
-        self.teacher = get_object_or_404(User, id=teacher_id) if teacher_id else request.user
-
-        return super().get(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         year_id = self.request.GET.get('year')
-        directions = Direction.objects.all().order_by('id')
+        teacher_id = self.request.GET.get('teacher')
+
+        # Получаем список всех лет и направлений
         years = Year.objects.all().order_by('year')
+        directions = Direction.objects.all().order_by('id')
 
         context['years'] = years
         context['directions'] = directions
 
-        if not year_id:
+        # Если не выбран год — берём последний
+        if not year_id and years.exists():
+            year = years.last()
+        elif year_id:
+            year = get_object_or_404(Year, id=year_id)
+        else:
+            year = None
+
+        # Учитель: либо передан, либо текущий пользователь
+        if teacher_id:
+            teacher = get_object_or_404(User, id=teacher_id)
+        else:
+            teacher = self.request.user
+
+        context['year'] = year
+        context['teacher'] = teacher
+
+        # Если год не задан, то данные не передаём
+        if not year:
             return context
 
-        year = self.year
-        teacher = self.teacher
-
+        # Список направлений с агрегированными показателями
         all_data = []
 
         for direction in directions:
@@ -126,19 +133,15 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
 
             all_data.append(direction_data)
 
-        context.update({
-            'teacher': teacher,
-            'year': year,
-            'aggregated_data': all_data  # 👈 Весь список
-        })
-
+        context['aggregated_data'] = all_data
         return context
+
 
 
 @login_required
 def report_department(request):
-    """ кафедра менгерушиси """
-    user_profile = request.user.profile  # Получаем профиль пользователя
+    """кафедра менгерушиси"""
+    user_profile = request.user.profile
     user_role = user_profile.role
 
     year_id = request.GET.get("year")
@@ -151,44 +154,35 @@ def report_department(request):
     all_faculties = Faculty.objects.all()
     all_departments = Department.objects.all()
 
-    # ----------- Фильтрация факультетов и кафедр по ролям ----------- #
+    # Фильтрация факультетов и кафедр по ролям
     if request.user.is_superuser:
         faculties = all_faculties
         departments = all_departments
 
     elif user_role == 'viewer':
-        # Просмотр кафедры пользователя
-        faculties = Faculty.objects.filter(
-            id=user_profile.faculty.id) if user_profile.faculty else Faculty.objects.none()
-        departments = Department.objects.filter(
-            id=user_profile.department.id) if user_profile.department else Department.objects.none()
+        faculties = Faculty.objects.filter(id=user_profile.faculty.id) if user_profile.faculty else Faculty.objects.none()
+        departments = Department.objects.filter(id=user_profile.department.id) if user_profile.department else Department.objects.none()
         faculty_ids = [str(user_profile.faculty.id)] if user_profile.faculty else []
         department_ids = [str(user_profile.department.id)] if user_profile.department else []
 
-    else:  # Для преподавателей и других
+    else:
         faculties = Faculty.objects.none()
         departments = Department.objects.none()
 
-    # ------------------------------------- #
-    # Исключаем 'all' из department_ids
     department_ids = [d for d in department_ids if d != 'all']
-
     selected_faculties = faculties.filter(id__in=faculty_ids) if faculty_ids else faculties
     selected_departments = departments.filter(id__in=department_ids) if department_ids else departments
 
-    # Получаем направления
     directions = Direction.objects.all()
     data = []
 
-    # Обрабатываем данные для отчета
     for direction in directions:
         direction_data = {
             "name": direction.name,
             "main_indicators": []
         }
 
-        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related(
-            "indicators")
+        main_indicators = MainIndicator.objects.filter(direction=direction, years=selected_year).prefetch_related("indicators")
 
         for main in main_indicators:
             has_sub_indicators = main.indicators.exists()
@@ -196,24 +190,28 @@ def report_department(request):
                 "code": main.code,
                 "name": main.name,
                 "unit": main.unit,
-                "teachers": [],
+                "teachers": [],     # для хран. (имя, значение, кол‑во файлов)
                 "total": 0,
                 "sub_indicators": [],
                 "has_sub_indicators": has_sub_indicators
             }
 
             if has_sub_indicators:
+                # Проходим по каждому подиндикатору
                 for sub in main.indicators.filter(years=selected_year):
                     reports = TeacherReport.objects.filter(indicator=sub, year=selected_year)
-
                     if selected_departments.exists():
                         reports = reports.filter(teacher__profile__department__in=selected_departments)
 
-                    teacher_values = [
-                        (r.teacher.get_full_name() or r.teacher.username, r.value)
-                        for r in reports if r.value > 0
-                    ]
-                    total = sum(v for _, v in teacher_values)
+                    teacher_values = []
+                    total = 0
+                    for r in reports:
+                        if r.value > 0:
+                            # Считаем количество загруженных файлов для каждого TeacherReport
+                            files_count = r.uploaded_works.count()
+                            name = r.teacher.get_full_name() or r.teacher.username
+                            teacher_values.append((name, r.value, files_count))
+                            total += r.value
 
                     sub_data = {
                         "code": sub.code,
@@ -222,19 +220,22 @@ def report_department(request):
                         "teachers": teacher_values,
                         "total": total
                     }
-
                     main_data["sub_indicators"].append(sub_data)
+
             else:
-                aggr_reports = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
-
+                aggr_qs = AggregatedIndicator.objects.filter(main_indicator=main, year=selected_year)
                 if selected_departments.exists():
-                    aggr_reports = aggr_reports.filter(teacher__profile__department__in=selected_departments)
+                    aggr_qs = aggr_qs.filter(teacher__profile__department__in=selected_departments)
 
-                teacher_values = [
-                    (r.teacher.get_full_name() or r.teacher.username, r.total_value)
-                    for r in aggr_reports if r.total_value > 0
-                ]
-                total = sum(v for _, v in teacher_values)
+                teacher_values = []
+                total = 0
+                for r in aggr_qs:
+                    if r.total_value > 0:
+                        # Считаем количество загруженных файлов для AggregatedIndicator
+                        files_count = r.uploaded_works.count()
+                        name = r.teacher.get_full_name() or r.teacher.username
+                        teacher_values.append((name, r.total_value, files_count))
+                        total += r.total_value
 
                 main_data["teachers"] = teacher_values
                 main_data["total"] = total
@@ -262,6 +263,7 @@ def report_department(request):
             for f in selected_faculties
         }
     })
+
 
 
 def group_by_department(teacher_values):

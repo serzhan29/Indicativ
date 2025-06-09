@@ -1,166 +1,222 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="{% static 'main/css/report_department.css' %}" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'main/css/main.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<div class="container py-6">
-    <h1 class="mb-4 text-center">{{ selected_year.year }} жылғы көрсеткіштерге шолу</h1>
-    <div class="content-wrapper">
-        <!-- Фильтр -->
-        <div class="filter-container">
-            <div class="filter-card">
-                <form method="get" id="filter-form">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-12">
-                            <label for="faculty" class="form-label">Факультет:</label>
-                            <select name="faculties" id="faculty-select" class="form-select">
-                                <option value="all" {% if not selected_faculties %}selected{% endif %}>Все факультеты</option>
-                                {% for faculty in faculties %}
-                                    <option value="{{ faculty.id }}" {% if faculty.id in selected_faculties %}selected{% endif %}>{{ faculty.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="department" class="form-label">Кафедра:</label>
-                            <select name="departments" id="department-select" class="form-select">
-                                <option value="all" {% if not selected_departments %}selected{% endif %}>Все кафедры</option>
-                                {% for department in departments %}
-                                    <option value="{{ department.id }}" {% if department.id in selected_departments %}selected{% endif %} data-faculty="{{ department.faculty.id }}">{{ department.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+<div class="page-container" style="display: flex; gap: 20px; align-items: flex-start;">
 
-                        <div class="col-md-12">
-                            <label for="year" class="form-label">Жыл:</label>
-                            <select name="year" id="year" class="form-select">
-                                {% for year in years %}
-                                    <option value="{{ year.id }}" {% if year.id == selected_year.id %}selected{% endif %}>{{ year.year }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary w-100">Қолдану</button>
-                        </div>
-                        <div class="col-md-12">
-                            <a href="{% url 'report_department' %}"><button type="submit" class="btn btn-primary w-100">Қалпына келтіру</button></a>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="btn-group">
-                <!-- Кнопка для отчета с учителями -->
-                <a href="{% url 'export_report' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success btn-lg shadow">
-                    📄 Word файл (мұғаліммен)
-                </a>
-
-                <!-- Кнопка для отчета без учителей -->
-                <a href="{% url 'export_department_report_docx' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success btn-lg shadow">
-                    📄 Word файл (мұғалімсіз)
-                </a>
-            </div>
-            <div class="direction-navigation">
-                <h4>Направления</h4>
-                {% for direction in data %}
-                    <a href="#direction-{{ forloop.counter }}">{{ direction.name }}</a>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Контент -->
-        <div class="content-column">
-            {% for direction in data %}
-                <div id="direction-{{ forloop.counter }}" class="direction-card">
-                    <button class="direction-header" data-direction="{{ forloop.counter }}">
-                        📂 {{ direction.name }}
-                    </button>
-                    <div class="direction-content" id="direction-content-{{ forloop.counter }}">
-                        {% for main in direction.main_indicators %}
-                            <div class="indicator-card">
-                                <h5 class="mb-2">{{ main.code }} {{ main.name }} <small class="text-muted">({{ main.unit }})</small></h5>
-
-                                {% if main.has_sub_indicators %}
-                                    <p class="text-end text-primary"><strong>Барлығы: {{ main.sub_total_sum }}</strong></p>
-                                    {% for sub in main.sub_indicators %}
-                                        <div class="ms-3 mb-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span><strong>{{ sub.code }} {{ sub.name }}</strong> ({{ sub.unit }})</span>
-                                                <span>
-                                                    {{ sub.total }}
-                                                    {% if sub.teachers %}
-                                                        <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modal-sub-{{ main.code }}-{{ forloop.counter }}">👥</button>
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span></span>
-                                        <span>
-                                            {{ main.total }}
-                                            {% if main.teachers %}
-                                                <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modal-main-{{ main.code }}">👥</button>
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                {% endif %}
-                            </div>
+    <!-- Фильтр -->
+    <div class="switch-direction-container" style="flex: 0 0 300px;">
+        <form method="get" id="filter-form">
+            <h4 class="mb-3">Фильтр</h4>
+            <ul style="padding-left: 0; list-style: none;">
+                <li class="mb-3">
+                    <label for="faculty" class="form-label">Факультет:</label>
+                    <select name="faculties" id="faculty-select" class="form-select" onchange="updateDepartments()">
+                        <option value="all" {% if not selected_faculties %}selected{% endif %}>Все факультеты</option>
+                        {% for faculty in faculties %}
+                            <option value="{{ faculty.id }}" {% if faculty.id in selected_faculties %}selected{% endif %}>{{ faculty.name }}</option>
                         {% endfor %}
+                    </select>
+                </li>
+                <li class="mb-3">
+                    <label for="department" class="form-label">Кафедра:</label>
+                    <select name="departments" id="department-select" class="form-select">
+                        <option value="all" {% if not selected_departments %}selected{% endif %}>Все кафедры</option>
+                        {% for department in departments %}
+                            <option value="{{ department.id }}" {% if department.id in selected_departments %}selected{% endif %} data-faculty="{{ department.faculty.id }}">{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </li>
+                <li class="mb-3">
+                    <label for="year" class="form-label">{% trans "Year" %}:</label>
+                    <select name="year" id="year" class="form-select">
+                        {% for year in years %}
+                            <option value="{{ year.id }}" {% if year.id == selected_year.id %}selected{% endif %}>{{ year.year }}</option>
+                        {% endfor %}
+                    </select>
+                </li>
+                <li class="mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Қолдану</button>
+                </li>
+                <li class="mb-3">
+                    <a href="{% url 'report_department' %}" class="btn btn-primary w-100">Қалпына келтіру</a>
+                </li>
+                <li class="mb-3">
+                    <div class="btn-group w-100 d-flex flex-column gap-2">
+                        <a href="{% url 'export_report' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success shadow">
+                            📄 Word файл (мұғаліммен)
+                        </a>
+                        <a href="{% url 'export_department_report_docx' selected_faculties.0 %}?year={{ selected_year.id }}{% if selected_departments and selected_departments.0 != 'all' %}&department={{ selected_departments.0 }}{% endif %}" class="btn btn-success shadow">
+                            📄 Word файл (мұғалімсіз)
+                        </a>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
+                </li>
+            </ul>
+        </form>
     </div>
+
+<!-- Контент -->
+<div class="report-container" style="flex: 1; overflow-x: auto;">
+    {% for direction in data %}
+        <div class="report-header mt-4">
+            📂 {{ direction.name }}
+
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Code" %}</th>
+                        <th>{% trans "Indicator name" %}</th>
+                        <th>{% trans "Unit of measurement" %}</th>
+                        <th>{% trans "Number of indicators" %}</th>
+                        <th>{% trans "Submit" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for main in direction.main_indicators %}
+                        {% if main.has_sub_indicators %}
+                            <!-- Главный индикатор -->
+                            <tr class="main-indicator table-primary">
+                                <td><strong>{{ main.code }}</strong></td>
+                                <td><strong>{{ main.name }}</strong></td>
+                                <td class="text-center align-middle">
+                                    <span>{{ main.unit }}</span>
+                                </td>
+                                <td class="text-center align-middle" style="color: yellow">
+                                    <strong>{{ main.sub_total_sum }}</strong>
+                                </td>
+                                <td class="text-center align-middle">
+                                    {% if main.teachers %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-main-{{ main.code }}">
+                                            👥
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- Подчинённые индикаторы -->
+                            {% for sub in main.sub_indicators %}
+                                <tr class="sub-indicator">
+                                    <td class="ps-4">{{ sub.code }}</td>
+                                    <td>{{ sub.name }}</td>
+                                    <td class="text-center align-middle">
+                                        <span>{{ sub.unit }}</span>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <span style="font-weight: bold;" >{{ sub.total }}</span>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        {% if sub.teachers %}
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modal-sub-{{ main.code }}-{{ forloop.counter }}">
+                                                👥
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                        {% else %}
+                            <!-- Если нет подчинённых -->
+                            <tr class="main-indicator">
+                                <td>{{ main.code }}</td>
+                                <td>{{ main.name }}</td>
+                                <td class="text-center align-middle">
+                                    <span>{{ main.unit }}</span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span style="font-weight: bold;">{{ main.total }}</span>
+                                </td>
+                                <td>
+                                    {% if main.teachers %}
+                                        <button class="btn btn-sm btn-outline-primary ms-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-main-{{ main.code }}">
+                                            👥
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
 </div>
+
 
 <!-- Модальные окна -->
 {% for direction in data %}
     {% for indicator in direction.main_indicators %}
         {% if indicator.teachers %}
             <div class="modal fade" id="modal-main-{{ indicator.code }}" tabindex="-1">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">{{ indicator.name }}</h5>
+                            <h4 style="color: black">|{{ indicator.code }}| {{ indicator.name }}</h4>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <ul class="list-group">
-                                {% for teacher in indicator.teachers %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        {{ teacher.0 }}
-                                        <span style="min-width: 40px; text-align: right;">
-                                            {{ teacher.1 }}
-                                        </span>
-
-                                    </li>
-                                {% endfor %}
-                            </ul>
+                            <table class="table table-bordered table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>{% trans "Teacher" %}</th>
+                                        <th>{% trans "Number of indicators" %}</th>
+                                        <th>{% trans "File" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for teacher in indicator.teachers %}
+                                        <tr>
+                                            <td class="text-center align-middle">{{ teacher.0 }}</td>
+                                            <td class="text-center align-middle">{{ teacher.1 }}</td>
+                                            <td class="text-center align-middle">{{ teacher.2 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         {% endif %}
+
         {% for sub in indicator.sub_indicators %}
             {% if sub.teachers %}
                 <div class="modal fade" id="modal-sub-{{ indicator.code }}-{{ forloop.counter }}" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">{{ sub.name }}</h5>
+                                <h5 class="modal-title" style="color: black"> |{{ sub.code }} | {{ sub.name }}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <ul class="list-group">
-                                    {% for teacher in sub.teachers %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            {{ teacher.0 }}
-                                            <span style="min-width: 40px; text-align: right;">{{ teacher.1 }} </span>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
+                                <table class="table table-bordered table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>{% trans "Teacher" %}</th>
+                                            <th>{% trans "Number of indicators" %}</th>
+                                            <th>{% trans "File" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for teacher in sub.teachers %}
+                                            <tr>
+                                                <td class="text-center align-middle">{{ teacher.0 }}</td>
+                                                <td class="text-center align-middle">{{ teacher.1 }}</td>
+                                                <td class="text-center align-middle">{{ teacher.2 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -170,17 +226,13 @@
     {% endfor %}
 {% endfor %}
 
-
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Разворачиваем/сворачиваем карточки при клике на заголовок
-        const headers = document.querySelectorAll('.direction-header');
-        headers.forEach(header => {
-            header.addEventListener('click', function () {
-                const card = this.closest('.direction-card');
-                card.classList.toggle('open');
-            });
-        });
+        // Обновляем список кафедр при загрузке страницы
+        updateDepartments();
+
+        // Обновляем кафедры при изменении факультета
+        document.getElementById('faculty-select').addEventListener('change', updateDepartments);
     });
 
     // Функция для обновления списка кафедр в зависимости от выбранного факультета
@@ -189,20 +241,26 @@
         var departmentSelect = document.getElementById('department-select');
         var selectedFaculty = facultySelect.value;
 
-        // Показываем все кафедры, если выбран факультет "Все факультеты"
         if (selectedFaculty == 'all') {
             for (var i = 0; i < departmentSelect.options.length; i++) {
-                departmentSelect.options[i].style.display = '';  // Возвращаем дефолтный display
+                departmentSelect.options[i].style.display = '';
             }
+            departmentSelect.value = 'all'; // Сбрасываем выбор кафедры при выборе "Все факультеты"
         } else {
+            var firstVisible = null;
             for (var i = 0; i < departmentSelect.options.length; i++) {
                 var option = departmentSelect.options[i];
-                // Показываем только кафедры, относящиеся к выбранному факультету
                 if (option.getAttribute('data-faculty') == selectedFaculty) {
-                    option.style.display = '';  // Показываем кафедру
+                    option.style.display = '';
+                    if (!firstVisible) firstVisible = option.value;
                 } else {
-                    option.style.display = 'none';  // Скрываем кафедру
+                    option.style.display = 'none';
                 }
+            }
+            if (firstVisible) {
+                departmentSelect.value = firstVisible;
+            } else {
+                departmentSelect.value = 'all';
             }
         }
     }
