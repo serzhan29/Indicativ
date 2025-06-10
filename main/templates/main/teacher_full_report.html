@@ -207,56 +207,180 @@
         </div>
     </div>
 </div>
+
+
+<!-- fileModal -->
 <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form id="fileForm" enctype="multipart/form-data" method="post">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title" id="fileModalLabel">{% trans "Downloaded files" %}</h5>
+          <h5 class="modal-title" id="fileModalLabel">{% trans "Files" %}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans "Close" %}"></button>
         </div>
         <div class="modal-body">
-          <input type="file" name="file" id="fileInput" class="form-control mb-3" required>
+          <!-- Выбор файла -->
+          <div class="mb-3">
+            <label for="fileInput" class="form-label">{% trans "Select file" %}</label>
+            <input type="file" name="file" id="fileInput" class="form-control" required>
+          </div>
+
+          <!-- Скрытые поля -->
           <input type="hidden" name="report_id" id="modalReportId">
-          <div id="indicatorFieldContainer"></div>
+          <input type="hidden" name="report_type" id="modalReportType">
 
-            <div class="mb-3">
-              <label for="coAuthorsSelect" class="form-label">{% trans "Etcetera" %}</label>
-              <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;">
-                <select multiple class="form-select border-0" id="coAuthorsSelect" name="co_authors" size="10" style="height: auto;">
-                  {% for user in all_users %}
-                    <option value="{{ user.id }}">{{ user.get_full_name }} ({{ user.username }})</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <small class="form-text text-muted">{% trans "Select multiple etcetera by holding Ctrl (Cmd)." %}</small>
-            </div>
+          <!-- Селект соавторов -->
+          <div class="mb-3">
+            <label for="coAuthorsSelect" class="form-label">{% trans "Co‑authors" %}</label>
+            <div id="coAuthorsSelect" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;"></div>
+              <!-- JS заполнит опции
+            </select>
+            <div class="form-text">{% trans "Hold Ctrl (Cmd) to select multiple." %}</div>
+          </div> -->
 
-
-          <div class="table-responsive">
-              <table class="table table-bordered table-hover text-center align-middle" style="table-layout: auto;">
-                <thead class="table-dark">
-                  <tr>
-                    <th>{% trans "File name" %}</th>
-                    <th>{% trans "Download date" %}</th>
-                    <th style="min-width: 200px;">{% trans "Etcetera" %}</th>
-                    <th>{% trans "Actions" %}</th>
-                  </tr>
-                </thead>
-                <tbody id="uploadedFilesList"></tbody>
-              </table>
-            </div>
-          <p id="fileCount" class="text-muted text-end me-2"></p>
+          <!-- Таблица уже загруженных файлов -->
+          <div class="table-responsive mb-3">
+            <table class="table table-bordered text-center">
+              <thead class="table-dark">
+                <tr>
+                  <th>{% trans "Name" %}</th>
+                  <th>{% trans "Uploaded At" %}</th>
+                  <th>{% trans "Co‑authors" %}</th>
+                  <th>{% trans "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody id="uploadedFilesList"></tbody>
+            </table>
+          </div>
+          <p id="fileCount" class="text-end"></p>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">{% trans "Download" %}</button>
+          <button type="submit" class="btn btn-primary">{% trans "Upload" %}</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modalEl   = document.getElementById("fileModal");
+  const modal     = new bootstrap.Modal(modalEl);
+  const form      = document.getElementById("fileForm");
+  const selectCo  = document.getElementById("coAuthorsSelect");
+  const tableBody = document.getElementById("uploadedFilesList");
+  const fileCount = document.getElementById("fileCount");
+
+  // Открытие модалки
+  document.querySelectorAll(".open-file-modal").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const reportId   = btn.dataset.id;
+      const reportType = btn.dataset.type;
+
+      form.report_id.value   = reportId;
+      form.report_type.value = reportType;
+
+      form.reset();
+      selectCo.innerHTML  = "";
+      tableBody.innerHTML = "";
+      fileCount.textContent = "";
+
+      // Получаем данные
+      fetch(`{% url 'report_files' 0 %}`.replace("/0/","/"+reportId+"/")+"?type="+reportType)
+        .then(res => res.json())
+        .then(data => {
+          // 1. Чекбоксы
+          data.teachers.forEach(u => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "form-check";
+            wrapper.innerHTML = `
+              <input class="form-check-input" type="checkbox" value="${u.id}" id="co_${u.id}" name="co_authors">
+              <label class="form-check-label" for="co_${u.id}">${u.name}</label>
+            `;
+            selectCo.appendChild(wrapper);
+          });
+
+          // 2. Таблица
+          data.files.forEach(f => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${f.name}</td>
+              <td>${f.uploaded_at}</td>
+              <td>
+                <ul class="mb-0 ps-3">
+                  ${f.co_authors.map(name => `<li>${name}</li>`).join("")}
+                </ul>
+              </td>
+              <td class="d-flex justify-content-center gap-1 flex-wrap">
+                ${f.is_owner
+                  ? `<button class="btn btn-sm btn-danger delete-file" data-id="${f.id}">{% trans "Delete" %}</button>`
+                  : ``}
+                <a href="${encodeURI(f.url)}" download class="btn btn-sm btn-success">{% trans "Dowload" %}</a>
+              </td>
+            `;
+            tableBody.appendChild(tr);
+          });
+          fileCount.textContent = `{% trans "Total" %}: ${data.files.length}`;
+        });
+
+      modal.show();
+    });
+  });
+
+  // Загрузка файла
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const reportId = form.report_id.value;
+    const fd = new FormData(form);
+
+    fetch(`{% url 'report_files' 0 %}`.replace("/0/","/"+reportId+"/"), {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+      },
+      body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+      alert(data.message);
+      document.querySelector(`.open-file-modal[data-id="${reportId}"]`).click();
+    })
+    .catch(err => {
+      alert("Error: " + err.message);
+    });
+  });
+
+  // Удаление с подтверждением
+  tableBody.addEventListener("click", e => {
+    if (!e.target.classList.contains("delete-file")) return;
+    const fileId = e.target.dataset.id;
+
+    if (!confirm("Вы уверены, что хотите удалить этот файл?")) return;
+
+    fetch(`{% url 'report_file_delete' 0 %}`.replace("/0/","/"+fileId+"/"), {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+      },
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        e.target.closest("tr").remove();
+        const tot = parseInt(fileCount.textContent.split(":")[1]) - 1;
+        fileCount.textContent = `Total: ${tot}`;
+      } else {
+        alert("❌ " + (res.message || "Cannot delete"));
+      }
+    });
+  });
+});
+
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   // Получаем URL из Django‑шаблона, чтобы не «хардкодить» путь
@@ -348,31 +472,9 @@
   });
 </script>
 
-<script src="{% static 'main/js/upload_delete_fail.js' %}"></script>
 <script>
   const updateDeadlineUrl = "{% url 'update_deadline' %}";
   const csrfToken = "{{ csrf_token }}";
 </script>
 <script src="{% static 'main/js/second_modal.js' %}"></script>
-<script>
-  async function loadUsers() {
-    const response = await fetch('/get-all-users/');
-    const data = await response.json();
-
-    const select = document.getElementById('coAuthorsSelect');
-    select.innerHTML = ''; // Очистка перед обновлением
-
-    data.users.forEach(user => {
-      const option = document.createElement('option');
-      option.value = user.id;
-      option.textContent = user.name;
-      select.appendChild(option);
-    });
-  }
-
-  // Вызов при открытии формы/модалки:
-  document.addEventListener('DOMContentLoaded', () => {
-    loadUsers(); // или вызвать вручную перед показом модального окна
-  });
-</script>
 {% endblock %}
