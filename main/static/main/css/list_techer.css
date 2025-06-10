@@ -1,0 +1,53 @@
+.teacher-list-wrapper {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.teacher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.teacher-card {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s, transform 0.3s;
+    border: 1px solid #e9ecef;
+}
+
+.teacher-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+}
+
+.teacher-card a {
+    font-weight: 600;
+    color: #0d6efd;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.teacher-card a:hover {
+    text-decoration: underline;
+}
+
+.teacher-card small {
+    display: block;
+    margin-top: 6px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+    .teacher-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .teacher-list-wrapper {
+        padding: 15px;
+    }
+}
