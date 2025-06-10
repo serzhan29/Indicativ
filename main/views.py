@@ -5,10 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from .models import (Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator,
                      UploadedWork, UploadedMainWork)
+from django.contrib.auth.models import User
 from user.models import Department, Faculty, Profile
 from django.db.models import Sum
 from django.utils.decorators import method_decorator
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, View
@@ -35,124 +36,111 @@ class YearListView(LoginRequiredMixin, ListView):
         context['direction'] = get_object_or_404(Direction, id=self.kwargs['direction_id'])
         return context
 
-
-@login_required
-def get_all_users(request):
-    try:
-        current_profile = request.user.profile
-    except Profile.DoesNotExist:
-        return JsonResponse({'users': []})  # если профиль не найден
-
-    if not current_profile.department:
-        return JsonResponse({'users': []})  # если не указана кафедра
-
-    # Получаем всех пользователей, кроме себя, с той же кафедры и ролью "teacher"
-    same_department_profiles = Profile.objects.filter(
-        department=current_profile.department,
-        role='teacher'
-    ).exclude(user=request.user)
-
-    users_data = [
-        {'id': p.user.id, 'name': p.user.get_full_name()}
-        for p in same_department_profiles
-    ]
-
-    return JsonResponse({'users': users_data})
-
-
-@login_required
-def get_indicator_files(request, report_id):
+class FileModalView(LoginRequiredMixin, View):
     """
-    Загрузка и отображение файлов по подиндикаторам и главным индикаторам
-    Делаем фильтр строго по report_id, но берём все записи, где пользователь —
-    либо автор отчёта, либо входит в co_authors.
+    GET  — возвращает JSON со списком учителей (co-authors) и уже загруженных файлов.
+    POST — сохраняет новую загрузку (с co_authors).
     """
 
-    user = request.user
+    def get(self, request, report_id):
+        user = request.user
+        rpt_type = request.GET.get('type')  # 'sub' или 'main'
 
-    # POST: сохраняем файл
-    if request.method == 'POST' and request.FILES.get('file'):
-        uploaded_file = request.FILES['file']
-        co_author_ids = request.POST.getlist('co_authors')
-
-        # Всегда включаем автора
-        author_id = str(user.id)
-        if author_id not in co_author_ids:
-            co_author_ids.append(author_id)
-
-        if 'indicator' in request.POST:
-            report = get_object_or_404(TeacherReport, id=report_id, teacher=user)
-            new_file = report.uploaded_works.create(file=uploaded_file)
+        # --- 1) Список co‑authors: все учителя из той же кафедры ---
+        dept = getattr(user.profile, 'department', None)
+        if dept:
+            teachers = User.objects.filter(
+                profile__department=dept,
+                profile__role='teacher'
+            ).order_by('last_name', 'first_name')
         else:
-            report = get_object_or_404(AggregatedIndicator, id=report_id, teacher=user)
-            new_file = report.uploaded_works.create(file=uploaded_file)
+            teachers = User.objects.none()
 
-        new_file.co_authors.set(co_author_ids)
+        teachers_list = [
+            {'id': t.id, 'name': t.get_full_name() or t.username}
+            for t in teachers if t != user
+        ]
+
+        # --- 2) Список уже загруженных файлов ---
+        if rpt_type == 'sub':
+            qs = UploadedWork.objects.filter(
+                Q(report__id=report_id) &
+                (Q(report__teacher=user) | Q(co_authors=user))
+            )
+        else:  # main
+            qs = UploadedMainWork.objects.filter(
+                Q(aggregated_report__id=report_id) &
+                (Q(aggregated_report__teacher=user) | Q(co_authors=user))
+            )
+
+        files_data = []
+        for f in qs.distinct():
+            # определяем владельца и список соавторов
+            owner = f.report.teacher if rpt_type == 'sub' else f.aggregated_report.teacher
+            co_list = list(f.co_authors.all())
+            if owner not in co_list:
+                co_list.insert(0, owner)
+
+            files_data.append({
+                'id': f.id,
+                'name': f.file.name.rsplit('/', 1)[-1],
+                'uploaded_at': f.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'url': f.file.url,
+                'co_authors': [u.get_full_name() or u.username for u in co_list],
+                'is_owner': owner == user
+            })
+
+        return JsonResponse({
+            'teachers': teachers_list,
+            'files': files_data
+        })
+
+
+    def post(self, request, report_id):
+        user = request.user
+        rpt_type = request.POST.get('report_type')
+        if 'file' not in request.FILES:
+            return HttpResponseBadRequest("No file attached")
+
+        uploaded_file = request.FILES['file']
+        co_ids = request.POST.getlist('co_authors')
+        # всегда включаем текущего пользователя
+        if str(user.id) not in co_ids:
+            co_ids.append(str(user.id))
+
+        if rpt_type == 'sub':
+            report = get_object_or_404(TeacherReport, id=report_id)
+            obj = report.uploaded_works.create(file=uploaded_file)
+        elif rpt_type == 'main':
+            report = get_object_or_404(AggregatedIndicator, id=report_id)
+            obj = report.uploaded_works.create(file=uploaded_file)
+        else:
+            return HttpResponseBadRequest("Bad report_type")
+
+        obj.co_authors.set(co_ids)
         return JsonResponse({'success': True, 'message': 'Файл успешно загружен.'})
 
-    files_data = []
 
-    # 1) Подиндикаторы — строго для этого report_id
-    sub_qs = UploadedWork.objects.filter(
-        Q(report__id=report_id) &
-        (Q(report__teacher=user) | Q(co_authors=user))
-    ).distinct()
+class FileDeleteView(LoginRequiredMixin, View):
+    """
+    POST — удаляет файл, если текущий user — владелец или co_author.
+    """
+    def post(self, request, file_id):
+        user = request.user
+        from django.db.models import Q
 
-    for f in sub_qs:
-        # Список соавторов + автор
-        co_list = list(f.co_authors.all())
-        if f.report.teacher not in co_list:
-            co_list.insert(0, f.report.teacher)
+        obj = (UploadedWork.objects.filter(
+                    Q(id=file_id) & (Q(report__teacher=user) | Q(co_authors=user))
+               ).first()
+               or UploadedMainWork.objects.filter(
+                    Q(id=file_id) & (Q(aggregated_report__teacher=user) | Q(co_authors=user))
+               ).first())
 
-        files_data.append({
-            'id': f.id,
-            'file_name': f.file.name.split('/')[-1],
-            'uploaded_at': f.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'file_url': f.file.url,
-            'co_authors': [u.get_full_name() for u in co_list],
-            'owner': f.report.teacher.get_full_name(),
-            'is_owner': f.report.teacher == user
-        })
-
-    # 2) Главные индикаторы — строго для этого aggregated_report__id
-    main_qs = UploadedMainWork.objects.filter(
-        Q(aggregated_report__id=report_id) &
-        (Q(aggregated_report__teacher=user) | Q(co_authors=user))
-    ).distinct()
-
-    for f in main_qs:
-        co_list = list(f.co_authors.all())
-        if f.aggregated_report.teacher not in co_list:
-            co_list.insert(0, f.aggregated_report.teacher)
-
-        files_data.append({
-            'id': f.id,
-            'file_name': f.file.name.split('/')[-1],
-            'uploaded_at': f.uploaded_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'file_url': f.file.url,
-            'co_authors': [u.get_full_name() for u in co_list],
-            'owner': f.aggregated_report.teacher.get_full_name(),
-            'is_owner': f.aggregated_report.teacher == user
-        })
-
-    return JsonResponse({'files': files_data})
-
-
-
-@require_POST
-def delete_uploaded_file(request, file_id):
-    # сначала пытаемся в UploadedWork
-    obj = UploadedWork.objects.filter(id=file_id, report__teacher=request.user).first()
-    if not obj:
-        # иначе в UploadedMainWork
-        obj = UploadedMainWork.objects.filter(id=file_id, aggregated_report__teacher=request.user).first()
-    if not obj:
-        return JsonResponse({'success': False, 'message': 'Файл не найден.'}, status=404)
-
-    # удаляем сам файл и запись
-    obj.file.delete(save=False)
-    obj.delete()
-    return JsonResponse({'success': True, 'message': 'Файл удалён.'})
+        if not obj:
+            return HttpResponseForbidden("Нет доступа")
+        obj.file.delete(save=False)
+        obj.delete()
+        return JsonResponse({'success': True})
 
 
 @csrf_exempt
