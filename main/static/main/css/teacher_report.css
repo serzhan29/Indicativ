@@ -134,5 +134,43 @@
 @media (max-width: 768px) {
     .page-container {
         flex-direction: column;
+        gap: 16px;
+        margin-top: 10px;
+        padding: 0 0px;
+    }
+
+    .switch-direction-container {
+        position: relative;
+        top: unset;
+        min-width: unset;
+        width: 100%;
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    .switch-direction-container + .switch-direction-container {
+        top: unset;
+        margin-top: 10px;
+    }
+
+    .report-container {
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    .highlight-link {
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    .btn-download {
+        font-size: 15px;
+        padding: 10px 16px;
+        width: 100%;
+        box-shadow: none;
     }
 }
+
