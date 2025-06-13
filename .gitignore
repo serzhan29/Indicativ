@@ -40,3 +40,6 @@ build/
 # Игнорировать файлы миграций (опционально, если вы хотите исключить их)
 */migrations/*.py
 !*/migrations/__init__.py
+
+# Django
+media/

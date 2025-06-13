@@ -274,6 +274,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectCo  = document.getElementById("coAuthorsSelect");
   const tableBody = document.getElementById("uploadedFilesList");
   const fileCount = document.getElementById("fileCount");
+  const currentUserId = {{ request.user.id }};
+  const currentUserName = "{{ request.user.get_full_name|default:request.user.username }}";
 
   // Открытие модалки
   document.querySelectorAll(".open-file-modal").forEach(btn => {
@@ -311,10 +313,14 @@ document.addEventListener("DOMContentLoaded", () => {
               <td>${f.name}</td>
               <td>${f.uploaded_at}</td>
               <td>
-                <ul class="mb-0 ps-3">
-                  ${f.co_authors.map(name => `<li>${name}</li>`).join("")}
-                </ul>
-              </td>
+                  <ul class="mb-0 ps-3">
+                    ${f.co_authors.map(name => {
+                      const displayName = name === currentUserName ? `<strong>${name} (Вы)</strong>` : name;
+                      return `<li>${displayName}</li>`;
+                    }).join("")}
+                  </ul>
+               </td>
+
               <td class="d-flex justify-content-center gap-1 flex-wrap">
                 ${f.is_owner
                   ? `<button class="btn btn-sm btn-danger delete-file" data-id="${f.id}">{% trans "Delete" %}</button>`

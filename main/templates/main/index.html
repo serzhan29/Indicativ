@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block content %}
@@ -11,9 +12,9 @@
       <!-- ФИЛЬТР НАПРАВЛЕНИЙ -->
       <form method="GET" action="" class="filter-form">
         <div class="filter-group">
-          <label for="direction">Бағытты таңдаңыз</label>
+          <label for="direction">{% trans "Select a direction" %}</label>
           <select name="direction" id="direction">
-            <option value="">Барлық бағыттар</option>
+            <option value="">{% trans "ALL DIRECTIONS" %}</option>
             {% for direction in directions %}
               <option
                 value="{{ direction.id }}"
@@ -22,18 +23,18 @@
             {% endfor %}
           </select>
         </div>
-        <button type="submit" class="filter-button">Қолдану</button>
+        <button type="submit" class="filter-button">{% trans "Submit" %}</button>
       </form>
 
       <!-- ВЫБОР ИНДИКАТОРОВ С ПОИСКОМ И ГАЛОЧКАМИ -->
       <div class="indicator-section">
-        <label class="indicator-section-title">Көрсеткіштерді таңдаңыз:</label>
+        <label class="indicator-section-title">{% trans "Select of indicator" %}</label>
 
         <!-- Поиск индикаторов -->
         <input
           type="text"
           id="indicatorSearch"
-          placeholder="Индикаторды іздеу..."
+          placeholder="{% trans "Search indicator" %}..."
           class="indicator-search"
         >
 
@@ -60,7 +61,7 @@
     <main class="main-content">
       <!-- ЗАГОЛОВОК -->
       <h2 class="charts-header">
-        📊 {{ teacher.get_full_name|default:teacher.username }} үшін негізгі көрсеткіштер бойынша графиктер
+        📊 {{ teacher.get_full_name|default:teacher.username }} {% trans "graphs by the main indicators for" %}
       </h2>
 
       <!-- Подключаем Chart.js -->
@@ -82,7 +83,7 @@
                 >
                   {{ main.code }} — {{ main.name }}
                 </div>
-                <div class="chart-unit">Бірлік: {{ main.unit }}</div>
+                <div class="chart-unit">{% trans "Unit of measurement" %}: {{ main.unit }}</div>
               </div>
 
               <canvas id="chart-{{ forloop.counter }}" height="320"></canvas>
@@ -93,12 +94,12 @@
         {% if year_values.0.main_indicators|length > 6 %}
           <div class="show-more-container">
             <button id="showMoreBtn" class="show-more-button">
-              Көбірек көрсету
+                {% trans "Show more" %}
             </button>
           </div>
         {% endif %}
       {% else %}
-        <p class="no-charts">Графиктер жоқ. Есептер толтырылмаған болуы мүмкін.</p>
+        <p class="no-charts">{% trans "There are no graphs. Reports may be unfilled." %}</p>
       {% endif %}
     </main>
   </div>

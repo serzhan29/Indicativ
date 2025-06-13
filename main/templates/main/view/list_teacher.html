@@ -1,150 +1,115 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
 {% block content %}
-<!DOCTYPE html>
-<html lang="kk">
-<head>
-    <meta charset="UTF-8">
-    <title>Мұғалімдер тізімі</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .teacher-list-page {
-            background-color: #f8f9fa;
-        }
 
-        .teacher-card {
-            padding: 35px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            background-color: white;
-            margin-bottom: 15px;
-            transition: box-shadow 0.3s;
-        }
+<link href="{% static 'main/css/list_techer.css' %}" rel="stylesheet">
 
-        .teacher-card:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        }
+<section class="teacher-list-wrapper py-4">
+  <div class="container">
+    <h2 class="mb-4 text-center">{% trans "Teachers list" %}</h2>
 
-        .faculty-select {
-            max-width: 350px;
-        }
+    <!-- Форма фильтрации по факультету и кафедре -->
+    <form method="get" class="mb-4 d-flex flex-column flex-md-row align-items-md-center gap-3">
 
-        .teacher-list-page h2 {
-            font-size: 1.8rem;
-            font-weight: 600;
-        }
+      {# ----- ФАКУЛЬТЕТ ----- #}
+      {% if is_superuser %}
+        <div>
+          <label for="faculty" class="form-label mb-0">{% trans "Select faculty" %}:</label>
+          <select name="faculty" id="faculty" class="form-select" onchange="this.form.submit()">
+            <option value="">{% trans "All faculties" %}</option>
+            {% for f in faculties %}
+              <option value="{{ f.id }}" {% if selected_faculty_id == f.id %}selected{% endif %}>
+                {{ f.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      {% else %}
+        <div>
+          <label class="form-label mb-0">{% trans "Faculty" %}:</label>
+          <div class="fw-bold">{{ selected_faculty.name }}</div>
+          <input type="hidden" name="faculty" value="{{ selected_faculty.id }}">
+        </div>
+      {% endif %}
 
-        .teacher-list-page form {
-            margin-bottom: 20px;
-        }
+      {# ----- КАФЕДРА ----- #}
+      {% if departments %}
+        <div>
+          <label for="department" class="form-label mb-0">{% trans "Select department" %}:</label>
+          {% if is_superuser or is_dean %}
+            <select
+              name="department"
+              id="department"
+              class="form-select"
+              onchange="this.form.submit()">
+              {% if is_superuser or is_dean %}
+                <option value="">{% trans "All departments" %}</option>
+              {% endif %}
+              {% for d in departments %}
+                <option value="{{ d.id }}" {% if selected_department_id == d.id %}selected{% endif %}>
+                  {{ d.name }}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <div class="fw-bold">{{ selected_department.name }}</div>
+            <input type="hidden" name="department" value="{{ selected_department.id }}">
+          {% endif %}
+        </div>
+      {% endif %}
+    </form>
+    <hr>
 
-        .teacher-list-page .form-label {
-            margin-bottom: 0;
-        }
+    {% if page_obj %}
+      <div class="teacher-grid">
+        {% for teacher in page_obj %}
+          <div class="teacher-card">
+            <a href="{% url 'teacher_report_readonly' %}?direction={{ direction.id }}&year={{ year.id }}&teacher={{ teacher.id }}">
+              {{ teacher.user.last_name|default:teacher.user.username }} {{ teacher.user.first_name }}
+            </a>
+            <small>
+              {% if teacher.faculty %}
+                {{ teacher.department|default:_("No department set") }}
+              {% else %}
+                {% trans "No faculty" %}
+              {% endif %}
+            </small>
+          </div>
+        {% endfor %}
+      </div>
 
-        .teacher-card a {
-            text-decoration: none;
-            color: #0d6efd;
-            font-weight: bold;
-        }
+      <!-- Пагинация -->
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}{% if selected_department_id %}department={{ selected_department_id }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                {% trans "Previous" %}
+              </a>
+            </li>
+          {% endif %}
+          <li class="page-item disabled">
+            <span class="page-link">
+              {% trans "Page" %} {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+          </li>
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}{% if selected_department_id %}department={{ selected_department_id }}&{% endif %}page={{ page_obj.next_page_number }}">
+                {% trans "Next" %}
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% else %}
+      <p class="text-muted text-center mt-4">{% trans "No teachers found." %}</p>
+    {% endif %}
 
-        .teacher-card a:hover {
-            text-decoration: underline;
-        }
-
-        .teacher-card small {
-            color: #6c757d;
-        }
-
-        .teacher-list-page hr {
-            border-color: #dee2e6;
-        }
-
-        .teacher-list-page .text-muted {
-            text-align: center;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body class="teacher-list-page">
-    <div class="container">
-        <h2 class="mb-4 text-center">Мұғалімдер тізімі</h2>
-
-        <!-- Форма фильтрации по факультету и кафедре -->
-        <form method="get" class="mb-4 d-flex flex-column flex-md-row align-items-md-center gap-3">
-            <div>
-                <label for="faculty" class="form-label mb-0">Факультетті таңдау:</label>
-                <select name="faculty" id="faculty" class="form-select faculty-select" onchange="this.form.submit()">
-                    <option value="">Барлық факультеттер</option>
-                    {% for f in faculties %}
-                        <option value="{{ f.id }}" {% if selected_faculty_id == f.id %}selected{% endif %}>
-                            {{ f.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% if departments %}
-            <div>
-                <label for="department" class="form-label mb-0">Кафедраны таңдау:</label>
-                <select name="department" id="department" class="form-select" onchange="this.form.submit()">
-                    <option value="">Барлық кафедралар</option>
-                    {% for d in departments %}
-                        <option value="{{ d.id }}" {% if selected_department_id == d.id %}selected{% endif %}>
-                            {{ d.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
-        </form>
-
-        <hr>
-
-        {% if page_obj %}
-            <div class="row">
-                {% for teacher in page_obj %}
-                    <div class="col-md-6 col-lg-4">
-                        <div class="teacher-card">
-                            <a href="{% url 'teacher_report_readonly' %}?direction={{ direction.id }}&year={{ year.id }}&teacher={{ teacher.id }}">
-                                {{ teacher.user.last_name|default:teacher.user.username }} {{ teacher.user.first_name }}
-                            </a><br>
-                            <small>
-                                {% if teacher.faculty %}
-                                    {{ teacher.department|default:"Кафедра бекітілмеген" }}
-                                {% else %}
-                                    Без факультета
-                                {% endif %}
-                            </small>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <!-- Пагинация -->
-            <nav class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}page={{ page_obj.previous_page_number }}">Алдыңғы</a>
-                        </li>
-                    {% endif %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Бет {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% if selected_faculty_id %}faculty={{ selected_faculty_id }}&{% endif %}page={{ page_obj.next_page_number }}">Келесі</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% else %}
-            <p class="text-muted">Мұғалімдер табылмады.</p>
-        {% endif %}
-
-    </div>
-</body>
-</html>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </div>
+</section>
 
 {% endblock %}

@@ -13,9 +13,9 @@
 <link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
 <link rel="stylesheet" href="{% static 'main/css/modal_window.css' %}">
 
-<div class="page-container" style="display: flex; gap: 20px;">
+<div class="page-container table-wrapper" style="display: flex; gap: 20px;" >
     <!-- Фиксированный блок со списком направлений -->
-    <div class="switch-direction-container">
+    <div  class="switch-direction-container year-switcher">
         <h4>{% trans "Select a direction" %}</h4>
         <ul>
           {% for direction_item in directions %}
@@ -55,7 +55,7 @@
     </div>
 
     <!-- Блок с отчетом -->
-    <div class="report-container">
+    <div class="report-container" >
         <div class="report-header">
             <div>
                 <h2>{{ direction }}</h2>
@@ -68,10 +68,10 @@
                 <tr>
                     <th>{% trans "Code" %}</th>
                     <th>{% trans "Indicator name" %}</th>
-                    <th>{% trans "Unit of measurement" %}</th>
+                    <th class="hide-mobile">{% trans "Unit of measurement" %}</th>
                     <th>{% trans "Number of indicators" %}</th>
-                    <th>{% trans "File" %}</th>
-                    <th>{% trans "Month / year" %}</th>
+                    <th class="hide-mobile">{% trans "File" %}</th>
+                    <th class="hide-mobile">{% trans "Month / year" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -80,7 +80,7 @@
                 <tr class="main-indicator">
                     <td>{{ data.main_indicator.code }}</td>
                     <td>{{ data.main_indicator.name }}</td>
-                    <td class="text-center align-middle">
+                    <td class="text-center align-middle hide-mobile" >
                         <span>{{ data.main_indicator.unit }}</span>
                         <span style="font-weight: bold; font-size: 1em;">{{ data.main_indicator.points }}</span>
                     </td>
@@ -103,7 +103,7 @@
                         {% endif %}
                     </td>
                         <!-- Кнопка для открытия модального окна с файлами для главного индикатора-->
-                        <td>
+                        <td class="hide-mobile">
                             {% if not data.teacher_reports %}
                                 <button
                                     class="open-file-modal btn main-indicator"
@@ -115,7 +115,7 @@
                                 </button>
                             {% endif %}
                         </td>
-                        <td class="text-center align-middle">
+                        <td class="text-center align-middle hide-mobile">
                         {% if not data.teacher_reports %}
                             {% if year.editable %}
                                 <button class="btn btn-sm btn-outline-primary open-deadline-modal d-flex flex-column align-items-center mx-auto"
@@ -137,7 +137,7 @@
                     <tr class="sub-indicator">
                         <td>{{ report.indicator.code }}</td>
                         <td>{{ report.indicator.name }}</td>
-                        <td class="text-center align-middle">
+                        <td class="text-center align-middle hide-mobile">
                             <span>{{ report.indicator.unit }}</span>
                             <span style="font-weight: bold; font-size: 1em;">{{ report.indicator.points }}</span>
                         </td>
@@ -155,7 +155,7 @@
                                 value="{{ report.value }}"
                             >
                         </td>
-                        <td>
+                        <td class="hide-mobile">
                             <button
                                 class="open-file-modal btn sub-indicator"
                                 data-id="{{ report.id }}"
@@ -165,7 +165,7 @@
                                 {% trans "Files" %} ({{ report.uploaded_files.count }})
                             </button>
                         </td>
-                        <td>
+                        <td class="hide-mobile">
                             {% if year.editable %}
                                 <button class="btn btn-sm btn-outline-primary open-deadline-modal d-flex flex-column align-items-center mx-auto"
                                         data-id="{{ report.id }}"
@@ -286,6 +286,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectCo  = document.getElementById("coAuthorsSelect");
   const tableBody = document.getElementById("uploadedFilesList");
   const fileCount = document.getElementById("fileCount");
+  const currentUserId = {{ request.user.id }};
+  const currentUserName = "{{ request.user.get_full_name|default:request.user.username }}";
 
   // Открытие модалки
   document.querySelectorAll(".open-file-modal").forEach(btn => {
@@ -323,10 +325,14 @@ document.addEventListener("DOMContentLoaded", () => {
               <td>${f.name}</td>
               <td>${f.uploaded_at}</td>
               <td>
-                <ul class="mb-0 ps-3">
-                  ${f.co_authors.map(name => `<li>${name}</li>`).join("")}
-                </ul>
-              </td>
+                  <ul class="mb-0 ps-3">
+                    ${f.co_authors.map(name => {
+                      const displayName = name === currentUserName ? `<strong>${name} (Вы)</strong>` : name;
+                      return `<li>${displayName}</li>`;
+                    }).join("")}
+                  </ul>
+               </td>
+
               <td class="d-flex justify-content-center gap-1 flex-wrap">
                 ${f.is_owner
                   ? `<button class="btn btn-sm btn-danger delete-file" data-id="${f.id}">{% trans "Delete" %}</button>`

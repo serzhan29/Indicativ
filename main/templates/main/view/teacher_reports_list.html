@@ -2,27 +2,17 @@
 {% load i18n %}
 {% load static %}
 
-{% block breadcrumbs %}
-  <li class="breadcrumb-item">
-    <a href="{% url 'teachers_by_faculty' %}">
-      {% trans "Teachers list" %} /
-      {% if teacher.id %}
-        {{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }} ({{ year.year }} - {{ year.year|add:"1" }})
-      {% endif %}
-    </a>
-  </li>
-{% endblock %}
-
 {% block content %}
 <link rel="stylesheet" href="{% static 'main/css/main.css' %}">
 <link rel="stylesheet" href="{% static 'main/css/teacher_report.css' %}">
 
 <div class="container-fluid">
   <div class="row">
-    <!-- Фильтр слева -->
+
+    <!-- Список лет -->
     <div class="col-md-2">
       <div class="switch-direction-container p-3 bg-white rounded shadow-sm">
-        <h6 class="fw-semibold mb-3" style="color: white">{% trans "Select year" %}:</h6>
+        <h6 class="fw-semibold mb-3 text-dark">{% trans "Select year" %}:</h6>
         <form method="get" id="year-form">
           <input type="hidden" name="teacher" value="{{ request.GET.teacher }}">
           <div class="list-group mb-3" role="tablist">
@@ -36,18 +26,16 @@
               </button>
             {% endfor %}
           </div>
+          <div class="mb-3">
+              <a href="{% url 'teachers_by_faculty' %}" class="btn btn-outline-secondary">
+                ← {% trans "Teachers list" %}
+              </a>
+          </div>
         </form>
-        {% if teacher.id and year.id %}
-          <a href="{% url 'teacher_report_download' %}?year={{ year.id }}&teacher={{ teacher.id }}"
-             class="btn btn-outline-primary btn-sm w-100">
-            📄 Word-қа жүктеу
-          </a>
-        {% endif %}
       </div>
     </div>
 
-
-    <!-- Таблица справа -->
+    <!-- Отчет -->
     <div class="col-md-10">
       <div class="report-container">
         {% if teacher.id %}
@@ -64,12 +52,12 @@
                 <table class="report-table">
                   <thead class="table-light">
                     <tr>
-                      <th style="width: 5%;">{% trans "Code" %}</th>
-                      <th style="width: 50%;">{% trans "Indicator name" %}</th>
-                      <th style="width: 10%;">{% trans "Unit" %}</th>
-                      <th style="width: 8%;">{% trans "Value" %}</th>
-                      <th style="width: 10%;">{% trans "Month / year" %}</th>
-                      <th style="width: 5%;">{% trans "Files" %}</th>
+                      <th>{% trans "Code" %}</th>
+                      <th>{% trans "Indicator name" %}</th>
+                      <th>{% trans "Unit" %}</th>
+                      <th>{% trans "Value" %}</th>
+                      <th>{% trans "Month / year" %}</th>
+                      <th>{% trans "Files" %}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -79,92 +67,36 @@
                         <td class="text-start">{{ data.main_indicator.name }}</td>
                         <td class="text-center">{{ data.main_indicator.unit }}</td>
                         <td class="text-center">{{ data.total_value }}</td>
+                        <td class="text-center">{{ data.deadline_display }}</td>
                         <td class="text-center">
-                          {% if data.main_indicator.deadline_month and data.main_indicator.deadline_year %}
-                            {{ data.main_indicator.deadline_month }}/{{ data.main_indicator.deadline_year }}
-                          {% else %}
-                            —
-                          {% endif %}
-                        </td>
-                        <td class="text-center">
-                          {% with data.uploaded_works.count as cnt %}
+                          {% with data.uploaded_works|length as cnt %}
                             {% if cnt > 0 %}
-                              <a href="#" data-bs-toggle="modal" data-bs-target="#mainFilesModal{{ data.main_indicator.id }}">
-                                {{ cnt }}
-                              </a>
-                              <!-- Модалка -->
-                              <div class="modal fade" id="mainFilesModal{{ data.main_indicator.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-lg">
-                                  <div class="modal-content">
-                                    <div class="modal-header">
-                                      <h5 class="modal-title">{{ data.main_indicator.name }} — файлы</h5>
-                                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                      <ul class="list-group">
-                                        {% for file in data.uploaded_works.all %}
-                                          <li class="list-group-item d-flex justify-content-between">
-                                            <a href="{{ file.file.url }}" target="_blank">📄 {{ file.file.name|cut:"media/" }}</a>
-                                            <span class="text-muted small">{{ file.uploaded_at|date:"d.m.Y H:i" }}</span>
-                                          </li>
-                                        {% endfor %}
-                                      </ul>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                              <a role="button" data-bs-toggle="modal" data-bs-target="#mainModal{{ data.main_indicator.id }}">{{ cnt }}</a>
                             {% else %}
                               —
                             {% endif %}
                           {% endwith %}
                         </td>
                       </tr>
-                      <tbody id="sub-{{ data.main_indicator.id }}" class="collapse show">
-                        {% for report in data.teacher_reports %}
-                          <tr class="sub-indicator-row">
-                            <td>{{ report.indicator.code }}</td>
-                            <td class="text-start ps-4">↳ {{ report.indicator.name }}</td>
-                            <td class="text-center">{{ report.indicator.unit }}</td>
-                            <td class="text-center">{{ report.value }}</td>
-                            <td class="text-center">
-                              {% if report.deadline_month and report.deadline_year %}
-                                {{ report.deadline_month }}/{{ report.deadline_year }}
+
+                      {% for report in data.teacher_reports %}
+                        <tr class="sub-indicator-row">
+                          <td>{{ report.indicator.code }}</td>
+                          <td class="text-start ps-4">↳ {{ report.indicator.name }}</td>
+                          <td class="text-center">{{ report.indicator.unit }}</td>
+                          <td class="text-center">{{ report.value }}</td>
+                          <td class="text-center">{{ report.deadline_display }}</td>
+                          <td class="text-center">
+                            {% with report.uploaded_file_data|length as cnt2 %}
+                              {% if cnt2 > 0 %}
+                                <a role="button" data-bs-toggle="modal" data-bs-target="#subModal{{ report.id }}">{{ cnt2 }}</a>
                               {% else %}
                                 —
                               {% endif %}
-                            </td>
-                            <td class="text-center">
-                              {% with report.uploaded_works.count as cnt2 %}
-                                {% if cnt2 > 0 %}
-                                  <a href="#" data-bs-toggle="modal" data-bs-target="#subFilesModal{{ report.id }}">{{ cnt2 }}</a>
-                                  <div class="modal fade" id="subFilesModal{{ report.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
-                                      <div class="modal-content">
-                                        <div class="modal-header">
-                                          <h5 class="modal-title">{{ report.indicator.name }} — файлы</h5>
-                                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                          <ul class="list-group">
-                                            {% for file in report.uploaded_works.all %}
-                                              <li class="list-group-item d-flex justify-content-between">
-                                                <a href="{{ file.file.url }}" target="_blank">📄 {{ file.file.name|cut:"media/" }}</a>
-                                                <span class="text-muted small">{{ file.uploaded_at|date:"d.m.Y H:i" }}</span>
-                                              </li>
-                                            {% endfor %}
-                                          </ul>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                {% else %}
-                                  —
-                                {% endif %}
-                              {% endwith %}
-                            </td>
-                          </tr>
-                        {% endfor %}
-                      </tbody>
+                            {% endwith %}
+                          </td>
+                        </tr>
+                      {% endfor %}
                     {% endfor %}
                   </tbody>
                 </table>
@@ -176,6 +108,85 @@
     </div>
   </div>
 </div>
+
+<!-- Модальные окна -->
+{% for group in aggregated_data %}
+  {% for data in group.main_indicators %}
+    {% if data.uploaded_works %}
+      <div class="modal fade" id="mainModal{{ data.main_indicator.id }}" tabindex="-1" aria-labelledby="mainModalLabel{{ data.main_indicator.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{{ data.main_indicator.name }} — {% trans "Files" %}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Author" %}</th>
+                    <th>{% trans "Co-authors" %}</th>
+                    <th>{% trans "Uploaded at" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for f in data.uploaded_works %}
+                    <tr>
+                      <td><a href="{{ f.file.url }}" target="_blank">{{ f.file.name|cut:"media/" }}</a></td>
+
+                      <td>{{ teacher.get_full_name|default:teacher.username }}</td>
+                      <td>{{ f.co_authors|join:", " }}</td>
+                      <td>{{ f.uploaded_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% for report in data.teacher_reports %}
+      {% if report.uploaded_file_data %}
+        <div class="modal fade" id="subModal{{ report.id }}" tabindex="-1" aria-labelledby="subModalLabel{{ report.id }}" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">{{ report.indicator.name }} — {% trans "Files" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+              </div>
+              <div class="modal-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>{% trans "File" %}</th>
+                      <th>{% trans "Author" %}</th>
+                      <th>{% trans "Co-authors" %}</th>
+                      <th>{% trans "Uploaded at" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for f in report.uploaded_file_data %}
+                      <tr>
+                        <td><a href="{{ f.file.url }}" target="_blank">{{ f.file.name|cut:"media/" }}</a></td>
+
+                        <td>{{ f.author }}</td>
+                        <td>{{ f.co_authors|join:"," }}</td>
+                        <td>{{ f.uploaded_at|date:"d.m.Y H:i" }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}
