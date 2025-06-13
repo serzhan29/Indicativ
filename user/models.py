@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from smart_selects.db_fields import ChainedForeignKey
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 
@@ -45,6 +46,10 @@ class Profile(models.Model):
     )
     phone = models.CharField(max_length=20, blank=True, verbose_name="Телефон")
     father_name = models.CharField(max_length=100, blank=True, verbose_name="Отчество")
+
+    def clean(self):
+        if self.user.email and not self.user.email.endswith('@ayu.edu.kz'):
+            raise ValidationError({'user': "Email должен оканчиваться на @ayu.edu.kz"})
 
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
