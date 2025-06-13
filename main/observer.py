@@ -1,3 +1,4 @@
+import calendar
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from user.models import Profile, Faculty, Department
@@ -10,38 +11,82 @@ from django.db.models import Sum
 from collections import defaultdict
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.utils.translation import gettext as _
 
 
 @login_required
 def teachers_by_faculty(request):
-    if request.user.is_superuser:
-        profile = None  # можно вообще не использовать профиль
-    else:
-        try:
-            profile = request.user.profile
-        except Profile.DoesNotExist:
-            return redirect('home')
+    user = request.user
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        return redirect('home')
 
-        if profile.role != 'viewer':
-            return render(request, 'main/view/no_permission.html')
-
-    faculties = Faculty.objects.filter(profile__role='teacher').distinct()
+    teachers = Profile.objects.filter(role='teacher')
     selected_faculty_id = request.GET.get('faculty')
     selected_department_id = request.GET.get('department')
 
-    teachers = Profile.objects.filter(role='teacher')
+    is_superuser = user.is_superuser
+    is_dean = profile.role == 'dean'
+    is_viewer = profile.role == 'viewer'
 
-    if selected_faculty_id:
+    departments = Department.objects.none()
+    faculties = Faculty.objects.none()
+
+    # Значения факультета и кафедры для отображения
+    selected_faculty = None
+    selected_department = None
+
+    if is_superuser:
+        faculties = Faculty.objects.all()
+        if selected_faculty_id:
+            teachers = teachers.filter(faculty_id=selected_faculty_id)
+            departments = Department.objects.filter(faculty_id=selected_faculty_id)
+            try:
+                selected_faculty = Faculty.objects.get(id=selected_faculty_id)
+            except Faculty.DoesNotExist:
+                selected_faculty = None
+        if selected_department_id:
+            teachers = teachers.filter(department_id=selected_department_id)
+            try:
+                selected_department = Department.objects.get(id=selected_department_id)
+            except Department.DoesNotExist:
+                selected_department = None
+
+    elif is_dean:
+        faculties = Faculty.objects.filter(id=profile.faculty_id)
+        selected_faculty_id = profile.faculty_id
         teachers = teachers.filter(faculty_id=selected_faculty_id)
         departments = Department.objects.filter(faculty_id=selected_faculty_id)
-    else:
-        departments = Department.objects.none()
+        try:
+            selected_faculty = Faculty.objects.get(id=selected_faculty_id)
+        except Faculty.DoesNotExist:
+            selected_faculty = None
 
-    if selected_department_id:
-        teachers = teachers.filter(department_id=selected_department_id)
+        if selected_department_id:
+            teachers = teachers.filter(department_id=selected_department_id)
+            try:
+                selected_department = Department.objects.get(id=selected_department_id)
+            except Department.DoesNotExist:
+                selected_department = None
+
+    elif is_viewer:
+        faculties = Faculty.objects.filter(id=profile.faculty_id)
+        departments = Department.objects.filter(id=profile.department_id)
+        teachers = teachers.filter(
+            faculty=profile.faculty,
+            department=profile.department
+        )
+        selected_faculty_id = profile.faculty_id
+        selected_department_id = profile.department_id
+        selected_faculty = profile.faculty
+        selected_department = profile.department
+
+    else:
+        return render(request, 'main/view/no_permission.html')
 
     teachers = teachers.order_by('user__last_name', 'user__first_name')
-    paginator = Paginator(teachers, 18)
+    paginator = Paginator(teachers, 16)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -51,6 +96,11 @@ def teachers_by_faculty(request):
         'page_obj': page_obj,
         'selected_faculty_id': int(selected_faculty_id) if selected_faculty_id else None,
         'selected_department_id': int(selected_department_id) if selected_department_id else None,
+        'selected_faculty': selected_faculty,
+        'selected_department': selected_department,
+        'is_superuser': is_superuser,
+        'is_dean': is_dean,
+        'is_viewer': is_viewer,
     })
 
 
@@ -63,14 +113,13 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
         year_id = self.request.GET.get('year')
         teacher_id = self.request.GET.get('teacher')
 
-        # Получаем список всех лет и направлений
         years = Year.objects.all().order_by('year')
         directions = Direction.objects.all().order_by('id')
 
         context['years'] = years
         context['directions'] = directions
 
-        # Если не выбран год — берём последний
+        # Определение года
         if not year_id and years.exists():
             year = years.last()
         elif year_id:
@@ -78,7 +127,7 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
         else:
             year = None
 
-        # Учитель: либо передан, либо текущий пользователь
+        # Определение пользователя
         if teacher_id:
             teacher = get_object_or_404(User, id=teacher_id)
         else:
@@ -87,12 +136,13 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
         context['year'] = year
         context['teacher'] = teacher
 
-        # Если год не задан, то данные не передаём
         if not year:
             return context
 
-        # Список направлений с агрегированными показателями
         all_data = []
+
+        def code_key(code):
+            return [int(part) for part in code.split('.') if part.isdigit()]
 
         for direction in directions:
             direction_data = {
@@ -100,43 +150,80 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
                 'main_indicators': []
             }
 
-            def code_key(code):
-                return [int(part) for part in code.split('.') if part.isdigit()]
-
             main_indicators = list(MainIndicator.objects.filter(direction=direction, years=year))
             main_indicators.sort(key=lambda x: code_key(x.code))
 
             for main_indicator in main_indicators:
                 indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
 
+                # Суммарное значение
                 total_value = TeacherReport.objects.filter(
                     teacher=teacher, indicator__in=indicators, year=year
                 ).aggregate(Sum('value'))['value__sum'] or 0
 
+                # Получение агрегированного индикатора
                 aggregated_indicator = AggregatedIndicator.objects.filter(
                     teacher=teacher, main_indicator=main_indicator, year=year
-                ).first()
+                ).prefetch_related('uploaded_works__co_authors').first()
 
                 additional_value = aggregated_indicator.additional_value if aggregated_indicator else 0
                 total_value += additional_value
 
-                teacher_reports = TeacherReport.objects.filter(
+                # Файлы, загруженные по aggregated_indicator
+                uploaded_files = []
+                if aggregated_indicator:
+                    for f in aggregated_indicator.uploaded_works.all():
+                        uploaded_files.append({
+                            'file': f,
+                            'author': teacher.get_full_name() or teacher.username,
+                            'co_authors': [u.get_full_name() or u.username for u in f.co_authors.all()],
+                            'uploaded_at': f.uploaded_at,
+                        })
+                    if aggregated_indicator.deadline_month and aggregated_indicator.deadline_year:
+                        deadline_display = f"{_(calendar.month_name[aggregated_indicator.deadline_month])} {aggregated_indicator.deadline_year}"
+                    else:
+                        deadline_display = "—"
+                else:
+                    deadline_display = "—"
+
+                # Учительские отчёты и их загруженные файлы
+                teacher_reports = []
+                raw_reports = TeacherReport.objects.filter(
                     teacher=teacher, indicator__in=indicators, year=year
-                ).select_related('indicator')
+                ).select_related('indicator').prefetch_related('uploaded_works__co_authors')
+
+                for report in raw_reports:
+                    report_files = []
+                    for f in report.uploaded_works.all():
+                        report_files.append({
+                            'file': f,
+                            'author': teacher.get_full_name() or teacher.username,
+                            'co_authors': [u.get_full_name() or u.username for u in f.co_authors.all()],
+                            'uploaded_at': f.uploaded_at,
+                        })
+                    report.uploaded_file_data = report_files
+
+                    # Срок выполнения
+                    if report.deadline_month and report.deadline_year:
+                        report.deadline_display = f"{_(calendar.month_name[report.deadline_month])} {report.deadline_year}"
+                    else:
+                        report.deadline_display = "—"
+
+                    teacher_reports.append(report)
 
                 direction_data['main_indicators'].append({
                     'main_indicator': main_indicator,
                     'total_value': total_value,
                     'additional_value': additional_value,
-                    'teacher_reports': teacher_reports
+                    'teacher_reports': teacher_reports,
+                    'uploaded_works': uploaded_files,
+                    'deadline_display': deadline_display,
                 })
 
             all_data.append(direction_data)
 
         context['aggregated_data'] = all_data
         return context
-
-
 
 @login_required
 def report_department(request):
