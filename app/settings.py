@@ -7,6 +7,8 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from django.utils.translation import gettext_lazy as _
+from decouple import config
+import socket
 
 
 load_dotenv()
@@ -15,10 +17,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -77,13 +78,27 @@ WSGI_APPLICATION = 'app.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
+#
+#
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite31',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME'),
+#         'USER': config('DB_USER'),
+#         'PASSWORD': config('DB_PASSWORD'),
+#         'HOST': config('DB_HOST'),
+#         'PORT': config('DB_PORT', cast=int),
+#     }
+# }
+
 
 
 # Password validation
@@ -157,6 +172,13 @@ SITE_ID = 1
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+# Добавляем IP из Docker-сети
+try:
+    hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+    INTERNAL_IPS += [ip[: ip.rfind(".")] + ".1" for ip in ips]
+except:
+    pass
 
 JAZZMIN_SETTINGS = {
     "site_title": "Мой сайт",  # название сайта
