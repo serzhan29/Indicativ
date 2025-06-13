@@ -16,6 +16,7 @@ from django.views.generic import ListView, View
 from django.views.generic import TemplateView
 from django.db.models import Q
 from django.utils.translation import gettext as _
+from django.core.files.base import ContentFile
 
 
 class DirectionListView(LoginRequiredMixin, ListView):
@@ -99,26 +100,74 @@ class FileModalView(LoginRequiredMixin, View):
     def post(self, request, report_id):
         user = request.user
         rpt_type = request.POST.get('report_type')
+
         if 'file' not in request.FILES:
             return HttpResponseBadRequest("No file attached")
 
         uploaded_file = request.FILES['file']
         co_ids = request.POST.getlist('co_authors')
-        # всегда включаем текущего пользователя
+
+        # Всегда включаем текущего пользователя
         if str(user.id) not in co_ids:
             co_ids.append(str(user.id))
 
+        # Считываем файл в память один раз
+        original_file_content = uploaded_file.read()
+        original_file_name = uploaded_file.name
+
         if rpt_type == 'sub':
-            report = get_object_or_404(TeacherReport, id=report_id)
-            obj = report.uploaded_works.create(file=uploaded_file)
+            base_report = get_object_or_404(TeacherReport, id=report_id)
+            indicator = base_report.indicator  # ← исправлено
+            year = base_report.year
+
+            for co_id in co_ids:
+                co_user = get_object_or_404(User, id=co_id)
+
+                teacher_report, _ = TeacherReport.objects.get_or_create(
+                    teacher=co_user,
+                    indicator=indicator,  # ← исправлено
+                    year=year,
+                    defaults={'value': 0, 'additional_value': 0}
+                )
+
+                file_copy = ContentFile(original_file_content)
+                file_copy.name = original_file_name
+
+                uploaded = UploadedWork.objects.create(
+                    report=teacher_report,
+                    file=file_copy
+                )
+                uploaded.co_authors.set(co_ids)
+
+
         elif rpt_type == 'main':
-            report = get_object_or_404(AggregatedIndicator, id=report_id)
-            obj = report.uploaded_works.create(file=uploaded_file)
+            base_report = get_object_or_404(AggregatedIndicator, id=report_id)
+            main_indicator = base_report.main_indicator
+            year = base_report.year
+
+            for co_id in co_ids:
+                co_user = get_object_or_404(User, id=co_id)
+
+                agg_report, _ = AggregatedIndicator.objects.get_or_create(
+                    teacher=co_user,
+                    main_indicator=main_indicator,
+                    year=year,
+                    defaults={'total_value': 0, 'additional_value': 0}
+                )
+
+                file_copy = ContentFile(original_file_content)
+                file_copy.name = original_file_name
+
+                uploaded = UploadedMainWork.objects.create(
+                    aggregated_report=agg_report,
+                    file=file_copy
+                )
+                uploaded.co_authors.set(co_ids)
+
         else:
             return HttpResponseBadRequest("Bad report_type")
 
-        obj.co_authors.set(co_ids)
-        return JsonResponse({'success': True, 'message': 'Файл успешно загружен.'})
+        return JsonResponse({'success': True, 'message': 'Файл успешно загружен для всех соавторов.'})
 
 
 class FileDeleteView(LoginRequiredMixin, View):
