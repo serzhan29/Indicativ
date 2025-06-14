@@ -60,7 +60,7 @@
 </div>
 
 
-<div class="report-container">
+<div class="report-container responsive-table">
     <div class="report-header">
         <div>
             <h3>{% trans "Year" %} {{ year.year }} - {{ year.year|add:"1" }}</h3>
@@ -69,7 +69,7 @@
 
     {% for direction_item, aggregated_data in all_aggregated_data.items %}
         <h3 style="margin-top: 30px;">{{ direction_item.name }}</h3>
-        <table class="report-table">
+        <table class="report-table responsive-table">
             <thead>
                 <tr>
                     <th>{% trans "Code" %}</th>
