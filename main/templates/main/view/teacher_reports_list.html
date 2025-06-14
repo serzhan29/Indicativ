@@ -66,7 +66,7 @@
                         <td>{{ data.main_indicator.code }}</td>
                         <td class="text-start">{{ data.main_indicator.name }}</td>
                         <td class="text-center">{{ data.main_indicator.unit }}</td>
-                        <td class="text-center">{{ data.total_value }}</td>
+                        <td class="text-center" style="color: yellow">{{ data.total_value }}</td>
                         <td class="text-center">{{ data.deadline_display }}</td>
                         <td class="text-center">
                           {% with data.uploaded_works|length as cnt %}
@@ -113,11 +113,11 @@
 {% for group in aggregated_data %}
   {% for data in group.main_indicators %}
     {% if data.uploaded_works %}
-      <div class="modal fade" id="mainModal{{ data.main_indicator.id }}" tabindex="-1" aria-labelledby="mainModalLabel{{ data.main_indicator.id }}" aria-hidden="true">
+      <div class="modal fade" id="mainModal{{ data.main_indicator.id }}" tabindex="-1" aria-labelledby="mainModalLabel{{ data.main_indicator.id }}" style="color: black" aria-hidden="true">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">{{ data.main_indicator.name }} — {% trans "Files" %}</h5>
+              <h5 class="modal-title">{{ data.main_indicator.name }}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
             </div>
             <div class="modal-body">
@@ -133,8 +133,11 @@
                 <tbody>
                   {% for f in data.uploaded_works %}
                     <tr>
-                      <td><a href="{{ f.file.url }}" target="_blank">{{ f.file.name|cut:"media/" }}</a></td>
-
+                      <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <a href="{{ f.file_url }}" target="_blank" class="text-dark" download="{{ f.file_name }}" title="{{ f.file_name }}">
+                          {{ f.file_name }}
+                        </a>
+                      </td>
                       <td>{{ teacher.get_full_name|default:teacher.username }}</td>
                       <td>{{ f.co_authors|join:", " }}</td>
                       <td>{{ f.uploaded_at|date:"d.m.Y H:i" }}</td>
@@ -150,11 +153,11 @@
 
     {% for report in data.teacher_reports %}
       {% if report.uploaded_file_data %}
-        <div class="modal fade" id="subModal{{ report.id }}" tabindex="-1" aria-labelledby="subModalLabel{{ report.id }}" aria-hidden="true">
+        <div class="modal fade" id="subModal{{ report.id }}" tabindex="-1" aria-labelledby="subModalLabel{{ report.id }}" style="color: black" aria-hidden="true">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title">{{ report.indicator.name }} — {% trans "Files" %}</h5>
+                <h5 class="modal-title">{{ report.indicator.name }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
               </div>
               <div class="modal-body">
@@ -170,8 +173,11 @@
                   <tbody>
                     {% for f in report.uploaded_file_data %}
                       <tr>
-                        <td><a href="{{ f.file.url }}" target="_blank">{{ f.file.name|cut:"media/" }}</a></td>
-
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                          <a href="{{ f.file_url }}" target="_blank" class="text-dark" download="{{ f.file_name }}" title="{{ f.file_name }}">
+                            {{ f.file_name }}
+                          </a>
+                        </td>
                         <td>{{ f.author }}</td>
                         <td>{{ f.co_authors|join:"," }}</td>
                         <td>{{ f.uploaded_at|date:"d.m.Y H:i" }}</td>
@@ -187,6 +193,7 @@
     {% endfor %}
   {% endfor %}
 {% endfor %}
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

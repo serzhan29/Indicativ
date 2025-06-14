@@ -12,6 +12,7 @@ from collections import defaultdict
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.utils.translation import gettext as _
+from calendar import month_name
 
 
 @login_required
@@ -174,7 +175,7 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
                 if aggregated_indicator:
                     for f in aggregated_indicator.uploaded_works.all():
                         uploaded_files.append({
-                            'file': f,
+                            'file_name': f.file.name.split('/')[-1],
                             'author': teacher.get_full_name() or teacher.username,
                             'co_authors': [u.get_full_name() or u.username for u in f.co_authors.all()],
                             'uploaded_at': f.uploaded_at,
@@ -196,7 +197,8 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
                     report_files = []
                     for f in report.uploaded_works.all():
                         report_files.append({
-                            'file': f,
+                            'file_url': f.file.url,
+                            'file_name': f.file.name.split('/')[-1],
                             'author': teacher.get_full_name() or teacher.username,
                             'co_authors': [u.get_full_name() or u.username for u in f.co_authors.all()],
                             'uploaded_at': f.uploaded_at,
@@ -373,12 +375,15 @@ def group_by_department(teacher_values):
 
 @login_required
 def dean_report(request):
+    # 1. Выбор года
     year_id = request.GET.get('year')
-    selected_year = Year.objects.get(id=year_id) if year_id else Year.objects.latest('year')
-
-    # 🔥 Добавим все года для выпадающего списка
+    if year_id:
+        selected_year = get_object_or_404(Year, id=year_id)
+    else:
+        selected_year = Year.objects.latest('year')
     years = Year.objects.all().order_by('-year')
 
+    # 2. Профиль, факультет, кафедры, направления
     user_profile = request.user.profile
     faculty = user_profile.faculty
     departments = Department.objects.filter(faculty=faculty)
@@ -386,20 +391,20 @@ def dean_report(request):
 
     data = []
 
+    def code_key(code):
+        return [int(part) for part in code.split('.') if part.isdigit()]
+
+    # 3. Собираем данные по каждому направлению
     for direction in directions:
         direction_data = {
             'name': direction.name,
             'main_indicators': []
         }
 
-        # Заменяем сортировку на собственную функцию
-        def code_key(code):
-            return [int(part) for part in code.split('.') if part.isdigit()]
+        main_inds = list(MainIndicator.objects.filter(direction=direction, years=selected_year))
+        main_inds.sort(key=lambda x: code_key(x.code))
 
-        main_indicators = list(MainIndicator.objects.filter(direction=direction, years=selected_year))
-        main_indicators.sort(key=lambda x: code_key(x.code))
-
-        for main in main_indicators:
+        for main in main_inds:
             indicator_data = {
                 'main': main,
                 'has_sub': main.indicators.exists(),
@@ -409,63 +414,96 @@ def dean_report(request):
             }
 
             if main.indicators.exists():
-                sub_indicators = main.indicators.filter(years=selected_year)
-
-                dept_sums = []
+                subs = main.indicators.filter(years=selected_year)
+                summary = []
 
                 for dept in departments:
-                    total_value = 0
-                    teachers = set()
-                    for sub in sub_indicators:
-                        reports = TeacherReport.objects.filter(
+                    total_val = 0
+                    teachers_set = set()
+                    for sub in subs:
+                        qs = TeacherReport.objects.filter(
                             indicator=sub,
                             year=selected_year,
                             teacher__profile__department=dept
                         )
-                        value = reports.aggregate(total=Sum('value'))['total'] or 0
-                        total_value += value
-                        teachers.update([r.teacher.get_full_name() for r in reports])
-                    dept_sums.append({'value': total_value, 'teachers': list(teachers)})
+                        total_val += qs.aggregate(total=Sum('value'))['total'] or 0
+                        teachers_set |= {r.teacher.get_full_name() for r in qs}
+                    summary.append({
+                        'value': total_val,
+                        'teachers': list(teachers_set)
+                    })
+                indicator_data['summary_row'] = summary
 
-                indicator_data['summary_row'] = dept_sums
-
-                for sub in sub_indicators:
+                # Подиндикаторы
+                for sub in subs:
                     sub_row = []
                     for dept in departments:
-                        reports = TeacherReport.objects.filter(
+                        qs = TeacherReport.objects.filter(
                             indicator=sub,
                             year=selected_year,
                             teacher__profile__department=dept
                         )
-                        value = reports.aggregate(total=Sum('value'))['total'] or 0
-                        teachers = [{"name": r.teacher.get_full_name(), "value": r.value} for r in reports]
-                        sub_row.append({'value': value, 'teachers': teachers})
+                        val = qs.aggregate(total=Sum('value'))['total'] or 0
+
+                        teachers = []
+                        for r in qs:
+                            fc = r.uploaded_works.count()
+                            dl = ""
+                            if r.deadline_year and r.deadline_month:
+                                dl = f"{month_name[r.deadline_month]} {r.deadline_year}"
+                            teachers.append({
+                                "name":       r.teacher.get_full_name(),
+                                "value":      r.value,
+                                "file_count": fc,
+                                "deadline":   dl,
+                            })
+
+                        sub_row.append({
+                            'value': val,
+                            'teachers': teachers
+                        })
                     indicator_data['sub_indicators'].append((sub, sub_row))
+
             else:
                 row = []
                 for dept in departments:
-                    reports = AggregatedIndicator.objects.filter(
+                    qs = AggregatedIndicator.objects.filter(
                         main_indicator=main,
                         year=selected_year,
                         teacher__profile__department=dept
                     )
-                    value = reports.aggregate(total=Sum('total_value'))['total'] or 0
-                    teachers = [{"name": r.teacher.get_full_name(), "value": r.total_value} for r in reports]
+                    val = qs.aggregate(total=Sum('total_value'))['total'] or 0
 
-                    row.append({'value': value, 'teachers': teachers})
+                    teachers = []
+                    for r in qs:
+                        fc = r.uploaded_works.count()
+                        dl = ""
+                        if r.deadline_year and r.deadline_month:
+                            dl = f"{month_name[r.deadline_month]} {r.deadline_year}"
+                        teachers.append({
+                            "name":       r.teacher.get_full_name(),
+                            "value":      r.total_value,
+                            "file_count": fc,
+                            "deadline":   dl,
+                        })
+
+                    row.append({
+                        'value':    val,
+                        'teachers': teachers
+                    })
                 indicator_data['row'] = row
 
             direction_data['main_indicators'].append(indicator_data)
+
         data.append(direction_data)
 
     return render(request, "main/view/dean_report.html", {
-        'faculty': faculty,
-        'departments': departments,
-        'data': data,
-        'year': selected_year,
-        'years': years,
+        'faculty':    faculty,
+        'departments':departments,
+        'data':       data,
+        'year':       selected_year,
+        'years':      years,
     })
-
 
 # Добавляем представление для получения кафедр в зависимости от факультета
 def get_departments(request, faculty_id):

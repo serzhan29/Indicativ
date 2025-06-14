@@ -43,6 +43,26 @@ h3 {
     opacity: 0.9;
     color: #f5f5f5;
 }
+
+/* Добавь в main.css или modal_window.css */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Контейнер с горизонтальной прокруткой */
+.responsive-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Чтобы таблица не ломалась на мобиле */
+.responsive-table table {
+    min-width: 800px;
+}
+
+
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
