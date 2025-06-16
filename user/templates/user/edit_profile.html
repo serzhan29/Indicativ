@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex flex-column flex-md-row shadow rounded-4 overflow-hidden">
+                <!-- Левая колонка: фото -->
+                <div class="bg-light p-3 d-flex align-items-center justify-content-center" style="min-width: 280px;">
+                    {% if user.profile.photo %}
+                        <img src="{{ user.profile.photo.url }}" alt="Фото" class="img-fluid rounded border" style="max-height: 300px;">
+                    {% else %}
+                        <img src="{% static 'img/default-user.png' %}" alt="Фото по умолчанию" class="img-fluid rounded border" style="max-height: 300px;">
+                    {% endif %}
+                </div>
+
+                <!-- Правая колонка: форма -->
+                <div class="flex-grow-1 p-4 bg-white">
+                    <h3 class="mb-4 text-center">{% trans 'Change profile' %}</h3>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="id_first_name" class="form-label">{% trans "First name" %}</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_last_name" class="form-label">{% trans "Last name" %}</label>
+                                {{ form.last_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_father_name" class="form-label">{% trans "Middle name" %}</label>
+                                {{ form.father_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_phone" class="form-label">{% trans "Phone" %}</label>
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_faculty" class="form-label">{% trans "Faculty" %}</label>
+                                {{ form.faculty }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_department" class="form-label">{% trans "Department" %}</label>
+                                {{ form.department }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_email" class="form-label">{% trans "Email" %} (@ayu.edu.kz)</label>
+                                {{ form.email }}
+                            </div>
+
+                            <div class="col-12">
+                                <label for="id_photo" class="form-label">{% trans "Change photo" %}</label>
+                                {{ form.photo }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">{% trans 'Save' %}</button>
+                        </div>
+                    </form>
+                </div> <!-- /форма -->
+            </div> <!-- /d-flex -->
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,6 +3,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Profile, Faculty
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError
+
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -35,3 +37,71 @@ class LoginForm(forms.Form):
 
     def get_user(self):
         return self.user
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    first_name = forms.CharField(
+        label="Аты",
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        label="Тегі",
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = Profile
+        fields = ['faculty', 'department', 'phone', 'father_name', 'photo']
+        widgets = {
+            'faculty': forms.Select(attrs={'class': 'form-control'}),
+            'department': forms.Select(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'father_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'photo': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        instance = kwargs.get('instance')
+        initial = kwargs.get('initial', {}).copy()
+
+        if instance:
+            self.user = instance.user
+
+        if self.user:
+            initial['first_name'] = self.user.first_name
+            initial['last_name'] = self.user.last_name
+            initial['email'] = self.user.email
+
+        kwargs['initial'] = initial
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and not email.endswith('@ayu.edu.kz'):
+            raise ValidationError("Email должен оканчиваться на @ayu.edu.kz")
+        return email
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+
+        if self.user:
+            self.user.first_name = self.cleaned_data.get('first_name')
+            self.user.last_name = self.cleaned_data.get('last_name')
+            self.user.email = self.cleaned_data.get('email')
+            if commit:
+                self.user.save()
+                profile.user = self.user
+                profile.save()
+                self.save_m2m()
+        elif commit:
+            profile.save()
+            self.save_m2m()
+
+        return profile

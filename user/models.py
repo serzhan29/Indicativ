@@ -46,10 +46,12 @@ class Profile(models.Model):
     )
     phone = models.CharField(max_length=20, blank=True, verbose_name="Телефон")
     father_name = models.CharField(max_length=100, blank=True, verbose_name="Отчество")
+    photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True, verbose_name="Фото")
 
     def clean(self):
-        if self.user.email and not self.user.email.endswith('@ayu.edu.kz'):
-            raise ValidationError({'user': "Email должен оканчиваться на @ayu.edu.kz"})
+        email = self.user.email
+        if email and not email.endswith('@ayu.edu.kz'):
+            raise ValidationError("Email должен оканчиваться на @ayu.edu.kz")
 
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
