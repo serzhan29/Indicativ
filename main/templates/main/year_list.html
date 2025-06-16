@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load cache %}  {# Подключаем кэширование шаблонов #}
+
 {% block title %}Годы для направления "{{ direction.name }}" - Мой сайт{% endblock %}
 
 {% block breadcrumbs %}
@@ -11,6 +13,7 @@
 <div class="container mt-4">
     <h2 class="text-center mb-4 text-primary">{% trans "Select year" %}</h2>
 
+    {% cache 300 year_cards direction.id %}  {# Кэш на 5 минут (300 сек) по direction.id #}
     <div class="row justify-content-center g-4">
         {% for year in years|dictsort:"year" %}
             <div class="col-lg-3 col-md-4 col-sm-6 d-flex align-items-stretch">
@@ -24,6 +27,7 @@
             </div>
         {% endfor %}
     </div>
+    {% endcache %}
 </div>
 
 <style>
@@ -36,12 +40,10 @@
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* Убедимся, что ссылки занимают всю ширину карточки */
 a.w-100 {
     display: block;
 }
 
-/* Немного увеличим padding для большей «воздушности» */
 .card.py-4 {
     padding-top: 1.5rem !important;
     padding-bottom: 1.5rem !important;

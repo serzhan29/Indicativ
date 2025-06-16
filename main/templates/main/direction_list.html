@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
+{% load cache %}
+
 {% block title %}Направления - Мой сайт{% endblock %}
+
 {% block breadcrumbs %}
   <li class="breadcrumb-item"><a href="{% url 'direction_list' %}">{% trans "Select a direction" %}</a></li>
   <li class="breadcrumb-item active" aria-current="page">{% trans "Directions" %}</li>
 {% endblock %}
+
 {% block content %}
+{% cache 300 direction_list user.id %}
 <link rel="stylesheet" href="{% static 'main/css/direction_list.css' %}">
 <div class="container">
     <h2 class="text-center my-4">{% trans "Select a direction" %}</h2>
@@ -31,4 +36,5 @@
         </div>
     </div>
 </div>
+{% endcache %}
 {% endblock %}

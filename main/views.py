@@ -2,11 +2,9 @@ import json
 import calendar
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
 from .models import (Direction, Year, TeacherReport, Indicator, MainIndicator, AggregatedIndicator,
                      UploadedWork, UploadedMainWork)
 from django.contrib.auth.models import User
-from user.models import Department, Faculty, Profile
 from django.db.models import Sum
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
@@ -17,13 +15,29 @@ from django.views.generic import TemplateView
 from django.db.models import Q
 from django.utils.translation import gettext as _
 from django.core.files.base import ContentFile
+from django.core.cache import cache
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+
+@receiver([post_save, post_delete], sender=Direction)
+def clear_direction_cache(sender, **kwargs):
+    cache.delete("direction_list")
 
 
 class DirectionListView(LoginRequiredMixin, ListView):
-    """Шаг 1: Выбор направления"""
+    """Шаг 1: Выбор направления (с кэшированием queryset)"""
     model = Direction
     template_name = 'main/direction_list.html'
     context_object_name = 'directions'
+
+    def get_queryset(self):
+        cache_key = "direction_list"
+        queryset = cache.get(cache_key)
+        if queryset is None:
+            queryset = Direction.objects.all()
+            cache.set(cache_key, queryset, 300)
+        return queryset
 
 
 class YearListView(LoginRequiredMixin, ListView):
@@ -32,10 +46,16 @@ class YearListView(LoginRequiredMixin, ListView):
     template_name = 'main/year_list.html'
     context_object_name = 'years'
 
+    def get_queryset(self):
+        return Year.objects.filter(
+            mainindicator__direction__id=self.kwargs['direction_id']
+        ).distinct()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['direction'] = get_object_or_404(Direction, id=self.kwargs['direction_id'])
         return context
+
 
 class FileModalView(LoginRequiredMixin, View):
     """
@@ -223,23 +243,45 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         teacher = self.request.user
-        direction = get_object_or_404(Direction, id=self.kwargs['direction_id'])
+        direction_id = self.kwargs['direction_id']
+        direction = cache.get_or_set(f'direction_{direction_id}', lambda: get_object_or_404(Direction, id=direction_id),
+                                     60 * 60)
 
-        # Получаем год либо из URL (kwargs), либо из GET-параметра
         year_id = self.request.GET.get('year_id') or self.kwargs.get('year_id')
-        year = get_object_or_404(Year, id=year_id) if year_id else Year.objects.last()
+        year = cache.get_or_set(f'year_{year_id}', lambda: get_object_or_404(Year, id=year_id),
+                                60 * 60) if year_id else Year.objects.last()
 
-        # Заменяем сортировку на собственную функцию
+        # Список всех лет и направлений (редко обновляется)
+        all_years = cache.get_or_set('all_years', lambda: list(Year.objects.all()), 60 * 60)
+        all_directions = cache.get_or_set('all_directions', lambda: list(Direction.objects.all()), 60 * 60)
+
+        # Сортировка по коду
         def code_key(code):
             return [int(part) for part in code.split('.') if part.isdigit()]
 
-        main_indicators = list(MainIndicator.objects.filter(direction=direction, years=year))
-        main_indicators.sort(key=lambda x: code_key(x.code))
+        # Кэшируем список главных индикаторов
+        main_indicators_key = f'main_indicators_dir{direction_id}_year{year.id}'
+        main_indicators = cache.get(main_indicators_key)
+
+        if main_indicators is None:
+            main_indicators = list(
+                MainIndicator.objects.filter(direction=direction, years=year).only('id', 'name', 'code'))
+            main_indicators.sort(key=lambda x: code_key(x.code))
+            cache.set(main_indicators_key, main_indicators, 60 * 60)
+
         aggregated_data = []
 
         for main_indicator in main_indicators:
-            indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year)
+            # Подиндикаторы — тоже можно кэшировать только имена и id
+            indicators_key = f'indicators_main{main_indicator.id}_year{year.id}'
+            indicators = cache.get(indicators_key)
 
+            if indicators is None:
+                indicators = list(
+                    Indicator.objects.filter(main_indicator=main_indicator, years=year).only('id', 'name'))
+                cache.set(indicators_key, indicators, 60 * 60)
+
+            # TeacherReport — НЕ кэшируем
             for indicator in indicators:
                 teacher_report, created = TeacherReport.objects.get_or_create(
                     teacher=teacher,
@@ -250,6 +292,7 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
                 if not created and teacher_report.value != 0:
                     teacher_report.save()
 
+            # AggregatedIndicator — НЕ кэшируем
             aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
                 main_indicator=main_indicator,
                 teacher=teacher,
@@ -291,19 +334,19 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
                 'deadline_display': aggregated_deadline_display,
             })
 
-        # Список месяцев через calendar с локализацией
         months = [(i, _(calendar.month_name[i])) for i in range(1, 13)]
 
         context.update({
             'teacher': teacher,
             'direction': direction,
             'year': year,
-            'all_years': Year.objects.all(),
+            'all_years': all_years,
             'aggregated_data': aggregated_data,
-            'directions': Direction.objects.all(),
+            'directions': all_directions,
             'months': months,
         })
         return context
+
 
 def code_key(code):
     return [int(part) for part in code.split('.') if part.isdigit()]
