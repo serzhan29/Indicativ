@@ -12,7 +12,7 @@
                     {% if user.profile.photo %}
                         <img src="{{ user.profile.photo.url }}" alt="Фото" class="img-fluid rounded border" style="max-height: 300px;">
                     {% else %}
-                        <img src="{% static 'img/default-user.png' %}" alt="Фото по умолчанию" class="img-fluid rounded border" style="max-height: 300px;">
+                        <img src="{% static 'user/img/default-user.png' %}" alt="Фото по умолчанию" class="img-fluid rounded border" style="max-height: 300px;">
                     {% endif %}
                 </div>
 
