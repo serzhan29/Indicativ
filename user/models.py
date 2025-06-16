@@ -53,3 +53,13 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
+
+
+class VisitLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    ip = models.GenericIPAddressField()
+    path = models.CharField(max_length=500)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user or 'Anonymous'} | {self.ip} | {self.path}"

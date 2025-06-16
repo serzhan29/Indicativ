@@ -54,6 +54,10 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
+MIDDLEWARE += [
+    'user.middleware.VisitLoggingMiddleware',
+]
+
 ROOT_URLCONF = 'app.urls'
 
 TEMPLATES = [

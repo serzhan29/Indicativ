@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Faculty, Department, Profile
+from .models import Faculty, Department, Profile, VisitLog
 
 
 class ProfileInline(admin.StackedInline):  # Можно заменить на TabularInline для компактности
@@ -47,6 +47,13 @@ class CustomDepartmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
     list_display_links = ('id', 'name')
 
+
+@admin.register(VisitLog)
+class VisitLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'user', 'ip', 'path')
+    list_filter = ('user', 'ip')
+    search_fields = ('ip', 'path')
+    list_display_links = ('user', 'ip', 'path')
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
