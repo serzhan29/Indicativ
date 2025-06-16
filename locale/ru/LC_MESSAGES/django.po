@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-14 18:02+0500\n"
+"POT-Creation-Date: 2025-06-16 21:41+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,51 +20,51 @@ msgstr ""
 "n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
 "(n%100>=11 && n%100<=14)? 2 : 3);\n"
 
-#: .\app\settings.py:127
+#: .\app\settings.py:131
 msgid "English"
 msgstr "Английский"
 
-#: .\app\settings.py:128
+#: .\app\settings.py:132
 msgid "Қазақ тілі"
 msgstr "Казахский язык"
 
-#: .\app\settings.py:129
+#: .\app\settings.py:133
 msgid "Русский"
 msgstr "Русский язык"
 
-#: .\app\settings.py:130
+#: .\app\settings.py:134
 msgid "Türkçe"
 msgstr "Турецкий язык"
 
-#: .\main\templates\main\direction_list.html:6
-#: .\main\templates\main\direction_list.html:12
+#: .\main\templates\main\direction_list.html:9
+#: .\main\templates\main\direction_list.html:17
 #: .\main\templates\main\index.html:15
 #: .\main\templates\main\teacher_full_report.html:15
-#: .\main\templates\main\teacher_report.html:19
+#: .\main\templates\main\teacher_report.html:20
 msgid "Select a direction"
 msgstr "Выберите направление"
 
-#: .\main\templates\main\direction_list.html:7
-#: .\main\templates\main\year_list.html:6 .\templates\base.html:50
+#: .\main\templates\main\direction_list.html:10
+#: .\main\templates\main\year_list.html:8 .\templates\base.html:50
 msgid "Directions"
 msgstr "Направления"
 
-#: .\main\templates\main\direction_list.html:19
-#: .\main\templates\main\direction_list.html:28
+#: .\main\templates\main\direction_list.html:24
+#: .\main\templates\main\direction_list.html:33
 msgid "Select"
 msgstr "Выбрать"
 
-#: .\main\templates\main\direction_list.html:27
+#: .\main\templates\main\direction_list.html:32
 #: .\main\templates\main\index.html:17
 #: .\main\templates\main\teacher_full_report.html:30
-#: .\main\templates\main\teacher_report.html:34
+#: .\main\templates\main\teacher_report.html:35
 msgid "ALL DIRECTIONS"
 msgstr "Все направления"
 
 #: .\main\templates\main\index.html:26
 #: .\main\templates\main\view\report_department.html:75
 msgid "Submit"
-msgstr ""
+msgstr "Выбрать"
 
 #: .\main\templates\main\index.html:31
 #, fuzzy
@@ -80,59 +80,59 @@ msgstr "Показатель"
 
 #: .\main\templates\main\index.html:64
 msgid "graphs by the main indicators for"
-msgstr ""
+msgstr " - графики по основным показателям"
 
 #: .\main\templates\main\index.html:86
 #: .\main\templates\main\teacher_full_report.html:77
-#: .\main\templates\main\teacher_report.html:71
+#: .\main\templates\main\teacher_report.html:72
 #: .\main\templates\main\view\report_department.html:73
 msgid "Unit of measurement"
 msgstr "Ед. измерения"
 
 #: .\main\templates\main\index.html:97
 msgid "Show more"
-msgstr ""
+msgstr "Показать больше"
 
 #: .\main\templates\main\index.html:102
 msgid "There are no graphs. Reports may be unfilled."
-msgstr ""
+msgstr "Графиков нет. Отчеты могут быть незаполненными."
 
 #: .\main\templates\main\teacher_full_report.html:39
-#: .\main\templates\main\teacher_report.html:39
+#: .\main\templates\main\teacher_report.html:40
 msgid "Dowload report"
 msgstr "Скачать отчет"
 
 #: .\main\templates\main\teacher_full_report.html:47
-#: .\main\templates\main\teacher_report.html:42
+#: .\main\templates\main\teacher_report.html:43
 #: .\main\templates\main\view\teacher_reports_list.html:15
-#: .\main\templates\main\year_list.html:12
+#: .\main\templates\main\year_list.html:14
 msgid "Select year"
 msgstr "Выберите год"
 
 #: .\main\templates\main\teacher_full_report.html:66
 #: .\main\templates\main\teacher_full_report.html:199
-#: .\main\templates\main\teacher_report.html:62
-#: .\main\templates\main\teacher_report.html:210
+#: .\main\templates\main\teacher_report.html:63
+#: .\main\templates\main\teacher_report.html:211
 #: .\main\templates\main\view\report_department.html:36
 msgid "Year"
 msgstr "Год"
 
 #: .\main\templates\main\teacher_full_report.html:75
-#: .\main\templates\main\teacher_report.html:69
+#: .\main\templates\main\teacher_report.html:70
 #: .\main\templates\main\view\report_department.html:71
 #: .\main\templates\main\view\teacher_reports_list.html:55
 msgid "Code"
 msgstr "Код"
 
 #: .\main\templates\main\teacher_full_report.html:76
-#: .\main\templates\main\teacher_report.html:70
+#: .\main\templates\main\teacher_report.html:71
 #: .\main\templates\main\view\report_department.html:72
 #: .\main\templates\main\view\teacher_reports_list.html:56
 msgid "Indicator name"
 msgstr "Название индикатора"
 
 #: .\main\templates\main\teacher_full_report.html:78
-#: .\main\templates\main\teacher_report.html:72
+#: .\main\templates\main\teacher_report.html:73
 #: .\main\templates\main\view\report_department.html:74
 #: .\main\templates\main\view\report_department.html:171
 #: .\main\templates\main\view\report_department.html:205
@@ -140,7 +140,7 @@ msgid "Number of indicators"
 msgstr "Показатель"
 
 #: .\main\templates\main\teacher_full_report.html:79
-#: .\main\templates\main\teacher_report.html:73
+#: .\main\templates\main\teacher_report.html:74
 #: .\main\templates\main\view\report_department.html:172
 #: .\main\templates\main\view\report_department.html:206
 #: .\main\templates\main\view\teacher_reports_list.html:127
@@ -150,7 +150,7 @@ msgid "File"
 msgstr "Файл"
 
 #: .\main\templates\main\teacher_full_report.html:80
-#: .\main\templates\main\teacher_report.html:74
+#: .\main\templates\main\teacher_report.html:75
 #: .\main\templates\main\view\teacher_reports_list.html:59
 msgid "Month / year"
 msgstr "Месяц / год"
@@ -158,22 +158,22 @@ msgstr "Месяц / год"
 #: .\main\templates\main\teacher_full_report.html:113
 #: .\main\templates\main\teacher_full_report.html:155
 #: .\main\templates\main\teacher_full_report.html:219
-#: .\main\templates\main\teacher_report.html:114
-#: .\main\templates\main\teacher_report.html:165
-#: .\main\templates\main\teacher_report.html:229
+#: .\main\templates\main\teacher_report.html:115
+#: .\main\templates\main\teacher_report.html:166
+#: .\main\templates\main\teacher_report.html:230
 #: .\main\templates\main\view\teacher_reports_list.html:60
 msgid "Files"
 msgstr "Файлы"
 
 #: .\main\templates\main\teacher_full_report.html:182
-#: .\main\templates\main\teacher_report.html:193
+#: .\main\templates\main\teacher_report.html:194
 msgid "Mark the month and year"
 msgstr "Отметьте месяц и год"
 
 #: .\main\templates\main\teacher_full_report.html:183
 #: .\main\templates\main\teacher_full_report.html:220
-#: .\main\templates\main\teacher_report.html:194
-#: .\main\templates\main\teacher_report.html:230
+#: .\main\templates\main\teacher_report.html:195
+#: .\main\templates\main\teacher_report.html:231
 #: .\main\templates\main\view\dean_report.html:123
 #: .\main\templates\main\view\teacher_reports_list.html:121
 #: .\main\templates\main\view\teacher_reports_list.html:161
@@ -181,85 +181,84 @@ msgid "Close"
 msgstr "Закрыть"
 
 #: .\main\templates\main\teacher_full_report.html:190
-#: .\main\templates\main\teacher_report.html:201
+#: .\main\templates\main\teacher_report.html:202
 msgid "Month"
 msgstr "Месяй"
 
 #: .\main\templates\main\teacher_full_report.html:204
-#: .\main\templates\main\teacher_report.html:215
+#: .\main\templates\main\teacher_report.html:216
+#: .\user\templates\user\edit_profile.html:63
 msgid "Save"
 msgstr "Сохранить"
 
 #: .\main\templates\main\teacher_full_report.html:225
-#: .\main\templates\main\teacher_report.html:235
-#, fuzzy
-#| msgid "Select year"
+#: .\main\templates\main\teacher_report.html:236
 msgid "Select file"
-msgstr "Выберите год"
+msgstr "Выберите файл"
 
 #: .\main\templates\main\teacher_full_report.html:235
 #: .\main\templates\main\teacher_full_report.html:249
-#: .\main\templates\main\teacher_report.html:245
-#: .\main\templates\main\teacher_report.html:259
+#: .\main\templates\main\teacher_report.html:246
+#: .\main\templates\main\teacher_report.html:260
 msgid "Co‑authors"
-msgstr ""
+msgstr "Соавторы"
 
 #: .\main\templates\main\teacher_full_report.html:239
-#: .\main\templates\main\teacher_report.html:249
+#: .\main\templates\main\teacher_report.html:250
 msgid "Hold Ctrl (Cmd) to select multiple."
-msgstr ""
+msgstr "Удерживая нажатой клавишу Ctrl (Cmd), выберите несколько."
 
 #: .\main\templates\main\teacher_full_report.html:247
-#: .\main\templates\main\teacher_report.html:257
+#: .\main\templates\main\teacher_report.html:258
 msgid "Name"
-msgstr ""
+msgstr "Имя"
 
 #: .\main\templates\main\teacher_full_report.html:248
-#: .\main\templates\main\teacher_report.html:258
+#: .\main\templates\main\teacher_report.html:259
 msgid "Uploaded At"
-msgstr ""
+msgstr "Загружено по адресу"
 
 #: .\main\templates\main\teacher_full_report.html:250
-#: .\main\templates\main\teacher_report.html:260
+#: .\main\templates\main\teacher_report.html:261
 #, fuzzy
 #| msgid "Directions"
 msgid "Actions"
 msgstr "Выбрать действие"
 
 #: .\main\templates\main\teacher_full_report.html:259
-#: .\main\templates\main\teacher_report.html:269
+#: .\main\templates\main\teacher_report.html:270
 msgid "Upload"
-msgstr ""
+msgstr "Загружать"
 
 #: .\main\templates\main\teacher_full_report.html:326
-#: .\main\templates\main\teacher_report.html:338
+#: .\main\templates\main\teacher_report.html:339
 #: .\venv\Lib\site-packages\django\forms\formsets.py:499
 msgid "Delete"
-msgstr ""
+msgstr "Удалить"
 
 #: .\main\templates\main\teacher_full_report.html:328
-#: .\main\templates\main\teacher_report.html:340
+#: .\main\templates\main\teacher_report.html:341
 #, fuzzy
 #| msgid "Download"
 msgid "Dowload"
 msgstr "Загрузка"
 
 #: .\main\templates\main\teacher_full_report.html:333
-#: .\main\templates\main\teacher_report.html:345
+#: .\main\templates\main\teacher_report.html:346
 msgid "Total"
-msgstr ""
+msgstr "Сумма"
 
 #: .\main\templates\main\view\dean_report.html:106
 msgid "Преподаватели"
-msgstr ""
+msgstr "Преподаватели"
 
 #: .\main\templates\main\view\dean_report.html:112
 msgid "ФИО"
-msgstr ""
+msgstr "ФИО"
 
 #: .\main\templates\main\view\dean_report.html:113
 msgid "Мағынасы"
-msgstr ""
+msgstr "Значение"
 
 #: .\main\templates\main\view\list_teacher.html:10
 #: .\main\templates\main\view\teacher_reports_list.html:31
@@ -268,33 +267,30 @@ msgid "Teachers list"
 msgstr "Список преподавателей"
 
 #: .\main\templates\main\view\list_teacher.html:18
-#, fuzzy
-#| msgid "Select year"
 msgid "Select faculty"
-msgstr "Выберите год"
+msgstr "Выберите факультет"
 
 #: .\main\templates\main\view\list_teacher.html:20
 msgid "All faculties"
-msgstr ""
+msgstr "Все факультеты"
 
 #: .\main\templates\main\view\list_teacher.html:30
+#: .\user\templates\user\edit_profile.html:43
 #: .\user\templates\user\register.html:23
 msgid "Faculty"
 msgstr "Факультет"
 
 #: .\main\templates\main\view\list_teacher.html:39
-#, fuzzy
-#| msgid "Select year"
 msgid "Select department"
-msgstr "Выберите год"
+msgstr "Выберите кафедру"
 
 #: .\main\templates\main\view\list_teacher.html:47
 msgid "All departments"
-msgstr ""
+msgstr "Все кафедры"
 
 #: .\main\templates\main\view\list_teacher.html:73
 msgid "No department set"
-msgstr ""
+msgstr "No department set"
 
 #: .\main\templates\main\view\list_teacher.html:75
 #, fuzzy
@@ -304,19 +300,19 @@ msgstr "Факультет"
 
 #: .\main\templates\main\view\list_teacher.html:89
 msgid "Previous"
-msgstr ""
+msgstr "Предыдущий"
 
 #: .\main\templates\main\view\list_teacher.html:95
 msgid "Page"
-msgstr ""
+msgstr "Страница"
 
 #: .\main\templates\main\view\list_teacher.html:102
 msgid "Next"
-msgstr ""
+msgstr "Следующий"
 
 #: .\main\templates\main\view\list_teacher.html:109
 msgid "No teachers found."
-msgstr ""
+msgstr "Учителей не найдено."
 
 #: .\main\templates\main\view\report_department.html:170
 #: .\main\templates\main\view\report_department.html:204
@@ -327,26 +323,107 @@ msgstr "Список преподавателей"
 
 #: .\main\templates\main\view\teacher_reports_list.html:57
 msgid "Unit"
-msgstr ""
+msgstr "Единица измерения"
 
 #: .\main\templates\main\view\teacher_reports_list.html:58
 msgid "Value"
-msgstr ""
+msgstr "Значение"
 
 #: .\main\templates\main\view\teacher_reports_list.html:128
 #: .\main\templates\main\view\teacher_reports_list.html:168
 msgid "Author"
-msgstr ""
+msgstr "Автор"
 
 #: .\main\templates\main\view\teacher_reports_list.html:129
 #: .\main\templates\main\view\teacher_reports_list.html:169
 msgid "Co-authors"
-msgstr ""
+msgstr "Соавторы"
 
 #: .\main\templates\main\view\teacher_reports_list.html:130
 #: .\main\templates\main\view\teacher_reports_list.html:170
 msgid "Uploaded at"
+msgstr "Загружено"
+
+#: .\main\views_docx.py:26
+msgid "Январь"
 msgstr ""
+
+#: .\main\views_docx.py:27
+msgid "Февраль"
+msgstr ""
+
+#: .\main\views_docx.py:28
+msgid "Март"
+msgstr ""
+
+#: .\main\views_docx.py:29
+msgid "Апрель"
+msgstr ""
+
+#: .\main\views_docx.py:30
+msgid "Май"
+msgstr ""
+
+#: .\main\views_docx.py:31
+msgid "Июнь"
+msgstr ""
+
+#: .\main\views_docx.py:32
+msgid "Июль"
+msgstr ""
+
+#: .\main\views_docx.py:33
+msgid "Август"
+msgstr ""
+
+#: .\main\views_docx.py:34
+msgid "Сентябрь"
+msgstr ""
+
+#: .\main\views_docx.py:35
+msgid "Октябрь"
+msgstr ""
+
+#: .\main\views_docx.py:36
+msgid "Ноябрь"
+msgstr ""
+
+#: .\main\views_docx.py:37
+msgid "Декабрь"
+msgstr ""
+
+#: .\main\views_docx.py:44
+msgid "Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті"
+msgstr "Международный казахско-турецкий университет имени Ходжи Ахмеда Ясави"
+
+#: .\main\views_docx.py:47
+msgid "«БЕКІТЕМІН»"
+msgstr "«Утверждаю»"
+
+#: .\main\views_docx.py:48
+msgid "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры"
+msgstr "Представитель руководства по качеству, вице-ректор по науке и стратегическому развитию"
+
+#: .\main\views_docx.py:49
+msgid "__________________________ А.Ошибаева"
+msgstr "__________________________ А.Ошибаева"
+
+#: .\main\views_docx.py:58
+#, python-brace-format
+msgid "{start} - {end} оқу жылына"
+msgstr "{start} - {end} на учебный год"
+
+#: .\main\views_docx.py:59
+msgid "ИНДИКАТИВТІ ЖОСПАРЫ"
+msgstr "ИНДИКАТИВНЫЙ ПЛАН"
+
+#: .\main\views_docx.py:60
+msgid ""
+"\n"
+"Кентау"
+msgstr ""
+"\n"
+"Кентау"
 
 #: .\templates\base.html:55
 msgid "Faculty reports"
@@ -357,18 +434,28 @@ msgid "Dean"
 msgstr "Декан"
 
 #: .\templates\base.html:73
+msgid "Profile"
+msgstr "Профиль"
+
+#: .\templates\base.html:78
 msgid "Logout"
 msgstr "Выход"
 
-#: .\templates\base.html:79 .\user\templates\user\login.html:7
+#: .\templates\base.html:84 .\user\templates\user\login.html:7
 #: .\user\templates\user\login.html:27 .\user\templates\user\register.html:38
 msgid "Login"
 msgstr "Вход"
 
-#: .\templates\base.html:84 .\user\templates\user\login.html:31
+#: .\templates\base.html:89 .\user\templates\user\login.html:31
 #: .\user\templates\user\register.html:7 .\user\templates\user\register.html:35
 msgid "Register"
 msgstr "Регистрация"
+
+#: .\user\forms.py:35
+#, fuzzy
+#| msgid "Error: incorrect username or password."
+msgid "Invalid username/email or password"
+msgstr "Ошибка: неправильное имя пользователя или пароль."
 
 #: .\user\models.py:10
 msgid "Название факультета"
@@ -378,9 +465,38 @@ msgstr "Название факультета"
 msgid "Название кафедры"
 msgstr "Название кафедры"
 
+#: .\user\templates\user\edit_profile.html:21
+msgid "Change profile"
+msgstr "Изменить профиль"
+
+#: .\user\templates\user\edit_profile.html:27
+msgid "First name"
+msgstr "Имя"
+
+#: .\user\templates\user\edit_profile.html:31
+msgid "Last name"
+msgstr "Фамилия"
+
+#: .\user\templates\user\edit_profile.html:35
+msgid "Middle name"
+msgstr "Отчество"
+
+#: .\user\templates\user\edit_profile.html:39
+msgid "Phone"
+msgstr "Телефон"
+
+#: .\user\templates\user\edit_profile.html:47
+msgid "Department"
+msgstr "Кафедра"
+
+#: .\user\templates\user\edit_profile.html:52
 #: .\user\templates\user\login.html:12
 msgid "Email"
 msgstr "Электронная почта"
+
+#: .\user\templates\user\edit_profile.html:57
+msgid "Change photo"
+msgstr "Изменить фото"
 
 #: .\user\templates\user\login.html:12
 msgid "Or"
@@ -414,7 +530,7 @@ msgstr "Телефонный номер"
 msgid "Already have an account?"
 msgstr "У вас уже есть учетная запись?"
 
-#: .\user\views.py:37
+#: .\user\views.py:38
 msgid "Error: incorrect username or password."
 msgstr "Ошибка: неправильное имя пользователя или пароль."
 
@@ -1627,10 +1743,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Выберите несколько соавторов и так далее, удерживая нажатой клавишу Ctrl "
 #~ "(Cmd)."
-
-#~| msgid "File path"
-#~ msgid "File name"
-#~ msgstr "Путь к файлу"
 
 #~ msgid "Download date"
 #~ msgstr "Дата загрузки "

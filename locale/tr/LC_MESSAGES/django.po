@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-14 18:02+0500\n"
+"POT-Creation-Date: 2025-06-16 21:41+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,119 +18,115 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: .\app\settings.py:127
+#: .\app\settings.py:131
 msgid "English"
 msgstr "İngilizce"
 
-#: .\app\settings.py:128
+#: .\app\settings.py:132
 msgid "Қазақ тілі"
 msgstr "Kazakça"
 
-#: .\app\settings.py:129
+#: .\app\settings.py:133
 msgid "Русский"
 msgstr "Rus"
 
-#: .\app\settings.py:130
+#: .\app\settings.py:134
 msgid "Türkçe"
 msgstr "Türkçe"
 
-#: .\main\templates\main\direction_list.html:6
-#: .\main\templates\main\direction_list.html:12
+#: .\main\templates\main\direction_list.html:9
+#: .\main\templates\main\direction_list.html:17
 #: .\main\templates\main\index.html:15
 #: .\main\templates\main\teacher_full_report.html:15
-#: .\main\templates\main\teacher_report.html:19
+#: .\main\templates\main\teacher_report.html:20
 msgid "Select a direction"
 msgstr "Bir yön seçin"
 
-#: .\main\templates\main\direction_list.html:7
-#: .\main\templates\main\year_list.html:6 .\templates\base.html:50
+#: .\main\templates\main\direction_list.html:10
+#: .\main\templates\main\year_list.html:8 .\templates\base.html:50
 msgid "Directions"
 msgstr "Yönler"
 
-#: .\main\templates\main\direction_list.html:19
-#: .\main\templates\main\direction_list.html:28
+#: .\main\templates\main\direction_list.html:24
+#: .\main\templates\main\direction_list.html:33
 msgid "Select"
 msgstr "Seçmek"
 
-#: .\main\templates\main\direction_list.html:27
+#: .\main\templates\main\direction_list.html:32
 #: .\main\templates\main\index.html:17
 #: .\main\templates\main\teacher_full_report.html:30
-#: .\main\templates\main\teacher_report.html:34
+#: .\main\templates\main\teacher_report.html:35
 msgid "ALL DIRECTIONS"
 msgstr "Tüm destinasyonlar"
 
 #: .\main\templates\main\index.html:26
 #: .\main\templates\main\view\report_department.html:75
 msgid "Submit"
-msgstr ""
+msgstr "Sunmak"
 
 #: .\main\templates\main\index.html:31
-#, fuzzy
-#| msgid "Number of indicators"
 msgid "Select of indicator"
-msgstr "Gösterge sayısı"
+msgstr "Gösterge seçimi"
 
 #: .\main\templates\main\index.html:37
-#, fuzzy
-#| msgid "Number of indicators"
 msgid "Search indicator"
-msgstr "Gösterge sayısı"
+msgstr "Arama göstergesi"
 
 #: .\main\templates\main\index.html:64
 msgid "graphs by the main indicators for"
-msgstr ""
+msgstr "için ana göstergelere göre grafikler"
 
 #: .\main\templates\main\index.html:86
 #: .\main\templates\main\teacher_full_report.html:77
-#: .\main\templates\main\teacher_report.html:71
+#: .\main\templates\main\teacher_report.html:72
 #: .\main\templates\main\view\report_department.html:73
 msgid "Unit of measurement"
 msgstr "Ölçü birimi"
 
 #: .\main\templates\main\index.html:97
 msgid "Show more"
-msgstr ""
+msgstr "Daha fazla göster"
 
 #: .\main\templates\main\index.html:102
 msgid "There are no graphs. Reports may be unfilled."
 msgstr ""
 
 #: .\main\templates\main\teacher_full_report.html:39
-#: .\main\templates\main\teacher_report.html:39
+#: .\main\templates\main\teacher_report.html:40
 msgid "Dowload report"
 msgstr "Raporu indir"
 
 #: .\main\templates\main\teacher_full_report.html:47
-#: .\main\templates\main\teacher_report.html:42
+#: .\main\templates\main\teacher_report.html:43
 #: .\main\templates\main\view\teacher_reports_list.html:15
-#: .\main\templates\main\year_list.html:12
+#: .\main\templates\main\year_list.html:14
 msgid "Select year"
 msgstr "Yılı seçin"
 
 #: .\main\templates\main\teacher_full_report.html:66
 #: .\main\templates\main\teacher_full_report.html:199
-#: .\main\templates\main\teacher_report.html:62
-#: .\main\templates\main\teacher_report.html:210
+#: .\main\templates\main\teacher_report.html:63
+#: .\main\templates\main\teacher_report.html:211
 #: .\main\templates\main\view\report_department.html:36
 msgid "Year"
 msgstr "Yıl"
 
 #: .\main\templates\main\teacher_full_report.html:75
-#: .\main\templates\main\teacher_report.html:69
+#: .\main\templates\main\teacher_report.html:70
 #: .\main\templates\main\view\report_department.html:71
 #: .\main\templates\main\view\teacher_reports_list.html:55
 msgid "Code"
 msgstr "Kod"
 
 #: .\main\templates\main\teacher_full_report.html:76
-#: .\main\templates\main\teacher_report.html:70
+#: .\main\templates\main\teacher_report.html:71
 #: .\main\templates\main\view\report_department.html:72
 #: .\main\templates\main\view\teacher_reports_list.html:56
 msgid "Indicator name"
 msgstr "Gösterge adı"
 
 #: .\main\templates\main\teacher_full_report.html:78
-#: .\main\templates\main\teacher_report.html:72
+#: .\main\templates\main\teacher_report.html:73
 #: .\main\templates\main\view\report_department.html:74
 #: .\main\templates\main\view\report_department.html:171
 #: .\main\templates\main\view\report_department.html:205
@@ -138,7 +134,7 @@ msgid "Number of indicators"
 msgstr "Gösterge sayısı"
 
 #: .\main\templates\main\teacher_full_report.html:79
-#: .\main\templates\main\teacher_report.html:73
+#: .\main\templates\main\teacher_report.html:74
 #: .\main\templates\main\view\report_department.html:172
 #: .\main\templates\main\view\report_department.html:206
 #: .\main\templates\main\view\teacher_reports_list.html:127
@@ -148,7 +144,7 @@ msgid "File"
 msgstr "Dosya"
 
 #: .\main\templates\main\teacher_full_report.html:80
-#: .\main\templates\main\teacher_report.html:74
+#: .\main\templates\main\teacher_report.html:75
 #: .\main\templates\main\view\teacher_reports_list.html:59
 msgid "Month / year"
 msgstr "Ay / yıl"
@@ -156,22 +152,22 @@ msgstr "Ay / yıl"
 #: .\main\templates\main\teacher_full_report.html:113
 #: .\main\templates\main\teacher_full_report.html:155
 #: .\main\templates\main\teacher_full_report.html:219
-#: .\main\templates\main\teacher_report.html:114
-#: .\main\templates\main\teacher_report.html:165
-#: .\main\templates\main\teacher_report.html:229
+#: .\main\templates\main\teacher_report.html:115
+#: .\main\templates\main\teacher_report.html:166
+#: .\main\templates\main\teacher_report.html:230
 #: .\main\templates\main\view\teacher_reports_list.html:60
 msgid "Files"
 msgstr "Dosyalar"
 
 #: .\main\templates\main\teacher_full_report.html:182
-#: .\main\templates\main\teacher_report.html:193
+#: .\main\templates\main\teacher_report.html:194
 msgid "Mark the month and year"
 msgstr "Dosyalar"
 
 #: .\main\templates\main\teacher_full_report.html:183
 #: .\main\templates\main\teacher_full_report.html:220
-#: .\main\templates\main\teacher_report.html:194
-#: .\main\templates\main\teacher_report.html:230
+#: .\main\templates\main\teacher_report.html:195
+#: .\main\templates\main\teacher_report.html:231
 #: .\main\templates\main\view\dean_report.html:123
 #: .\main\templates\main\view\teacher_reports_list.html:121
 #: .\main\templates\main\view\teacher_reports_list.html:161
@@ -179,85 +175,80 @@ msgid "Close"
 msgstr "Kapatma"
 
 #: .\main\templates\main\teacher_full_report.html:190
-#: .\main\templates\main\teacher_report.html:201
+#: .\main\templates\main\teacher_report.html:202
 msgid "Month"
 msgstr "Ay"
 
 #: .\main\templates\main\teacher_full_report.html:204
-#: .\main\templates\main\teacher_report.html:215
+#: .\main\templates\main\teacher_report.html:216
+#: .\user\templates\user\edit_profile.html:63
 msgid "Save"
 msgstr "Kaydetmek"
 
 #: .\main\templates\main\teacher_full_report.html:225
-#: .\main\templates\main\teacher_report.html:235
-#, fuzzy
-#| msgid "Select year"
+#: .\main\templates\main\teacher_report.html:236
 msgid "Select file"
-msgstr "Yılı seçin"
+msgstr "Dosya seç"
 
 #: .\main\templates\main\teacher_full_report.html:235
 #: .\main\templates\main\teacher_full_report.html:249
-#: .\main\templates\main\teacher_report.html:245
-#: .\main\templates\main\teacher_report.html:259
+#: .\main\templates\main\teacher_report.html:246
+#: .\main\templates\main\teacher_report.html:260
 msgid "Co‑authors"
-msgstr ""
+msgstr "Ortak yazarlar"
 
 #: .\main\templates\main\teacher_full_report.html:239
-#: .\main\templates\main\teacher_report.html:249
+#: .\main\templates\main\teacher_report.html:250
 msgid "Hold Ctrl (Cmd) to select multiple."
-msgstr ""
+msgstr "Birden çok seçmek için Ctrl (Cmd) tuşunu basılı tutun."
 
 #: .\main\templates\main\teacher_full_report.html:247
-#: .\main\templates\main\teacher_report.html:257
+#: .\main\templates\main\teacher_report.html:258
 msgid "Name"
-msgstr ""
+msgstr "İsim"
 
 #: .\main\templates\main\teacher_full_report.html:248
-#: .\main\templates\main\teacher_report.html:258
+#: .\main\templates\main\teacher_report.html:259
 msgid "Uploaded At"
-msgstr ""
+msgstr "Yüklendi"
 
 #: .\main\templates\main\teacher_full_report.html:250
-#: .\main\templates\main\teacher_report.html:260
-#, fuzzy
-#| msgid "Directions"
+#: .\main\templates\main\teacher_report.html:261
 msgid "Actions"
 msgstr "Hareketler"
 
 #: .\main\templates\main\teacher_full_report.html:259
-#: .\main\templates\main\teacher_report.html:269
+#: .\main\templates\main\teacher_report.html:270
 msgid "Upload"
-msgstr ""
+msgstr "Yükle"
 
 #: .\main\templates\main\teacher_full_report.html:326
-#: .\main\templates\main\teacher_report.html:338
+#: .\main\templates\main\teacher_report.html:339
 #: .\venv\Lib\site-packages\django\forms\formsets.py:499
 msgid "Delete"
 msgstr "Silmek"
 
 #: .\main\templates\main\teacher_full_report.html:328
-#: .\main\templates\main\teacher_report.html:340
-#, fuzzy
-#| msgid "Download"
+#: .\main\templates\main\teacher_report.html:341
 msgid "Dowload"
-msgstr "İndirmek"
+msgstr "İndirme"
 
 #: .\main\templates\main\teacher_full_report.html:333
-#: .\main\templates\main\teacher_report.html:345
+#: .\main\templates\main\teacher_report.html:346
 msgid "Total"
-msgstr ""
+msgstr "Toplam"
 
 #: .\main\templates\main\view\dean_report.html:106
 msgid "Преподаватели"
-msgstr ""
+msgstr "Öğretmenler"
 
 #: .\main\templates\main\view\dean_report.html:112
 msgid "ФИО"
-msgstr ""
+msgstr "TAM adı"
 
 #: .\main\templates\main\view\dean_report.html:113
 msgid "Мағынасы"
-msgstr ""
+msgstr "Değer"
 
 #: .\main\templates\main\view\list_teacher.html:10
 #: .\main\templates\main\view\teacher_reports_list.html:31
@@ -266,85 +257,159 @@ msgid "Teachers list"
 msgstr "Öğretmenler listesi"
 
 #: .\main\templates\main\view\list_teacher.html:18
-#, fuzzy
-#| msgid "Select year"
 msgid "Select faculty"
-msgstr "Yılı seçin"
+msgstr "Fakülte seçiniz"
 
 #: .\main\templates\main\view\list_teacher.html:20
 msgid "All faculties"
-msgstr ""
+msgstr "Tüm fakülteler"
 
 #: .\main\templates\main\view\list_teacher.html:30
+#: .\user\templates\user\edit_profile.html:43
 #: .\user\templates\user\register.html:23
 msgid "Faculty"
 msgstr "Fakülte"
 
 #: .\main\templates\main\view\list_teacher.html:39
-#, fuzzy
-#| msgid "Select year"
 msgid "Select department"
-msgstr "Yılı seçin"
+msgstr "Bölüm seç"
 
 #: .\main\templates\main\view\list_teacher.html:47
 msgid "All departments"
-msgstr ""
+msgstr "Tüm bölümler"
 
 #: .\main\templates\main\view\list_teacher.html:73
 msgid "No department set"
-msgstr ""
+msgstr "Departman seti yok"
 
 #: .\main\templates\main\view\list_teacher.html:75
-#, fuzzy
-#| msgid "Faculty"
 msgid "No faculty"
-msgstr "Fakülte"
+msgstr "Fakülte yok"
 
 #: .\main\templates\main\view\list_teacher.html:89
 msgid "Previous"
-msgstr ""
+msgstr "Önceki"
 
 #: .\main\templates\main\view\list_teacher.html:95
 msgid "Page"
-msgstr ""
+msgstr "Sayfa"
 
 #: .\main\templates\main\view\list_teacher.html:102
 msgid "Next"
-msgstr ""
+msgstr "Sonraki"
 
 #: .\main\templates\main\view\list_teacher.html:109
 msgid "No teachers found."
-msgstr ""
+msgstr "Öğretmen bulunamadı."
 
 #: .\main\templates\main\view\report_department.html:170
 #: .\main\templates\main\view\report_department.html:204
-#, fuzzy
-#| msgid "Teachers list"
 msgid "Teacher"
-msgstr "Öğretmenler listesi"
+msgstr "Öğretmen"
 
 #: .\main\templates\main\view\teacher_reports_list.html:57
 msgid "Unit"
-msgstr ""
+msgstr "Birim"
 
 #: .\main\templates\main\view\teacher_reports_list.html:58
 msgid "Value"
-msgstr ""
+msgstr "Değer"
 
 #: .\main\templates\main\view\teacher_reports_list.html:128
 #: .\main\templates\main\view\teacher_reports_list.html:168
 msgid "Author"
-msgstr ""
+msgstr "Yazar"
 
 #: .\main\templates\main\view\teacher_reports_list.html:129
 #: .\main\templates\main\view\teacher_reports_list.html:169
 msgid "Co-authors"
-msgstr ""
+msgstr "Ortak yazarlar"
 
 #: .\main\templates\main\view\teacher_reports_list.html:130
 #: .\main\templates\main\view\teacher_reports_list.html:170
 msgid "Uploaded at"
+msgstr "Yüklendi"
+
+#: .\main\views_docx.py:26
+msgid "Январь"
+msgstr "Ocak"
+
+#: .\main\views_docx.py:27
+msgid "Февраль"
+msgstr "Şubat"
+
+#: .\main\views_docx.py:28
+msgid "Март"
+msgstr "Mart"
+
+#: .\main\views_docx.py:29
+msgid "Апрель"
+msgstr "Nisan"
+
+#: .\main\views_docx.py:30
+msgid "Май"
+msgstr "Mayıs"
+
+#: .\main\views_docx.py:31
+msgid "Июнь"
+msgstr "Haziran"
+
+#: .\main\views_docx.py:32
+msgid "Июль"
+msgstr "Temmuz"
+
+#: .\main\views_docx.py:33
+msgid "Август"
+msgstr "Ağustos"
+
+#: .\main\views_docx.py:34
+msgid "Сентябрь"
+msgstr "Eylül"
+
+#: .\main\views_docx.py:35
+msgid "Октябрь"
+msgstr "Ekim"
+
+#: .\main\views_docx.py:36
+msgid "Ноябрь"
+msgstr "Kasım"
+
+#: .\main\views_docx.py:37
+msgid "Декабрь"
+msgstr "Aralık"
+
+#: .\main\views_docx.py:44
+msgid "Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті"
+msgstr "Hoca Ahmed Yasavi Uluslararası Kazak-Türk Üniversitesi"
+
+#: .\main\views_docx.py:47
+msgid "«БЕКІТЕМІН»"
+msgstr "«İddia etmek»"
+
+#: .\main\views_docx.py:48
+msgid "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры"
+msgstr "Kalite Yönetimi Temsilcisi, Bilim ve Stratejik Gelişmeden sorumlu Rektör Yardımcısı"
+
+#: .\main\views_docx.py:49
+msgid "__________________________ А.Ошибаева"
+msgstr "__________________________ А.Ошибаева"
+
+#: .\main\views_docx.py:58
+#, python-brace-format
+msgid "{start} - {end} оқу жылына"
+msgstr "okul yılı için {start} - {end}"
+
+#: .\main\views_docx.py:59
+msgid "ИНДИКАТИВТІ ЖОСПАРЫ"
+msgstr "GÖSTERGE PLANI"
+
+#: .\main\views_docx.py:60
+msgid ""
+"\n"
+"Кентау"
 msgstr ""
+"\n"
+"Kentau"
 
 #: .\templates\base.html:55
 msgid "Faculty reports"
@@ -355,18 +420,26 @@ msgid "Dean"
 msgstr "Dekan"
 
 #: .\templates\base.html:73
+msgid "Profile"
+msgstr "Profil"
+
+#: .\templates\base.html:78
 msgid "Logout"
 msgstr "Çıkış"
 
-#: .\templates\base.html:79 .\user\templates\user\login.html:7
+#: .\templates\base.html:84 .\user\templates\user\login.html:7
 #: .\user\templates\user\login.html:27 .\user\templates\user\register.html:38
 msgid "Login"
 msgstr "Oturum aç"
 
-#: .\templates\base.html:84 .\user\templates\user\login.html:31
+#: .\templates\base.html:89 .\user\templates\user\login.html:31
 #: .\user\templates\user\register.html:7 .\user\templates\user\register.html:35
 msgid "Register"
 msgstr "Kaydolmak"
+
+#: .\user\forms.py:35
+msgid "Invalid username/email or password"
+msgstr "Geçersiz kullanıcı adı / e-posta veya şifre"
 
 #: .\user\models.py:10
 msgid "Название факультета"
@@ -376,9 +449,38 @@ msgstr "Fakültenin adı"
 msgid "Название кафедры"
 msgstr "Bölümün adı"
 
+#: .\user\templates\user\edit_profile.html:21
+msgid "Change profile"
+msgstr "Profili değiştir"
+
+#: .\user\templates\user\edit_profile.html:27
+msgid "First name"
+msgstr "İlk isim"
+
+#: .\user\templates\user\edit_profile.html:31
+msgid "Last name"
+msgstr "Soyadı"
+
+#: .\user\templates\user\edit_profile.html:35
+msgid "Middle name"
+msgstr "Göbek adı"
+
+#: .\user\templates\user\edit_profile.html:39
+msgid "Phone"
+msgstr "Telefon"
+
+#: .\user\templates\user\edit_profile.html:47
+msgid "Department"
+msgstr "Bölüm"
+
+#: .\user\templates\user\edit_profile.html:52
 #: .\user\templates\user\login.html:12
 msgid "Email"
 msgstr "E-posta"
+
+#: .\user\templates\user\edit_profile.html:57
+msgid "Change photo"
+msgstr "Fotoğrafı değiştir"
 
 #: .\user\templates\user\login.html:12
 msgid "Or"
@@ -412,7 +514,7 @@ msgstr "Telefon numarası"
 msgid "Already have an account?"
 msgstr "Zaten bir hesabınız var mı?"
 
-#: .\user\views.py:37
+#: .\user\views.py:38
 msgid "Error: incorrect username or password."
 msgstr "Hata: Yanlış kullanıcı adı veya şifre."
 
@@ -422,11 +524,11 @@ msgstr "Mesajlar"
 
 #: .\venv\Lib\site-packages\django\contrib\sitemaps\apps.py:8
 msgid "Site Maps"
-msgstr ""
+msgstr "Site Haritaları"
 
 #: .\venv\Lib\site-packages\django\contrib\staticfiles\apps.py:9
 msgid "Static Files"
-msgstr ""
+msgstr "Statik Dosyalar"
 
 #: .\venv\Lib\site-packages\django\contrib\syndication\apps.py:7
 msgid "Syndication"
@@ -444,6 +546,7 @@ msgstr ""
 
 #: .\venv\Lib\site-packages\django\core\paginator.py:52
 msgid "That page number is less than 1"
+#| msgid "Select year"
 msgstr ""
 
 #: .\venv\Lib\site-packages\django\core\paginator.py:54
@@ -1624,9 +1727,6 @@ msgstr ""
 #~ msgid "Select multiple etcetera by holding Ctrl (Cmd)."
 #~ msgstr ""
 #~ "Ctrl (Cmd) tuşunu basılı tutarak birden fazla ortak çalışan seçin vb."
-
-#~ msgid "File name"
-#~ msgstr "Dosya yolu"
 
 #~ msgid "Download date"
 #~ msgstr "İndirme tarihi"

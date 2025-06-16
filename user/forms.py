@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from .models import Profile, Faculty
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
-
+from django.utils.translation import gettext_lazy as _
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -32,7 +32,7 @@ class LoginForm(forms.Form):
         if login and password:
             self.user = authenticate(self.request, username=login, password=password)
             if self.user is None:
-                raise forms.ValidationError("Неверный логин/email или пароль")
+                raise forms.ValidationError(_("Invalid username/email or password"))
         return self.cleaned_data
 
     def get_user(self):
