@@ -40,13 +40,14 @@
                                 {{ form.phone }}
                             </div>
                             <div class="col-md-6">
-                                <label for="id_faculty" class="form-label">{% trans "Faculty" %}</label>
-                                {{ form.faculty }}
+                                <label class="form-label">{% trans "Faculty" %}</label>
+                                <p class="form-control-plaintext">{{ user.profile.faculty }}</p>
                             </div>
                             <div class="col-md-6">
-                                <label for="id_department" class="form-label">{% trans "Department" %}</label>
-                                {{ form.department }}
+                                <label class="form-label">{% trans "Department" %}</label>
+                                <p class="form-control-plaintext">{{ user.profile.department }}</p>
                             </div>
+
                             <div class="col-md-6">
                                 <label for="id_email" class="form-label">{% trans "Email" %} (@ayu.edu.kz)</label>
                                 {{ form.email }}
@@ -67,4 +68,8 @@
         </div>
     </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'smart-selects/admin/js/chainedfk.js' %}"></script>
+
 {% endblock %}

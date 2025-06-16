@@ -57,7 +57,7 @@ class ProfileUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        fields = ['faculty', 'department', 'phone', 'father_name', 'photo']
+        fields = ['phone', 'father_name', 'photo']
         widgets = {
             'faculty': forms.Select(attrs={'class': 'form-control'}),
             'department': forms.Select(attrs={'class': 'form-control'}),
