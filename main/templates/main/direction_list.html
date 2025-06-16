@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
-{% load cache %}
 
 {% block title %}Направления - Мой сайт{% endblock %}
 
@@ -11,21 +10,12 @@
 {% endblock %}
 
 {% block content %}
-{% cache 300 direction_list user.id %}
 <link rel="stylesheet" href="{% static 'main/css/direction_list.css' %}">
 <div class="container">
     <h2 class="text-center my-4">{% trans "Select a direction" %}</h2>
     <div class="row row-cols-1 row-cols-md-3 g-4">
-        {% for direction in directions %}
-        <div class="col-md-4 mb-4">
-            <div class="card direction-card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">{{ direction.name }}</h5>
-                    <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">{% trans "Select" %}</a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+        {% include "main/_cached_direction_links.html" %}
+        <!-- ALL DIRECTIONS card (НЕ кэшируется) -->
         <div class="col-md-4 mb-4">
             <div class="card direction-card">
                 <div class="card-body text-center">
@@ -36,5 +26,4 @@
         </div>
     </div>
 </div>
-{% endcache %}
 {% endblock %}

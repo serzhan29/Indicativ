@@ -1,0 +1,14 @@
+{% load i18n %}
+{% load cache %}
+{% cache 300 direction_links user.id LANGUAGE_CODE %}
+    {% for direction in directions %}
+    <div class="col-md-4 mb-4">
+        <div class="card direction-card">
+            <div class="card-body text-center">
+                <h5 class="card-title">{{ direction.name }}</h5>
+                <a href="{% url 'choose_year' direction.id %}" class="btn btn-primary mt-3 mb-3">{% trans "Select" %}</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endcache %}
