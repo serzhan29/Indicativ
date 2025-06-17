@@ -23,44 +23,51 @@ from django.utils.translation import gettext_lazy as _
 
 def get_kz_month_name(month_number):
     kz_month_names = {
-        1: _("Январь"),
-        2: _("Февраль"),
-        3: _("Март"),
-        4: _("Апрель"),
-        5: _("Май"),
-        6: _("Июнь"),
-        7: _("Июль"),
-        8: _("Август"),
-        9: _("Сентябрь"),
-        10: _("Октябрь"),
-        11: _("Ноябрь"),
-        12: _("Декабрь"),
+        1: 'Қаңтар',
+        2: 'Ақпан',
+        3: 'Наурыз',
+        4: 'Сәуір',
+        5: 'Мамыр',
+        6: 'Маусым',
+        7: 'Шілде',
+        8: 'Тамыз',
+        9: 'Қыркүйек',
+        10: 'Қазан',
+        11: 'Қараша',
+        12: 'Желтоқсан',
     }
     return kz_month_names.get(month_number, "")
 
 def create_first_page(doc, faculty_name, year):
-    next_year = year + 1
+    """Функция для создания первой страницы отчета"""
+    next_year = year + 1  # Следующий учебный год
 
-    doc.add_paragraph(_("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті")).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # --- Первая страница ---
+    doc.add_paragraph("Қожа Ахмет Ясауи атындағы Халықаралық қазақ-түрік университеті").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     para = doc.add_paragraph(
-        _("«БЕКІТЕМІН»") + "\n" +
-        _("Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры") + "\n" +
-        _("__________________________ А.Ошибаева") + "\n" +
+        "«БЕКІТЕМІН»\n"
+        "Сапа бойынша басшылық өкілі, Ғылым және стратегиялық даму вице-ректоры\n"
+        "__________________________ А.Ошибаева\n"
         f"«____» _______________ {year}ж."
     )
     para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
+    # Пустые строки
     for _ in range(6):
         doc.add_paragraph("")
 
     doc.add_paragraph(f"{faculty_name}").alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(_("{start} - {end} оқу жылына").format(start=year, end=next_year)).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(_("ИНДИКАТИВТІ ЖОСПАРЫ")).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_paragraph(_("\nКентау")).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"{year} - {next_year} оқу жылына").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("ИНДИКАТИВТІ ЖОСПАРЫ").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph("\nКентау").alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    # Добавляем разрыв страницы для следующей части отчета
     doc.add_page_break()
 
+
+def init_document(selected_year, faculty):
+    document = Document()
 
 def init_document(selected_year, faculty):
     document = Document()
@@ -288,7 +295,7 @@ def download_teacher_report(request, teacher_id, direction_id, year_id):
             # Дедлайн для подиндикатора
             deadline_sub = "-"
             if report and report.deadline_month and report.deadline_year:
-                month_name = get_kz_month_name(data.deadline_month)
+                month_name = get_kz_month_name(report.deadline_month)
                 deadline_sub = f"{month_name} / {report.deadline_year}"
 
             has_docs_sub = "✓" if report and report.uploaded_works.exists() else "-"
