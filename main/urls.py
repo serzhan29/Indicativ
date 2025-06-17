@@ -4,8 +4,8 @@ from .views import  (DirectionListView, YearListView, TeacherReportView,
                     update_deadline,FileDeleteView, FileModalView)
 from .views_docx import (download_teacher_report,
                          TeacherReportWordExportView, export_report, export_department_report_docx)
-from .observer import (teachers_by_faculty, TeacherReportReadOnlyView,
-                     report_department, get_departments, dean_report)
+from .observer import (TeachersByFacultyView, TeacherReportReadOnlyView,
+                     ReportDepartmentView, get_departments, dean_report)
 
 urlpatterns = [
     path('', DirectionListView.as_view(), name='direction_list'),
@@ -17,12 +17,14 @@ urlpatterns = [
     path('report/<int:direction_id>/<int:year_id>/', TeacherReportView.as_view(), name='teacher_report'),
     # Обновление значение
     path('update_value/', UpdateValueView.as_view(), name='update_value'),
-    path('teacher/', teachers_by_faculty, name='teachers_by_faculty'),
+    path('teacher/', TeachersByFacultyView.as_view(), name='teachers_by_faculty'),
 
     # Для учителей
     path('teacher/report/', TeacherReportReadOnlyView.as_view(), name='teacher_report_readonly'),
     path('teacher-report/download/', TeacherReportWordExportView.as_view(), name='teacher_report_download'),
-    path('report/department/', report_department, name='report_department'),
+    # Отчеты преподавателей
+    path('report/department/', ReportDepartmentView.as_view(), name='report_department'),
+    #Обновление значений
     path('update-deadline/', update_deadline, name='update_deadline'),
     # Загрузка файлов для соавторов и авторов
     path(

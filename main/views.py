@@ -244,94 +244,118 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         teacher = self.request.user
         direction_id = self.kwargs['direction_id']
-        direction = cache.get_or_set(f'direction_{direction_id}', lambda: get_object_or_404(Direction, id=direction_id),
-                                     60 * 60)
+        direction = cache.get_or_set(
+            f'direction_{direction_id}',
+            lambda: get_object_or_404(Direction, id=direction_id),
+            60 * 60
+        )
 
         year_id = self.request.GET.get('year_id') or self.kwargs.get('year_id')
-        year = cache.get_or_set(f'year_{year_id}', lambda: get_object_or_404(Year, id=year_id),
-                                60 * 60) if year_id else Year.objects.last()
+        year = cache.get_or_set(
+            f'year_{year_id}',
+            lambda: get_object_or_404(Year, id=year_id),
+            60 * 60
+        ) if year_id else Year.objects.last()
 
-        # Список всех лет и направлений (редко обновляется)
         all_years = cache.get_or_set('all_years', lambda: list(Year.objects.all()), 60 * 60)
         all_directions = cache.get_or_set('all_directions', lambda: list(Direction.objects.all()), 60 * 60)
 
-        # Сортировка по коду
+        # Загрузка основных индикаторов с кешированием
         def code_key(code):
             return [int(part) for part in code.split('.') if part.isdigit()]
 
-        # Кэшируем список главных индикаторов
-        main_indicators_key = f'main_indicators_dir{direction_id}_year{year.id}'
-        main_indicators = cache.get(main_indicators_key)
-
+        main_key = f'main_indicators_dir{direction_id}_year{year.id}'
+        main_indicators = cache.get(main_key)
         if main_indicators is None:
             main_indicators = list(
-                MainIndicator.objects.filter(direction=direction, years=year).only('id', 'name', 'code'))
+                MainIndicator.objects.filter(direction=direction, years=year)
+                .only('id', 'name', 'code')
+            )
             main_indicators.sort(key=lambda x: code_key(x.code))
-            cache.set(main_indicators_key, main_indicators, 60 * 60)
+            cache.set(main_key, main_indicators, 60 * 60)
+
+        # Загрузка всех подиндикаторов сразу и группировка по main_indicator_id
+        indicators_qs = Indicator.objects.filter(
+            main_indicator__in=main_indicators,
+            years=year
+        ).only('id', 'name', 'main_indicator_id')
+        indicators_by_main = {}
+        for ind in indicators_qs:
+            indicators_by_main.setdefault(ind.main_indicator_id, []).append(ind)
+
+        # Загрузка существующих отчетов учителя
+        all_indicators = [ind for sub in indicators_by_main.values() for ind in sub]
+        tr_qs = TeacherReport.objects.filter(
+            teacher=teacher,
+            indicator__in=all_indicators,
+            year=year
+        ).select_related('indicator').prefetch_related('uploaded_works')
+        tr_dict = {tr.indicator_id: tr for tr in tr_qs}
+
+        # Загрузка аггрегированных индикаторов
+        ai_qs = AggregatedIndicator.objects.filter(
+            teacher=teacher,
+            main_indicator__in=main_indicators,
+            year=year
+        ).prefetch_related('uploaded_works')
+        ai_dict = {ai.main_indicator_id: ai for ai in ai_qs}
 
         aggregated_data = []
+        for main in main_indicators:
+            sub_inds = indicators_by_main.get(main.id, [])
 
-        for main_indicator in main_indicators:
-            # Подиндикаторы — тоже можно кэшировать только имена и id
-            indicators_key = f'indicators_main{main_indicator.id}_year{year.id}'
-            indicators = cache.get(indicators_key)
-
-            if indicators is None:
-                indicators = list(
-                    Indicator.objects.filter(main_indicator=main_indicator, years=year).only('id', 'name'))
-                cache.set(indicators_key, indicators, 60 * 60)
-
-            # TeacherReport — НЕ кэшируем
-            for indicator in indicators:
-                teacher_report, created = TeacherReport.objects.get_or_create(
-                    teacher=teacher,
-                    indicator=indicator,
-                    year=year,
-                    defaults={'value': 0}
-                )
-                if not created and teacher_report.value != 0:
-                    teacher_report.save()
-
-            # AggregatedIndicator — НЕ кэшируем
-            aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
-                main_indicator=main_indicator,
-                teacher=teacher,
-                year=year,
-                defaults={'additional_value': 0}
-            )
-            if not created and aggregated_indicator.additional_value != 0:
-                aggregated_indicator.save()
-
-            total_value = TeacherReport.objects.filter(
-                teacher=teacher, indicator__in=indicators, year=year
-            ).aggregate(Sum('value'))['value__sum'] or 0
-
-            total_value += aggregated_indicator.additional_value
-
-            teacher_reports = TeacherReport.objects.filter(
-                teacher=teacher, indicator__in=indicators, year=year
-            ).select_related('indicator')
-
-            for report in teacher_reports:
-                report.uploaded_files = report.uploaded_works.all()
-                if report.deadline_month and report.deadline_year:
-                    report.deadline_display = f"{_(calendar.month_name[report.deadline_month])} {report.deadline_year}"
+            # Обработка TeacherReport
+            current_trs = []
+            for ind in sub_inds:
+                tr = tr_dict.get(ind.id)
+                if tr:
+                    if tr.value != 0:
+                        tr.save()
                 else:
-                    report.deadline_display = "—"
+                    tr = TeacherReport.objects.create(
+                        teacher=teacher,
+                        indicator=ind,
+                        year=year,
+                        value=0
+                    )
+                    tr.uploaded_works.set([])
+                # Формат отображения дедлайна для tr
+                if tr.deadline_month and tr.deadline_year:
+                    tr.deadline_display = f"{_(calendar.month_name[tr.deadline_month])} {tr.deadline_year}"
+                else:
+                    tr.deadline_display = "—"
+                current_trs.append(tr)
 
-            if aggregated_indicator.deadline_month and aggregated_indicator.deadline_year:
-                aggregated_deadline_display = f"{_(calendar.month_name[aggregated_indicator.deadline_month])} {aggregated_indicator.deadline_year}"
+            # Обработка AggregatedIndicator
+            ai = ai_dict.get(main.id)
+            if ai:
+                if ai.additional_value != 0:
+                    ai.save()
             else:
-                aggregated_deadline_display = "—"
+                ai = AggregatedIndicator.objects.create(
+                    main_indicator=main,
+                    teacher=teacher,
+                    year=year,
+                    additional_value=0
+                )
+                ai.uploaded_works.set([])
+
+            if ai.deadline_month and ai.deadline_year:
+                ai_deadline = f"{_(calendar.month_name[ai.deadline_month])} {ai.deadline_year}"
+            else:
+                ai_deadline = "—"
+
+            # Подсчет суммарного значения
+            total = sum(tr.value for tr in current_trs) + ai.additional_value
 
             aggregated_data.append({
-                'id': aggregated_indicator.id,
-                'main_indicator': main_indicator,
-                'total_value': total_value,
-                'additional_value': aggregated_indicator.additional_value,
-                'teacher_reports': teacher_reports,
-                'uploaded_works': aggregated_indicator.uploaded_works.all(),
-                'deadline_display': aggregated_deadline_display,
+                'id': ai.id,
+                'main_indicator': main,
+                'total_value': total,
+                'additional_value': ai.additional_value,
+                'teacher_reports': current_trs,
+                'uploaded_works': ai.uploaded_works.all(),
+                'deadline_display': ai_deadline,
             })
 
         months = [(i, _(calendar.month_name[i])) for i in range(1, 13)]
@@ -347,13 +371,12 @@ class TeacherReportView(LoginRequiredMixin, TemplateView):
         })
         return context
 
-
 def code_key(code):
     return [int(part) for part in code.split('.') if part.isdigit()]
 
 
 class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
-    """Генерация отчетов для учителя и их агрегация"""
+    """Генерация отчетов для учителя по всем направлениям и их агрегация"""
     template_name = 'main/teacher_full_report.html'
 
     def get_context_data(self, **kwargs):
@@ -363,90 +386,122 @@ class TeacherReportAllDirection(LoginRequiredMixin, TemplateView):
         direction_id = self.kwargs.get('direction_id')
         year_id = self.kwargs.get('year_id')
 
-        directions = Direction.objects.all()
-        all_aggregated_data = {}
-
+        # Определяем год
         if year_id:
             year = get_object_or_404(Year, id=year_id)
         else:
-            year = Year.objects.order_by('-id').first()
+            year = cache.get_or_set('latest_year', lambda: Year.objects.order_by('-id').first(), 60 * 60)
 
+        # Определяем список направлений
         if direction_id:
             directions = Direction.objects.filter(id=direction_id)
+        else:
+            directions = cache.get_or_set('all_directions_list', lambda: list(Direction.objects.all()), 60 * 60)
 
-        for dir_item in directions:
-            main_indicators_unsorted = MainIndicator.objects.filter(direction=dir_item, years=year)
-            main_indicators = sorted(main_indicators_unsorted, key=lambda x: code_key(x.code))
-            aggregated_data = []
+        # Загрузка главных индикаторов для всех направлений
+        mi_qs = MainIndicator.objects.filter(direction__in=directions, years=year).only('id', 'name', 'code', 'direction_id')
+        mi_by_dir = {}
+        all_main_ids = []
+        for mi in mi_qs:
+            mi_by_dir.setdefault(mi.direction_id, []).append(mi)
+            all_main_ids.append(mi.id)
 
-            for main_indicator in main_indicators:
-                indicators = Indicator.objects.filter(main_indicator=main_indicator, years=year).order_by('code')
+        # Сортировка списков главных индикаторов по коду
+        for dir_id, mis in mi_by_dir.items():
+            mi_by_dir[dir_id] = sorted(mis, key=lambda x: code_key(x.code))
 
-                for indicator in indicators:
-                    teacher_report, created = TeacherReport.objects.get_or_create(
-                        teacher=teacher,
-                        indicator=indicator,
-                        year=year,
-                        defaults={'value': 0}
-                    )
-                    if not created and teacher_report.value != 0:
-                        teacher_report.save()
+        # Загрузка подиндикаторов для всех главных
+        ind_qs = Indicator.objects.filter(main_indicator_id__in=all_main_ids, years=year).only('id', 'name', 'main_indicator_id', 'code')
+        inds_by_main = {}
+        for ind in ind_qs:
+            inds_by_main.setdefault(ind.main_indicator_id, []).append(ind)
+        # Сортируем по коду
+        for mi_id, inds in inds_by_main.items():
+            inds_by_main[mi_id] = sorted(inds, key=lambda x: code_key(x.code))
 
-                aggregated_indicator, created = AggregatedIndicator.objects.get_or_create(
-                    main_indicator=main_indicator,
-                    teacher=teacher,
-                    year=year,
-                    defaults={'additional_value': 0}
-                )
-                if not created and aggregated_indicator.additional_value != 0:
-                    aggregated_indicator.save()
+        # Подготовка всех необходимых TeacherReport и AggregatedIndicator
+        all_inds = [ind for sub in inds_by_main.values() for ind in sub]
+        tr_qs = TeacherReport.objects.filter(teacher=teacher, indicator__in=all_inds, year=year)
+        tr_qs = tr_qs.select_related('indicator').prefetch_related('uploaded_works')
+        tr_dict = {tr.indicator_id: tr for tr in tr_qs}
 
-                total_value = TeacherReport.objects.filter(
-                    teacher=teacher, indicator__in=indicators, year=year
-                ).aggregate(Sum('value'))['value__sum'] or 0
+        ai_qs = AggregatedIndicator.objects.filter(teacher=teacher, main_indicator_id__in=all_main_ids, year=year)
+        ai_qs = ai_qs.prefetch_related('uploaded_works')
+        ai_dict = {ai.main_indicator_id: ai for ai in ai_qs}
 
-                total_value += aggregated_indicator.additional_value
-
-                teacher_reports = TeacherReport.objects.filter(
-                    teacher=teacher, indicator__in=indicators, year=year
-                ).select_related('indicator')
-
-                for report in teacher_reports:
-                    report.uploaded_files = report.uploaded_works.all()
-                    if report.deadline_month and report.deadline_year:
-                        report.deadline_display = f"{_(calendar.month_name[report.deadline_month])} {report.deadline_year}"
+        # Сбор данных
+        all_aggregated_data = {}
+        for dir_obj in directions:
+            dir_data = []
+            mains = mi_by_dir.get(dir_obj.id, [])
+            for main in mains:
+                # Формируем отчеты для подиндикаторов
+                reports = []
+                sub_inds = inds_by_main.get(main.id, [])
+                for ind in sub_inds:
+                    tr = tr_dict.get(ind.id)
+                    if tr:
+                        if tr.value != 0:
+                            tr.save()
                     else:
-                        report.deadline_display = "—"
+                        tr = TeacherReport.objects.create(
+                            teacher=teacher,
+                            indicator=ind,
+                            year=year,
+                            value=0
+                        )
+                        tr.uploaded_works.set([])
+                    # Формат дедлайна
+                    if tr.deadline_month and tr.deadline_year:
+                        tr.deadline_display = f"{_(calendar.month_name[tr.deadline_month])} {tr.deadline_year}"
+                    else:
+                        tr.deadline_display = "—"
+                    reports.append(tr)
 
-                # Добавим срок к aggregated_indicator
-                if aggregated_indicator.deadline_month and aggregated_indicator.deadline_year:
-                    aggregated_deadline_display = f"{_(calendar.month_name[aggregated_indicator.deadline_month])} {aggregated_indicator.deadline_year}"
+                # Обработка агрегированного индикатора
+                ai = ai_dict.get(main.id)
+                if ai:
+                    if ai.additional_value != 0:
+                        ai.save()
                 else:
-                    aggregated_deadline_display = "—"
+                    ai = AggregatedIndicator.objects.create(
+                        main_indicator=main,
+                        teacher=teacher,
+                        year=year,
+                        additional_value=0
+                    )
+                    ai.uploaded_works.set([])
+                if ai.deadline_month and ai.deadline_year:
+                    ai_deadline = f"{_(calendar.month_name[ai.deadline_month])} {ai.deadline_year}"
+                else:
+                    ai_deadline = "—"
 
-                aggregated_data.append({
-                    'id': aggregated_indicator.id,
-                    'main_indicator': main_indicator,
-                    'total_value': total_value,
-                    'additional_value': aggregated_indicator.additional_value,
-                    'teacher_reports': teacher_reports,
-                    'uploaded_works': aggregated_indicator.uploaded_works.all(),
-                    'deadline_display': aggregated_deadline_display,
+                # Подсчет суммарного значения
+                total_val = sum(r.value for r in reports) + ai.additional_value
+
+                dir_data.append({
+                    'id': ai.id,
+                    'main_indicator': main,
+                    'total_value': total_val,
+                    'additional_value': ai.additional_value,
+                    'teacher_reports': reports,
+                    'uploaded_works': ai.uploaded_works.all(),
+                    'deadline_display': ai_deadline,
                 })
 
-            all_aggregated_data[dir_item] = aggregated_data
+            all_aggregated_data[dir_obj] = dir_data
 
         context.update({
             'teacher': teacher,
             'current_direction': None if not direction_id else get_object_or_404(Direction, id=direction_id),
             'year': year,
             'all_aggregated_data': all_aggregated_data,
-            'directions': Direction.objects.all(),
-            'all_years': Year.objects.all().order_by('-year'),
+            'directions': directions,
+            'all_years': cache.get_or_set('years_list', lambda: list(Year.objects.all().order_by('-year')), 60 * 60),
             'months': [(i, _(calendar.month_name[i])) for i in range(1, 13)],
         })
-
         return context
+
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -503,59 +558,60 @@ class UpdateValueView(LoginRequiredMixin, View):
         return JsonResponse({"success": False, "error": "Неверный метод"})
 
 
-
 # index.html
 @login_required
 def index(request):
     teacher = request.user
-    years = Year.objects.order_by('year')
-    main_indicators = MainIndicator.objects.all()
 
-    # Получаем все направления
-    directions = Direction.objects.all()
+    # Кэшируем список годов и направлений (редко меняются)
+    years = cache.get_or_set('years_list', lambda: list(Year.objects.order_by('year')), 60 * 60)
+    directions = cache.get_or_set('directions_list', lambda: list(Direction.objects.all()), 60 * 60)
 
-    selected_direction = request.GET.get('direction')  # получаем выбранное направление
-    selected_indicator = request.GET.get('indicator')  # получаем выбранный главный индикатор
+    # Получаем и фильтруем главные индикаторы
+    main_qs = MainIndicator.objects.all().only('id', 'name', 'code', 'unit', 'direction_id')
+    selected_direction = request.GET.get('direction')
+    selected_indicator = request.GET.get('indicator')
 
-    # Фильтрация по направлению
     if selected_direction:
-        main_indicators = main_indicators.filter(direction__id=selected_direction)
-
-    # Фильтрация по главному индикатору
+        main_qs = main_qs.filter(direction_id=selected_direction)
     if selected_indicator:
-        main_indicators = main_indicators.filter(id=selected_indicator)
+        main_qs = main_qs.filter(id=selected_indicator)
+
+    main_indicators = list(main_qs)
+
+    # Подгружаем все AggregatedIndicator одной операцией
+    agg_qs = AggregatedIndicator.objects.filter(
+        teacher=teacher,
+        main_indicator__in=main_indicators,
+        year__in=years
+    ).select_related('year', 'main_indicator')
+
+    # Создаем словарь (year_id, main_id) -> AggregatedIndicator
+    agg_dict = {(ai.year_id, ai.main_indicator_id): ai for ai in agg_qs}
 
     year_values = []
 
     for year in years:
-        year_data = {
-            'year': year.year,
-            'main_indicators': []
-        }
-
+        row = {'year': year.year, 'main_indicators': []}
         for main in main_indicators:
-            agg = AggregatedIndicator.objects.filter(
-                teacher=teacher,
-                main_indicator=main,
-                year=year
-            ).first()
-
-            year_data['main_indicators'].append({
+            ai = agg_dict.get((year.id, main.id))
+            value = ai.additional_value if ai else 0
+            row['main_indicators'].append({
                 'name': main.name,
                 'code': main.code,
-                'value': agg.total_value if agg else 0,
+                'value': value,
                 'unit': main.unit
             })
-
-        year_values.append(year_data)
+        year_values.append(row)
 
     return render(request, 'main/index.html', {
         'teacher': teacher,
         'year_values': year_values,
-        'directions': directions,  # передаем список направлений в шаблон
-        'selected_direction': selected_direction,  # передаем выбранное направление
-        'selected_indicator': selected_indicator,  # передаем выбранный индикатор
-        'main_indicators': main_indicators,  # передаем список главных индикаторов для фильтра
+        'directions': directions,
+        'selected_direction': selected_direction,
+        'selected_indicator': selected_indicator,
+        'main_indicators': main_indicators,
     })
+
 
 
