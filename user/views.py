@@ -4,7 +4,6 @@ from django.contrib.auth import login, logout
 from .forms import CustomUserCreationForm, LoginForm, ProfileUpdateForm
 from .models import Profile
 from django.contrib import messages
-from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
 
 
