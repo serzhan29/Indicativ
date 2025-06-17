@@ -1,5 +1,5 @@
 import calendar
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from user.models import Profile, Faculty, Department
 from .models import TeacherReport, AggregatedIndicator, Year, Direction, MainIndicator, Indicator
@@ -7,21 +7,19 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
-from collections import defaultdict
 from django.core.paginator import Paginator
-from django.http import JsonResponse
 from django.utils.translation import gettext as _
-from calendar import month_name
 from django.core.cache import cache
+from django.views import View
+from django.utils.decorators import method_decorator
 
 
 class TeachersByFacultyView(LoginRequiredMixin, TemplateView):
     """
-    Показывает список всех учителей.
-    Если заходит администратора то он может выбирать любые факультеты и кафедры.
-    Если заходит Зам. кафедры он/она не может выбирать, ему/ей показывается только ее факультет и кафедра.
-    Если заходит Декан то он/она может выбирать кафедры, но не может выбрать факультет.
+    Показывает список всех преподавателей.
+    Если входит администратор, он может выбирать любые факультеты и кафедры.
+    Если входит заместитель заведующего кафедрой, он/она не может выбирать — отображаются только его/её факультет и кафедра.
+    Если входит декан, он/она может выбирать кафедры, но не может выбрать факультет.
     """
     template_name = 'main/view/list_teacher.html'
 
@@ -254,10 +252,11 @@ class TeacherReportReadOnlyView(LoginRequiredMixin, TemplateView):
 
 class ReportDepartmentView(LoginRequiredMixin, TemplateView):
     """
-    Страница для зам. кафедры.
-    Показывает только кафедры, в которых состоит сам зам. кафедры,
-    суммирует все значения всех учителей одной кафедры.
+    Страница для заместителя заведующего кафедрой.
+    Отображаются только кафедры, к которым он/она относится.
+    Значения всех преподавателей по каждой кафедре суммируются.
     """
+
     template_name = 'main/view/report_department.html'
 
     def get_context_data(self, **kwargs):
@@ -398,141 +397,133 @@ class ReportDepartmentView(LoginRequiredMixin, TemplateView):
         }
 
 
-@login_required
-def dean_report(request):
-    # 1. Выбор года и кэширование списка годов
-    year_id = request.GET.get('year')
-    if year_id:
-        selected_year = get_object_or_404(Year, id=year_id)
-    else:
-        selected_year = cache.get_or_set('latest_year_dean', lambda: Year.objects.latest('year'), 60*60)
-    years = cache.get_or_set('years_list_dean', lambda: list(Year.objects.all().order_by('-year')), 60*60)
+@method_decorator(login_required, name='dispatch')
+class DeanReportView(View):
+    template_name = 'main/view/dean_report.html'
 
-    # 2. Профиль, факультет, кафедры и направления
-    profile = request.user.profile
-    faculty = profile.faculty
-    departments = list(Department.objects.filter(faculty=faculty).only('id', 'name'))
-    directions = cache.get_or_set('directions_list_dean', lambda: list(Direction.objects.all()), 60*60)
+    def get(self, request):
+        # 1. Выбор года и кэширование списка годов
+        year_id = request.GET.get('year')
+        if year_id:
+            selected_year = get_object_or_404(Year, id=year_id)
+        else:
+            selected_year = cache.get_or_set('latest_year_dean', lambda: Year.objects.latest('year'), 60*60)
 
-    # 3. Основные и подиндикаторы для выбранного года
-    main_qs = MainIndicator.objects.filter(years=selected_year).only('id', 'name', 'code', 'direction_id')
-    subs_qs = Indicator.objects.filter(years=selected_year).only('id', 'main_indicator_id', 'name')
+        years = cache.get_or_set('years_list_dean', lambda: list(Year.objects.all().order_by('-year')), 60*60)
 
-    # Словари для группировки
-    mains_by_dir = {}
-    for m in main_qs:
-        mains_by_dir.setdefault(m.direction_id, []).append(m)
-    for dir_id, mis in mains_by_dir.items():
-        mis.sort(key=lambda x: [int(p) for p in x.code.split('.') if p.isdigit()])
+        # 2. Профиль, факультет, кафедры и направления
+        profile = request.user.profile
+        faculty = profile.faculty
+        departments = list(Department.objects.filter(faculty=faculty).only('id', 'name'))
+        directions = cache.get_or_set('directions_list_dean', lambda: list(Direction.objects.all()), 60*60)
 
-    subs_by_main = {}
-    for s in subs_qs:
-        subs_by_main.setdefault(s.main_indicator_id, []).append(s)
+        # 3. Основные и подиндикаторы для выбранного года
+        main_qs = MainIndicator.objects.filter(years=selected_year).only('id', 'name', 'code', 'direction_id')
+        subs_qs = Indicator.objects.filter(years=selected_year).only('id', 'main_indicator_id', 'name')
 
-    # 4. Загрузка всех отчетов учителей и агрегатов одним запросом
-    all_sub_ids = [s.id for s in subs_qs]
-    all_main_ids = [m.id for m in main_qs]
+        # Группировка основных индикаторов по направлениям
+        mains_by_dir = {}
+        for m in main_qs:
+            mains_by_dir.setdefault(m.direction_id, []).append(m)
+        for dir_id, mis in mains_by_dir.items():
+            mis.sort(key=lambda x: [int(p) for p in x.code.split('.') if p.isdigit()])
 
-    tr_qs = TeacherReport.objects.filter(
-        year=selected_year,
-        indicator_id__in=all_sub_ids,
-        teacher__profile__department__in=departments
-    ).select_related(
-        'indicator', 'teacher', 'teacher__profile', 'teacher__profile__department'
-    ).prefetch_related('uploaded_works')
+        # Группировка подиндикаторов по основным
+        subs_by_main = {}
+        for s in subs_qs:
+            subs_by_main.setdefault(s.main_indicator_id, []).append(s)
 
-    ai_qs = AggregatedIndicator.objects.filter(
-        year=selected_year,
-        main_indicator_id__in=all_main_ids,
-        teacher__profile__department__in=departments
-    ).select_related(
-        'main_indicator', 'teacher', 'teacher__profile', 'teacher__profile__department'
-    ).prefetch_related('uploaded_works')
+        # 4. Загрузка всех отчетов учителей и агрегатов одним запросом
+        all_sub_ids = [s.id for s in subs_qs]
+        all_main_ids = [m.id for m in main_qs]
 
-    # Группировка отчетов по (sub_id, dept_id)
-    tr_by_sub_dept = {}
-    for tr in tr_qs:
-        key = (tr.indicator_id, tr.teacher.profile.department_id)
-        tr_by_sub_dept.setdefault(key, []).append(tr)
+        tr_qs = TeacherReport.objects.filter(
+            year=selected_year,
+            indicator_id__in=all_sub_ids,
+            teacher__profile__department__in=departments
+        ).select_related(
+            'indicator', 'teacher', 'teacher__profile', 'teacher__profile__department'
+        ).prefetch_related('uploaded_works')
 
-    # Группировка агрегатов по (main_id, dept_id)
-    ai_by_main_dept = {}
-    for ai in ai_qs:
-        key = (ai.main_indicator_id, ai.teacher.profile.department_id)
-        ai_by_main_dept.setdefault(key, []).append(ai)
+        ai_qs = AggregatedIndicator.objects.filter(
+            year=selected_year,
+            main_indicator_id__in=all_main_ids,
+            teacher__profile__department__in=departments
+        ).select_related(
+            'main_indicator', 'teacher', 'teacher__profile', 'teacher__profile__department'
+        ).prefetch_related('uploaded_works')
 
-    # 5. Сбор данных для каждого направления
-    data = []
-    for direction in directions:
-        dir_mains = mains_by_dir.get(direction.id, [])
-        dir_entry = {'name': direction.name, 'main_indicators': []}
+        # Группировка отчетов по (sub_id, dept_id)
+        tr_by_sub_dept = {}
+        for tr in tr_qs:
+            key = (tr.indicator_id, tr.teacher.profile.department_id)
+            tr_by_sub_dept.setdefault(key, []).append(tr)
 
-        for main in dir_mains:
-            mi = {'main': main, 'has_sub': main.id in subs_by_main,
-                  'summary_row': [], 'sub_indicators': [], 'row': []}
+        # Группировка агрегатов по (main_id, dept_id)
+        ai_by_main_dept = {}
+        for ai in ai_qs:
+            key = (ai.main_indicator_id, ai.teacher.profile.department_id)
+            ai_by_main_dept.setdefault(key, []).append(ai)
 
-            if mi['has_sub']:
-                subs = subs_by_main[main.id]
-                # Summary row
-                for dept in departments:
-                    total = 0
-                    teachers = set()
-                    for sub in subs:
-                        for tr in tr_by_sub_dept.get((sub.id, dept.id), []):
-                            total += tr.value
-                            teachers.add(tr.teacher.get_full_name())
-                    mi['summary_row'].append({'value': total, 'teachers': list(teachers)})
+        # 5. Сбор данных для каждого направления
+        data = []
+        for direction in directions:
+            dir_mains = mains_by_dir.get(direction.id, [])
+            dir_entry = {'name': direction.name, 'main_indicators': []}
 
-                # Подиндикаторы
-                for sub in subs:
-                    sub_list = []
+            for main in dir_mains:
+                mi = {'main': main, 'has_sub': main.id in subs_by_main,
+                      'summary_row': [], 'sub_indicators': [], 'row': []}
+
+                if mi['has_sub']:
+                    subs = subs_by_main[main.id]
                     for dept in departments:
-                        trs = tr_by_sub_dept.get((sub.id, dept.id), [])
-                        val = sum(tr.value for tr in trs)
+                        total = 0
+                        teachers = set()
+                        for sub in subs:
+                            for tr in tr_by_sub_dept.get((sub.id, dept.id), []):
+                                total += tr.value
+                                teachers.add(tr.teacher.get_full_name())
+                        mi['summary_row'].append({'value': total, 'teachers': list(teachers)})
+
+                    for sub in subs:
+                        sub_list = []
+                        for dept in departments:
+                            trs = tr_by_sub_dept.get((sub.id, dept.id), [])
+                            val = sum(tr.value for tr in trs)
+                            teachers = []
+                            for tr in trs:
+                                dl = f"{calendar.month_name[tr.deadline_month]} {tr.deadline_year}" if tr.deadline_month and tr.deadline_year else ''
+                                teachers.append({
+                                    'name': tr.teacher.get_full_name(),
+                                    'value': tr.value,
+                                    'file_count': tr.uploaded_works.count(),
+                                    'deadline': dl,
+                                })
+                            sub_list.append({'value': val, 'teachers': teachers})
+                        mi['sub_indicators'].append((sub, sub_list))
+                else:
+                    for dept in departments:
+                        ais = ai_by_main_dept.get((main.id, dept.id), [])
+                        total = sum(ai.additional_value for ai in ais)
                         teachers = []
-                        for tr in trs:
-                            dl = f"{calendar.month_name[tr.deadline_month]} {tr.deadline_year}" if tr.deadline_month and tr.deadline_year else ''
+                        for ai in ais:
+                            dl = f"{calendar.month_name[ai.deadline_month]} {ai.deadline_year}" if ai.deadline_month and ai.deadline_year else ''
                             teachers.append({
-                                'name': tr.teacher.get_full_name(),
-                                'value': tr.value,
-                                'file_count': tr.uploaded_works.count(),
+                                'name': ai.teacher.get_full_name(),
+                                'value': ai.additional_value,
+                                'file_count': ai.uploaded_works.count(),
                                 'deadline': dl,
                             })
-                        sub_list.append({'value': val, 'teachers': teachers})
-                    mi['sub_indicators'].append((sub, sub_list))
-            else:
-                # AggregatedIndicators row
-                for dept in departments:
-                    ais = ai_by_main_dept.get((main.id, dept.id), [])
-                    total = sum(ai.additional_value for ai in ais)
-                    teachers = []
-                    for ai in ais:
-                        dl = f"{calendar.month_name[ai.deadline_month]} {ai.deadline_year}" if ai.deadline_month and ai.deadline_year else ''
-                        teachers.append({
-                            'name': ai.teacher.get_full_name(),
-                            'value': ai.additional_value,
-                            'file_count': ai.uploaded_works.count(),
-                            'deadline': dl,
-                        })
-                    mi['row'].append({'value': total, 'teachers': teachers})
+                        mi['row'].append({'value': total, 'teachers': teachers})
 
-            dir_entry['main_indicators'].append(mi)
-        data.append(dir_entry)
+                dir_entry['main_indicators'].append(mi)
+            data.append(dir_entry)
 
-    return render(request, 'main/view/dean_report.html', {
-        'faculty': faculty,
-        'departments': departments,
-        'data': data,
-        'year': selected_year,
-        'years': years,
-    })
-
-# Добавляем представление для получения кафедр в зависимости от факультета
-def get_departments(request, faculty_id):
-    if faculty_id == 'all':
-        departments = Department.objects.all()
-    else:
-        departments = Department.objects.filter(faculty_id=faculty_id)
-
-    departments_data = [{'id': department.id, 'name': department.name} for department in departments]
-    return JsonResponse({'departments': departments_data})
+        return render(request, self.template_name, {
+            'faculty': faculty,
+            'departments': departments,
+            'data': data,
+            'year': selected_year,
+            'years': years,
+        })
