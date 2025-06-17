@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from .models import Faculty, Department, Profile, VisitLog
 
 
-class ProfileInline(admin.StackedInline):  # Можно заменить на TabularInline для компактности
+class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = 'Профиль'

@@ -1,5 +1,5 @@
 from modeltranslation.translator import register, TranslationOptions
-from .models import Profile, Faculty
+from .models import Faculty
 
 
 @register(Faculty)
