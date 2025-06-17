@@ -27,6 +27,13 @@
             {% endfor %}
           </div>
           <div class="mb-3">
+              {% if teacher and year %}
+                <a href="{% url 'teacher_report_download' %}?teacher={{ teacher.id }}&year={{ year.id }}" class="btn btn-outline-success">
+                  📄 {% trans "Dowload report" %}
+                </a>
+              {% endif %}
+          </div>
+          <div class="mb-3">
               <a href="{% url 'teachers_by_faculty' %}" class="btn btn-outline-secondary">
                 ← {% trans "Teachers list" %}
               </a>
@@ -39,6 +46,7 @@
     <div class="col-md-10">
       <div class="report-container">
         {% if teacher.id %}
+
           <div class="report-header mb-4">
             <h2 class="fw-bold">{{ teacher.first_name|default:teacher.username }} {{ teacher.last_name }} - ({{ year.year }} - {{ year.year|add:"1" }})</h2>
           </div>
