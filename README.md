@@ -13,7 +13,8 @@ pip install -r requirements.txt
 
 3.Убедитесь, что Redis установлен и запущен
 На Windows
-Установите Memurai или используйте WSL с Redis (sudo apt install redis-server).
+Установите Memurai или используйте WSL с Redis 
+(sudo apt install redis-server).
 redis-server
 
 🚀 Запуск проекта
