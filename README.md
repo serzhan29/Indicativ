@@ -5,7 +5,6 @@
 Создайте и активируйте виртуальное окружение.
 python -m venv venv
 venv\Scripts\activate     # Windows
-# или
 source venv/bin/activate  # macOS/Linux
 
 2. Установить зависимости:
