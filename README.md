@@ -17,9 +17,9 @@ pip install -r requirements.txt
 redis-server
 
 🚀 Запуск проекта
-1. Применить миграции
-python manage.py makemigrations
-python manage.py migrate
+1. Применить миграции:
+- python manage.py makemigrations
+- python manage.py migrate
 
 DOCKER:
 🚀 Как запустить
