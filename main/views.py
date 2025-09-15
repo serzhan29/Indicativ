@@ -18,6 +18,7 @@ from django.core.files.base import ContentFile
 from django.core.cache import cache
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.views.decorators.http import require_POST
 
 
 @receiver([post_save, post_delete], sender=Direction)
@@ -213,27 +214,55 @@ class FileDeleteView(LoginRequiredMixin, View):
 
 
 @csrf_exempt
+@require_POST
 def update_deadline(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        item_id = data.get('id')
-        item_type = data.get('type')
-        month = data.get('month')
-        year = data.get('year')
+    # 1) Проверка типа содержимого и JSON
+    if request.content_type != 'application/json':
+        return HttpResponseBadRequest('Content-Type must be application/json')
 
-        try:
-            if item_type == 'main':
-                item = AggregatedIndicator.objects.get(id=item_id)
-            else:
-                item = TeacherReport.objects.get(id=item_id)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return HttpResponseBadRequest('Invalid JSON')
 
-            item.deadline_month = int(month)
-            item.deadline_year = int(year)
-            item.save()
+    # 2) Достаём и валидируем поля
+    item_id = data.get('id')
+    item_type = data.get('type')
+    month = data.get('month')
+    year = data.get('year')
 
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+    if item_id is None or item_type is None or month is None or year is None:
+        return HttpResponseBadRequest('Missing required fields: id, type, month, year')
+
+    try:
+        item_id = int(item_id)
+        month = int(month)
+        year = int(year)
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest('id, month, year must be integers')
+
+    if not 1 <= month <= 12:
+        return HttpResponseBadRequest('month must be between 1 and 12')
+
+    # 3) Определяем модель по типу
+    if item_type == 'main':
+        Model = AggregatedIndicator
+    elif item_type == 'teacher':
+        Model = TeacherReport
+    else:
+        return HttpResponseBadRequest('Invalid type: expected "main" or "teacher"')
+
+    # 4) Ищем запись и сохраняем изменения
+    try:
+        item = Model.objects.get(id=item_id)
+    except Model.DoesNotExist:
+        return HttpResponseBadRequest('Item not found')
+
+    item.deadline_month = month
+    item.deadline_year = year
+    item.save(update_fields=['deadline_month', 'deadline_year'])
+
+    return JsonResponse({'success': True})
 
 
 class TeacherReportView(LoginRequiredMixin, TemplateView):
