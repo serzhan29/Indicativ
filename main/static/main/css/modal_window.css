@@ -1,7 +1,7 @@
 /* Общие стили для модального окна */
 #fileModal .modal-dialog {
-  max-width: 1000px; /* Увеличенная ширина */
-  width: 90vw;      /* Чтобы адаптировалось под экран */
+  max-width: 1200px; /* Увеличенная ширина */
+  width: 100vw;      /* Чтобы адаптировалось под экран */
 }
 
 #fileModal .modal-content {
@@ -93,6 +93,11 @@
   font-size: 0.95rem;
   color: #333;
 }
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 0;
+}
 
 /* Поле загрузки */
 #fileModal input[type="file"] {
@@ -146,7 +151,7 @@
   vertical-align: middle;
   overflow-wrap: break-word; /* перенос длинных слов */
   word-break: break-word;
-  max-width: 280px; /* ограничение ширины для длинных названий */
+  max-width: 300px; /* ограничение ширины для длинных названий */
   text-align: left;
 }
 
